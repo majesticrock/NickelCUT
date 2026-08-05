@@ -22,4 +22,20 @@ struct WickOrderedExpression {
  */
 std::ostream& operator<<(std::ostream& os, const WickOrderedExpression& expression);
 
+/**
+ * @brief Compares two Wick ordered expressions for equality.
+ * @param lhs The left-hand side expression.
+ * @param rhs The right-hand side expression.
+ * @return true if the expressions are equal, false otherwise.
+ */
+bool operator==(const WickOrderedExpression& lhs, const WickOrderedExpression& rhs);
+
+/**
+ * @brief Compares two Wick ordered expressions for inequality.
+ * @param lhs The left-hand side expression.
+ * @param rhs The right-hand side expression.
+ * @return true if the expressions are not equal, false otherwise.
+ */
+bool operator!=(const WickOrderedExpression& lhs, const WickOrderedExpression& rhs);
+
 } // namespace mrock::symbolic_operators::experimental

@@ -1,0 +1,100 @@
+# Custom architecture target
+set(TARGET_ARCH
+    "native"
+    CACHE STRING
+    "Architecture passed to compiler as -march=<arch> (empty disables)"
+)
+
+# Joined compile options
+add_library(nickelcut_options INTERFACE)
+target_compile_features(nickelcut_options
+    INTERFACE
+        cxx_std_20
+)
+
+target_compile_options(nickelcut_options INTERFACE
+    $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall>
+    $<$<CXX_COMPILER_ID:GNU,Clang>:-Wextra>
+)
+if(TARGET_ARCH)
+    target_compile_options(nickelcut_options INTERFACE
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-march=${TARGET_ARCH}>
+    )
+    message(STATUS "Building for architecture ${TARGET_ARCH}!")
+endif()
+
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(nickelcut_options INTERFACE
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-ffast-math> 
+    )
+else()
+    target_compile_definitions(nickelcut_options INTERFACE DEBUG)
+endif()
+
+target_include_directories(nickelcut_options INTERFACE EXTRA_INCLUDE_DIRS)
+
+
+#
+# Tell the program where to find the commutator files
+#
+set(_APPEND_DIR "lattice_cut")
+
+set(COMMUTATOR_DIR
+    "${PROJECT_SOURCE_DIR}/../commutators/"
+    CACHE PATH
+    "Location where the result of the FermionCommute program is saved. The subdir name is added automatically and does not need to be specified."
+)
+cmake_path(
+    APPEND COMMUTATOR_DIR "${_APPEND_DIR}"
+    OUTPUT_VARIABLE COMMUTATOR_nickelcut_DIR
+)
+# Ensure the path ends in exactly one "/"
+string(REGEX REPLACE "/+$" "" COMMUTATOR_nickelcut_DIR "${COMMUTATOR_nickelcut_DIR}")
+string(APPEND COMMUTATOR_nickelcut_DIR "/")
+
+message(STATUS "${PROJECT_NAME} will look for the commutator files in ${COMMUTATOR_nickelcut_DIR}")
+target_compile_definitions(nickelcut_options INTERFACE COMMUTATOR_DIR="${COMMUTATOR_nickelcut_DIR}")
+
+#
+# Tell the program where to place the data files
+#
+set(OUTPUT_DATA_DIR
+    "${PROJECT_SOURCE_DIR}/../../data/"
+    CACHE PATH
+    "Location where the result of the simulation should be saved. The subdir name is added automatically and does not need to be specified."
+)
+cmake_path(
+    APPEND OUTPUT_DATA_DIR "${_APPEND_DIR}"
+    OUTPUT_VARIABLE OUTPUT_DATA_nickelcut_DIR
+)
+# Ensure the path ends in exactly one "/"
+string(REGEX REPLACE "/+$" "" OUTPUT_DATA_nickelcut_DIR "${OUTPUT_DATA_nickelcut_DIR}")
+string(APPEND OUTPUT_DATA_nickelcut_DIR "/")
+
+message(STATUS "${PROJECT_NAME} saves its data in ${OUTPUT_DATA_nickelcut_DIR}")
+target_compile_definitions(nickelcut_options INTERFACE OUTPUT_DATA_DIR="${OUTPUT_DATA_nickelcut_DIR}")
+
+unset(_APPEND_DIR)
+
+
+
+#
+# Use MKL if available
+#
+set(MKL_LINK static)
+set(MKL_THREADING gnu_thread)
+set(MKL_INTERFACE lp64)
+
+find_package(MKL CONFIG QUIET HINTS $ENV{MKLROOT})
+
+if (MKL_FOUND)
+    message(STATUS "Configuring lattice_cut to use Intel MKL")
+
+    target_compile_options(nickelcut_options INTERFACE $<TARGET_PROPERTY:MKL::MKL,INTERFACE_COMPILE_OPTIONS>)
+    target_include_directories(nickelcut_options INTERFACE $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
+    target_link_libraries(nickelcut_options INTERFACE $<LINK_ONLY:MKL::MKL>)
+    # Let Eigen use MKL
+    target_compile_definitions(nickelcut_options INTERFACE EIGEN_USE_MKL_ALL MROCK_IEOM_DO_NOT_PARALLELIZE)
+else()
+    message(STATUS "MKL not found or not enabled; lattice_cut will not use Intel MKL")
+endif()

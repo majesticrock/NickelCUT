@@ -33,11 +33,17 @@ int main() {
         WickOperatorTemplate({Num_Comparison}, Momentum(), OperatorType::Number) 
     });
 
-    experimental::WickOrderedCollector kinetic_result = experimental::wick_decompose(H_kin, wick_templates);
-    std::cout << "Kinetic term decomposition:\n" << kinetic_result << std::endl;
+    //experimental::WickOrderedCollector kinetic_result = experimental::wick_decompose(H_kin, wick_templates);
+    //std::cout << "Kinetic term decomposition:\n\\begin{align*}" 
+    //    << kinetic_result 
+    //    << "\\end{align*}" << std::endl;
 
     experimental::WickOrderedCollector interaction_result = experimental::wick_decompose(H_int, wick_templates);
-    std::cout << "Interaction term decomposition:\n" << interaction_result << std::endl;
+    clean_wick_ordered_terms(interaction_result);
+    
+    std::cout << "Interaction term decomposition:\n\\begin{align*}" 
+        << interaction_result 
+        << "\\end{align*}" << std::endl;
 
     return 0;
 }

@@ -12,6 +12,26 @@
 
 namespace mrock::symbolic_operators::experimental {
 
+void WickOrderedTerm::replace_each_momentum(const MomentumSymbol::name_type replaceWhat,
+                                            const Momentum& replaceWith,
+                                            std::function<bool(std::vector<KroneckerDelta<Momentum>>::iterator)> skip) 
+{
+    AbstractTerm<WickOperator>::replace_each_momentum(replaceWhat, replaceWith, skip);
+    for (auto& op : wick_expression) {
+        op.momentum.replace_occurances(replaceWhat, replaceWith);
+    }
+}
+
+void WickOrderedTerm::replace_each_index(Index target,
+                                         Index replace_with,
+                                         std::function<bool(std::vector<KroneckerDelta<Index>>::iterator)> skip) 
+{
+    AbstractTerm<WickOperator>::replace_each_index(target, replace_with, skip);
+    for (auto& op : wick_expression) {
+        op.indizes.replace_index(target, replace_with);
+    }
+}
+
 WickOrderedTerm::WickOrderedTerm(const Term& base) 
     : AbstractTerm<WickOperator>(base.multiplicity,
                                  base.coefficients,
@@ -22,7 +42,7 @@ WickOrderedTerm::WickOrderedTerm(const Term& base)
       wick_expression()
 { }
 
-static WickOrderedTerm from_wick_term_skip_wick_expression(const WickOrderedTerm& base)
+WickOrderedTerm WickOrderedTerm::from_wick_term_skip_wick_expression(const WickOrderedTerm& base)
 {
     WickOrderedTerm result;
     result.multiplicity = base.multiplicity;
@@ -42,6 +62,128 @@ void WickOrderedTerm::include_template_result(const TemplateResult::SingleResult
     this->multiplicity *= result.factor;
 }
 
+bool WickOrderedTerm::resolve_deltas()
+{
+    if (!resolve_momentum_deltas())
+        return false;
+    if (!resolve_index_deltas())
+        return false;
+
+    return true;
+}
+
+void WickOrderedTerm::discard_zero_momenta() 
+{
+    AbstractTerm<WickOperator>::discard_zero_momenta();
+    for (auto& op : wick_expression) {
+        op.momentum.remove_zeros();
+    }
+}
+
+void WickOrderedTerm::sort()
+{
+    for (auto& delta : delta_momenta) {
+        if (delta.first.momentum_list.size() == 1 && delta.second.momentum_list.size() == 1) {
+            // This comparison is well defined because we save the momentum as char i.e. byte
+            // which is easily comparable
+            if (delta.first.momentum_list[0].name < delta.second.momentum_list[0].name) {
+                std::swap(delta.first, delta.second);
+                if (delta.first.momentum_list[0].factor < 0) {
+                    delta.first.flip_momentum();
+                    delta.second.flip_momentum();
+                }
+                if (delta.first.add_Q) {
+                    delta.first.add_Q = false;
+                    delta.second.add_Q = !(delta.second.add_Q);
+                }
+            }
+            for (auto& op : operators) {
+                op.momentum.replace_occurances(delta.first.momentum_list[0].name, delta.second);
+            }
+            for (auto& coeff : coefficients) {
+                coeff.momenta.replace_occurances(delta.first.momentum_list[0].name, delta.second);
+            }
+        }
+    }
+
+    for (auto& op : operators) {
+        if (op.type == OperatorType::CDW && op.momentum.add_Q) {
+            op.momentum.add_Q = false;
+            op.is_daggered = !(op.is_daggered);
+        }
+    }
+
+    for (std::size_t i = 0U; i < operators.size(); ++i) {
+        for (std::size_t j = i + 1U; j < operators.size(); ++j) {
+            if (operators[i].type > operators[j].type) {
+                std::swap(operators[i], operators[j]);
+            } else if (operators[i].type == operators[j].type) {
+                if (momentum_order(operators[i].momentum, operators[j].momentum)) {
+                    std::swap(operators[i], operators[j]);
+                }
+            }
+        }
+    }
+
+    for (auto& coeff : coefficients) {
+        for (auto& momentum : coeff.momenta) {
+            momentum.sort();
+
+            if (coeff.inversion_symmetry && !momentum.momentum_list.empty()) {
+                if (momentum.momentum_list[0].factor < 0) {
+                    momentum.flip_momentum();
+                }
+            }
+            if (coeff.Q_changes_sign && momentum.add_Q) {
+                momentum.add_Q = false;
+                this->multiplicity *= -1;
+            }
+        }
+    }
+
+    for (auto& coeff : coefficients) {
+        if (coeff.momenta.size() == 3U) {
+            Momentum* first_momentum = &coeff.momenta.front();
+            if (first_momentum != nullptr && first_momentum->empty()) {
+                if (coeff.momenta.size() > 1U)
+                    first_momentum = &coeff.momenta[1];
+            }
+            if ((first_momentum != nullptr) && (!first_momentum->empty())) {
+                if (!first_momentum->first_momentum_is('k')) {
+                    coeff.use_symmetric_interaction_exchange();
+                }
+                if (sums.momenta.empty()) {
+                    if (coeff.momenta.back().first_momentum_is_negative()) {
+                        coeff.use_symmetric_interaction_inversion();
+                    }
+                } else if ((!sums.momenta.is_summed_over(first_momentum->front().name)) &&
+                           first_momentum->first_momentum_is_negative()) {
+                    coeff.use_symmetric_interaction_inversion();
+                }
+            }
+        }
+
+        for (auto& momentum : coeff.momenta) {
+            if (momentum.empty())
+                continue;
+            if ((!sums.momenta.is_summed_over(momentum.front().name)) && momentum.front().factor < 0) {
+                if (coeff.inversion_symmetry)
+                    momentum.flip_momentum();
+            }
+
+            for (const auto& sum : sums.momenta) {
+                int idx = momentum.is_used_at(sum);
+                if (idx < 0)
+                    continue;
+
+                if (momentum.momentum_list[idx].factor < 0) {
+                    invert_momentum_sum(sum);
+                }
+            }
+        }
+    }
+}
+
 std::ostream& operator<<(std::ostream& os, const WickOrderedTerm& term)
 {
     if (term.multiplicity > 0) {
@@ -56,10 +198,6 @@ std::ostream& operator<<(std::ostream& os, const WickOrderedTerm& term)
     for (const auto& delta : term.delta_indizes) {
         os << "\\delta_{" << delta.first << ", " << delta.second << "} ";
     }
-    if (term.is_identity()) {
-        os << " \\hat{1} ";
-        return os;
-    }
     for (const auto& op : term.operators) {
         os << op << " ";
     }
@@ -68,4 +206,23 @@ std::ostream& operator<<(std::ostream& os, const WickOrderedTerm& term)
     return os;
 }
 
+bool operator==(const WickOrderedTerm& lhs, const WickOrderedTerm& rhs) {
+    if (lhs.coefficients != rhs.coefficients)
+        return false;
+    if (lhs.sums != rhs.sums)
+        return false;
+    if (lhs.delta_indizes != rhs.delta_indizes)
+        return false;
+    if (lhs.delta_momenta != rhs.delta_momenta)
+        return false;
+    if (lhs.operators != rhs.operators)
+        return false;
+    if (lhs.wick_expression != rhs.wick_expression)
+        return false;
+    return true;
+}
+
+bool operator!=(const WickOrderedTerm& lhs, const WickOrderedTerm& rhs) {
+    return !(lhs == rhs);
+}
 }

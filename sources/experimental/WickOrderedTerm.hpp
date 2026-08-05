@@ -13,6 +13,13 @@
 namespace mrock::symbolic_operators::experimental {
 
 class WickOrderedTerm : public AbstractTerm<WickOperator> {
+protected:
+    void replace_each_momentum(const MomentumSymbol::name_type replaceWhat, const Momentum& replaceWith, 
+        std::function<bool(std::vector<KroneckerDelta<Momentum>>::iterator)> skip = [](auto) { return false; }) override;
+
+    void replace_each_index(Index target, Index replace_with, 
+        std::function<bool(std::vector<KroneckerDelta<Index>>::iterator)> skip = [](auto) { return false; }) override;
+
 public:
     WickOrderedExpression wick_expression;  ///< The Wick ordered expression associated with the term.
     
@@ -41,8 +48,48 @@ public:
      * @param result The TemplateResult::SingleResult to include.
      */
     void include_template_result(const TemplateResult::SingleResult& result);
+
+    /**
+     * @brief Resolves the deltas in the term.
+     */
+    bool resolve_deltas();
+
+    /**
+     * @brief Discards momenta that are zero from the term.
+     */
+    void discard_zero_momenta();
+
+    /**
+     * @brief Sorts the operators in the term.
+     */
+    void sort();
 };
 
+/**
+ * @brief Overloads the output stream operator for WickOrderedTerm.
+ * 
+ * @param os The output stream.
+ * @param term The WickOrderedTerm to output.
+ * @return The output stream.
+ */
 std::ostream& operator<<(std::ostream& os, const WickOrderedTerm& term);
+
+/**
+ * @brief Compares two WickOrderedTerm objects for equality.
+ * 
+ * @param lhs The left-hand side WickOrderedTerm.
+ * @param rhs The right-hand side WickOrderedTerm.
+ * @return true if the two WickOrderedTerm objects are equal, false otherwise.
+ */
+bool operator==(const WickOrderedTerm& lhs, const WickOrderedTerm& rhs);
+
+/**
+ * @brief Compares two WickOrderedTerm objects for inequality.
+ * 
+ * @param lhs The left-hand side WickOrderedTerm.
+ * @param rhs The right-hand side WickOrderedTerm.
+ * @return true if the two WickOrderedTerm objects are not equal, false otherwise.
+ */
+bool operator!=(const WickOrderedTerm& lhs, const WickOrderedTerm& rhs);
 
 } // namespace mrock::symbolic_operators::experimental

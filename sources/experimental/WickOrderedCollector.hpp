@@ -4,8 +4,10 @@
 
 #include <mrock/symbolic_operators/Term.hpp>
 #include <mrock/symbolic_operators/WickOperatorTemplate.hpp>
+#include <mrock/symbolic_operators/WickSymmetry.hpp>
 #include <mrock/symbolic_operators/detail/vector_macro.hpp>
 
+#include <memory>
 #include <ostream>
 #include <vector>
 
@@ -34,6 +36,9 @@ struct WickOrderedCollector {
  * @return WickOrderedCollector The collector containing the resulting WickOrderedTerm objects.
  */
 WickOrderedCollector wick_decompose(const Term& term, const std::vector<WickOperatorTemplate>& templates);
+
+void clean_wick_ordered_terms(WickOrderedCollector& terms,
+    const std::vector<std::unique_ptr<WickSymmetry>>& symmetries = std::vector<std::unique_ptr<WickSymmetry>>{});
 
 std::ostream& operator<<(std::ostream& os, const WickOrderedCollector& terms);
 

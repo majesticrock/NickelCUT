@@ -4,8 +4,20 @@
 namespace mrock::symbolic_operators::experimental {
 
 std::ostream& operator<<(std::ostream& os, const WickOrderedExpression& expr) {
-    os << ":" << expr.operators << ":";
+    if (expr.empty()) {
+        os << ": \\hat{1} :";
+    }
+    else {
+        os << ":" << expr.operators << ":";
+    }
     return os;
 }
 
+bool operator==(const WickOrderedExpression& lhs, const WickOrderedExpression& rhs) {
+    return lhs.operators == rhs.operators;
+}
+
+bool operator!=(const WickOrderedExpression& lhs, const WickOrderedExpression& rhs) {
+    return !(lhs == rhs);
+}
 }
