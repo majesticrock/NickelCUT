@@ -1,7 +1,9 @@
 #include "../sources/experimental/WickOrderedCollector.hpp"
 
 #include <mrock/symbolic_operators/Commutation>
+#include <mrock/symbolic_operators/WickSymmetry.hpp>
 
+#include <memory>
 #include <vector>
 #include <iostream>
 
@@ -68,23 +70,36 @@ int main(){
         WickOperatorTemplate({Num_Comparison}, Momentum(), OperatorType::Number) 
     });
 
+    std::vector<std::unique_ptr<WickSymmetry>> symmetries;
+    symmetries.push_back(std::make_unique<SpinSymmetry>());
+    symmetries.push_back(std::make_unique<InversionSymmetry>());
+
+
     experimental::WickOrderedCollector normal_ordered_result = experimental::wick_decompose(commutator, wick_templates);
-    experimental::clean_wick_ordered_terms(normal_ordered_result);
+    experimental::clean_wick_ordered_terms(normal_ordered_result, symmetries);
 
     std::erase_if(normal_ordered_result.terms, [](const experimental::WickOrderedTerm& term){
         return term.wick_expression.size() > 4U;
     });
 
     for (auto& term : normal_ordered_result) {
-        const Momentum current_momentum = term.wick_expression.front().momentum;
-        if (current_momentum != Momentum('q')) {
-            std::size_t i=0;
-            MomentumSymbol::name_type transformer = current_momentum[i].name;
-            while (!term.sums.momenta.is_summed_over(transformer) && ++i < current_momentum.size()) {
-                transformer = current_momentum[i].name;
+        if (term.wick_expression.empty()) continue;
+
+        term.redistribute_momenta(term.wick_expression[0].momentum, 'q');
+
+        if (term.wick_expression.size() == 4U) {
+            term.redistribute_momenta(term.wick_expression[1].momentum, 'p', {'q'});
+            
+            try {
+                term.redistribute_momenta(term.wick_expression[2].momentum, 'r', {'q', 'p'});
+                term.transform_momentum_sum('r', Momentum("?+p"), '?');
+                term.rename_momenta('?', 'r');
+                term.invert_momentum_sum('r');
             }
-            term.transform_momentum_sum(transformer, Momentum(), );
+            catch (std::invalid_argument& e) {};
         }
+
+        std::sort(term.sums.momenta.begin(), term.sums.momenta.end());
     }
 
     std::cout << "After normal ordering with respect to the Fermi sea, we omit any contribution with more than 4 operators. "

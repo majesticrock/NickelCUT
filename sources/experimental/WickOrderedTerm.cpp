@@ -11,24 +11,19 @@
 #include <variant>
 
 namespace mrock::symbolic_operators::experimental {
-
-void WickOrderedTerm::replace_each_momentum(const MomentumSymbol::name_type replaceWhat,
-                                            const Momentum& replaceWith,
-                                            std::function<bool(std::vector<KroneckerDelta<Momentum>>::iterator)> skip) 
+void WickOrderedTerm::for_each_momentum_except_deltas(const std::function<void(Momentum&)>& f) 
 {
-    AbstractTerm<WickOperator>::replace_each_momentum(replaceWhat, replaceWith, skip);
+    AbstractTerm<WickOperator>::for_each_momentum_except_deltas(f);
     for (auto& op : wick_expression) {
-        op.momentum.replace_occurances(replaceWhat, replaceWith);
+        f(op.momentum);
     }
 }
 
-void WickOrderedTerm::replace_each_index(Index target,
-                                         Index replace_with,
-                                         std::function<bool(std::vector<KroneckerDelta<Index>>::iterator)> skip) 
+void WickOrderedTerm::for_each_index_except_deltas(const std::function<void(IndexWrapper&)>& f) 
 {
-    AbstractTerm<WickOperator>::replace_each_index(target, replace_with, skip);
+    AbstractTerm<WickOperator>::for_each_index_except_deltas(f);
     for (auto& op : wick_expression) {
-        op.indizes.replace_index(target, replace_with);
+        f(op.indizes);
     }
 }
 

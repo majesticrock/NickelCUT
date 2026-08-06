@@ -14,11 +14,9 @@ namespace mrock::symbolic_operators::experimental {
 
 class WickOrderedTerm : public AbstractTerm<WickOperator> {
 protected:
-    void replace_each_momentum(const MomentumSymbol::name_type replaceWhat, const Momentum& replaceWith, 
-        std::function<bool(std::vector<KroneckerDelta<Momentum>>::iterator)> skip = [](auto) { return false; }) override;
+    void for_each_momentum_except_deltas(const std::function<void(Momentum&)>& f) override;
 
-    void replace_each_index(Index target, Index replace_with, 
-        std::function<bool(std::vector<KroneckerDelta<Index>>::iterator)> skip = [](auto) { return false; }) override;
+    void for_each_index_except_deltas(const std::function<void(IndexWrapper&)>& f) override;
 
 public:
     WickOrderedExpression wick_expression;  ///< The Wick ordered expression associated with the term.
