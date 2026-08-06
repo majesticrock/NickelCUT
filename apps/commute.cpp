@@ -1,4 +1,4 @@
-#pragma once
+#include "../sources/experimental/WickOrderedCollector.hpp"
 
 #include <mrock/symbolic_operators/Commutation>
 
@@ -50,8 +50,8 @@ std::vector<Term> commutator_of_cut() {
 
     std::cout << "We work with the Hamiltonian \n\\begin{align}\nH =" << H 
         << "\\end{align}\n, and the generator of the CUT\n\\begin{align}\n\\eta =" << cut_generator
-        << "\\end{align}\n. Here, the $\\ell$-dependence of the coefficients is implied."
-        << "Note that, at $\\ell=0$, the interaction is independent of the momenta." << std::endl;
+        << "\\end{align}\n. Here, the $\\ell$-dependence of the coefficients is implied. "
+        << "Note that, at $\\ell=0$, the interaction is independent of the momenta. " << std::endl;
         
     std::vector<Term> cut_commutator = commutator(H, cut_generator);
     clean_up(cut_commutator);
@@ -63,7 +63,33 @@ std::vector<Term> commutator_of_cut() {
 }
 
 int main(){
-    std::vector<Term> commutator = commutator_of_cut();
+    const std::vector<Term> commutator = commutator_of_cut();
+    const std::vector<WickOperatorTemplate> wick_templates({ 
+        WickOperatorTemplate({Num_Comparison}, Momentum(), OperatorType::Number) 
+    });
+
+    experimental::WickOrderedCollector normal_ordered_result = experimental::wick_decompose(commutator, wick_templates);
+    experimental::clean_wick_ordered_terms(normal_ordered_result);
+
+    std::erase_if(normal_ordered_result.terms, [](const experimental::WickOrderedTerm& term){
+        return term.wick_expression.size() > 4U;
+    });
+
+    for (auto& term : normal_ordered_result) {
+        const Momentum current_momentum = term.wick_expression.front().momentum;
+        if (current_momentum != Momentum('q')) {
+            std::size_t i=0;
+            MomentumSymbol::name_type transformer = current_momentum[i].name;
+            while (!term.sums.momenta.is_summed_over(transformer) && ++i < current_momentum.size()) {
+                transformer = current_momentum[i].name;
+            }
+            term.transform_momentum_sum(transformer, Momentum(), );
+        }
+    }
+
+    std::cout << "After normal ordering with respect to the Fermi sea, we omit any contribution with more than 4 operators. "
+        << "The result reads\n\\begin{align*}\n\t"
+        << normal_ordered_result << "\\end{align*}" << std::endl;
 
     return 0;
 }

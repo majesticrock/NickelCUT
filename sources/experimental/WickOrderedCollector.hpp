@@ -37,6 +37,8 @@ struct WickOrderedCollector {
  */
 WickOrderedCollector wick_decompose(const Term& term, const std::vector<WickOperatorTemplate>& templates);
 
+WickOrderedCollector wick_decompose(const std::vector<Term>& terms, const std::vector<WickOperatorTemplate>& templates);
+
 void clean_wick_ordered_terms(WickOrderedCollector& terms,
     const std::vector<std::unique_ptr<WickSymmetry>>& symmetries = std::vector<std::unique_ptr<WickSymmetry>>{});
 

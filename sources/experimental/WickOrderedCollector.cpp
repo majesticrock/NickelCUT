@@ -42,25 +42,31 @@ void generate_pairings(
         return;
     }
 
-    for (size_t i = 0U; i < remaining.size(); ++i) {
-        std::size_t first = remaining[i];
-        for (size_t j = i + 1U; j < remaining.size(); ++j) {
-            std::size_t second = remaining[j];
+    // Always consider the smallest remaining index first
+    std::size_t first = remaining[0];
 
-            // Build the list of unused indices after removing first and second
-            IndexVector newRemaining;
-            for (size_t k = 1; k < remaining.size(); k++) {
-                if (k != i && k != j) {
-                    newRemaining.push_back(remaining[k]);
-                }
+    // Option 1: leave it unused
+    IndexVector skipped(remaining.begin() + 1, remaining.end());
+    generate_pairings(skipped, n, current, result);
+
+    // Option 2: pair it with another remaining index
+    for (std::size_t i = 1; i < remaining.size(); ++i) {
+        std::size_t second = remaining[i];
+
+        IndexVector newRemaining;
+        newRemaining.reserve(remaining.size() - 2);
+
+        for (std::size_t j = 1; j < remaining.size(); ++j) {
+            if (j != i) {
+                newRemaining.push_back(remaining[j]);
             }
-
-            current.push_back({first, second});
-
-            generate_pairings(newRemaining, n, current, result);
-
-            current.pop_back();
         }
+
+        current.push_back({first, second});
+
+        generate_pairings(newRemaining, n, current, result);
+
+        current.pop_back();
     }
 }
 
@@ -77,27 +83,34 @@ PairingVector get_pairings(std::size_t n_indizes, std::size_t n_pairings) {
 }
 
 
-bool permutation_is_odd(const Pairing& pairs)
+int pair_parity(Pairing pairs)
 {
-    std::vector<int> p;
-    p.reserve(2 * pairs.size());
+    int parity = 0;
 
-    for (auto [a, b] : pairs) {
-        p.push_back(a);
-        p.push_back(b);
+    // Normalize ordering
+    for (auto& p : pairs) {
+        if (p.first > p.second)
+            std::swap(p.first, p.second);
+
+        // internal swaps needed to make this pair adjacent
+        parity ^= ((p.second - p.first - 1) & 1);
     }
 
-    bool odd = false;
+    // crossings
+    for (size_t i = 0; i < pairs.size(); ++i) {
+        auto [a,b] = pairs[i];
 
-    for (size_t i = 0U; i < p.size(); ++i) {
-        for (size_t j = i + 1; j < p.size(); ++j) {
-            if (p[i] > p[j]) {
-                odd = !odd;   // toggle parity
+        for (size_t j = i + 1; j < pairs.size(); ++j) {
+            auto [c,d] = pairs[j];
+
+            if ((a < c && c < b && b < d) ||
+                (c < a && a < d && d < b)) {
+                parity ^= 1;
             }
         }
     }
 
-    return odd;
+    return parity ? -1 : +1;
 }
 
 template <typename T>
@@ -150,7 +163,7 @@ void wick_decompose_internal(const std::vector<Operator>& operators,
             }
 
             WickOrderedTerm new_term = WickOrderedTerm::from_wick_term_skip_wick_expression(attach_to);
-            new_term.multiplicity *= permutation_is_odd(pairing) ? -1 : 1;
+            new_term.multiplicity *= pair_parity(pairing);
 
             for (const auto& tr : template_results) {
                 new_term.delta_momenta.emplace_back(tr.momentum_delta);
@@ -165,13 +178,41 @@ void wick_decompose_internal(const std::vector<Operator>& operators,
 
 WickOrderedCollector wick_decompose(const Term& term, const std::vector<WickOperatorTemplate>& templates)
 {
+    // for debugging
+    //auto pairs_vec2 = get_pairings(6, 2);
+    //for (auto& pairs : pairs_vec2) {
+    //    std::cout << "[";
+    //    for (auto& pair : pairs) {
+    //        std::cout << "(" << pair.first << "," << pair.second << ")";
+    //    }
+    //    std::cout << "]" << "   Parity = " << pair_parity(pairs) << std::endl;;
+    //}
+
     const std::size_t estimated_size = double_factorial(term.get_operators().size()) * templates.size();
     WickOrderedCollector result;
     result.reserve(estimated_size);
 
     WickOrderedTerm initial(term);
-
     wick_decompose_internal(term.get_operators(), templates, std::move(initial), result);
+
+    return result;
+}
+
+WickOrderedCollector wick_decompose(const std::vector<Term>& terms,
+                                    const std::vector<WickOperatorTemplate>& templates) 
+{
+    WickOrderedCollector result;
+    std::size_t estimated_size = std::accumulate(
+        terms.begin(), terms.end(), std::size_t{}, [&templates](std::size_t current, const auto& term) {
+            return current + double_factorial(term.get_operators().size()) * templates.size();
+        }
+    );
+    result.reserve(estimated_size);
+
+    for (const auto& term : terms) {
+        WickOrderedTerm initial(term);
+        wick_decompose_internal(term.get_operators(), templates, std::move(initial), result);
+    }
 
     return result;
 }
@@ -214,17 +255,16 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
     for (auto& term : terms) {
         for (auto& delta : term.delta_momenta) {
             assert(delta.first.momentum_list.size() == 1U);
-            int l_is = delta.first.is_used_at('l');
-            if (l_is == 0)
+            int l_is_at = delta.first.is_used_at('l');
+            if (l_is_at == 0)
                 continue;
 
-            l_is = delta.second.is_used_at('l');
-            if (l_is == -1) {
-                std::cout << "################\n# Broken term\n";
-                std::cout << term << std::endl;
-                throw std::runtime_error("There is no l in the delta, but we need an l!");
+            l_is_at = delta.second.is_used_at('l');
+            if (l_is_at == -1) {
+                // No l in the delta, skip the logic
+                continue;
             }
-            const Momentum l_mom('l', delta.second.momentum_list[l_is].factor);
+            const Momentum l_mom('l', delta.second.momentum_list[l_is_at].factor);
             const Momentum remainder = delta.second - l_mom;
             delta -= remainder;
             std::swap(delta.first, delta.second);
@@ -255,42 +295,25 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
     }
 
     auto predicate = [](const WickOrderedTerm& left, const WickOrderedTerm& right) -> bool {
-        if (left.delta_momenta.empty() && right.delta_momenta.size() > 0) {
-            return true;
-        } else if (left.delta_momenta.size() > 0 && right.delta_momenta.size() > 0) {
-            if (left.delta_momenta.size() < right.delta_momenta.size()) {
+        if (left.coefficients.empty()) {
+            if (!right.coefficients.empty())
                 return true;
-            } else if (left.delta_momenta.size() == right.delta_momenta.size()) {
-                if (left.delta_momenta[0].second.add_Q && !(right.delta_momenta[0].second.add_Q)) {
-                    return true;
-                } else if (!left.coefficients.empty() && right.coefficients[0].name < left.coefficients[0].name) {
-                    return true;
-                } else if ((!left.coefficients.empty() && right.coefficients[0].name == left.coefficients[0].name) ||
-                           left.coefficients.empty()) {
-                    if (!left.operators.empty() && right.operators.empty()) {
-                        return true;
-                    } else if ((!left.operators.empty() && !right.operators.empty()) &&
-                               left.operators.front().type < right.operators.front().type) {
-                        return true;
-                    }
-                }
-            }
-        } else if (left.delta_momenta.empty() && right.delta_momenta.empty()) {
+        }
+        else {
             if (left.coefficients.size() < right.coefficients.size()) {
                 return true;
-            } else if (!left.coefficients.empty() && !right.coefficients.empty()) {
-                if (right.coefficients[0].name < left.coefficients[0].name) {
+            }
+            else if (!right.coefficients.empty()){
+                if (left.coefficients.front().name < right.coefficients.front().name)
                     return true;
-                } else if (right.coefficients[0].name == left.coefficients[0].name) {
-                    if (left.operators.size() > right.operators.size()) {
-                        return true;
-                    } else if ((!left.operators.empty() && !right.operators.empty()) &&
-                               left.operators.front().type < right.operators.front().type) {
-                        return true;
-                    }
-                }
             }
         }
+
+        if (left.wick_expression.size() < right.wick_expression.size())
+            return true;
+        else 
+            return false;
+
         return false;
     };
 

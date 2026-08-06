@@ -5,8 +5,7 @@ debug: PRESET = debug
 test: PRESET = test
 
 all cascadelake icelake debug:
-	cmake --preset $(PRESET) \
-		-DLATTICE_CUT_RESIDUALS=$(RESIDUALS)
+	cmake --preset $(PRESET)
 	+cmake --build --preset $(PRESET)
 
 test:
