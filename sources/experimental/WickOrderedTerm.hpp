@@ -61,6 +61,20 @@ public:
      * @brief Sorts the operators in the term.
      */
     void sort();
+
+    /**
+     * @brief Returns true if the term is bilinear
+     * 
+     * @return true if the term is bilinear
+     */
+    bool is_bilinear();
+
+    /**
+     * @brief Returns true if the term is quartic
+     * 
+     * @return true if the term is quartic
+     */
+    bool is_quartic();
 };
 
 /**

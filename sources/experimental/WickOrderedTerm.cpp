@@ -179,6 +179,14 @@ void WickOrderedTerm::sort()
     }
 }
 
+bool WickOrderedTerm::is_bilinear() {
+    return wick_expression.size() == 2U;
+}
+
+bool WickOrderedTerm::is_quartic() {
+    return wick_expression.size() == 4U;
+}
+
 std::ostream& operator<<(std::ostream& os, const WickOrderedTerm& term)
 {
     if (term.multiplicity > 0) {

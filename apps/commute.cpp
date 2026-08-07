@@ -1,4 +1,5 @@
 #include "../sources/experimental/WickOrderedCollector.hpp"
+#include "../sources/commute_helper.hpp"
 
 #include <mrock/symbolic_operators/Commutation>
 #include <mrock/symbolic_operators/WickSymmetry.hpp>
@@ -9,64 +10,7 @@
 #include <iostream>
 
 using namespace mrock::symbolic_operators;
-
-std::vector<Term> commutator_of_cut() {
-    using namespace mrock::symbolic_operators;
-
-    const Operator c_q_sigma        = Operator(Momentum('q'), Index::Sigma,      false);
-    const Operator c_q_sigma_prime  = Operator(Momentum('q'), Index::SigmaPrime, false);
-
-    const Term H_kin(1, 
-        Coefficient::RealInversionSymmetric("\\varepsilon", MomentumList(Momentum('q'))),
-        SumContainer{MomentumSum{'q'}, IndexSum{ Index::Sigma }},
-        std::vector<Operator>({
-            c_q_sigma.hermitian_conjugate(),
-            c_q_sigma
-        })
-    );
-
-    const Term H_int(1, 
-        Coefficient("U", MomentumList({Momentum('q'), Momentum('p'), Momentum('r')}), IndexWrapper{Index::Sigma, Index::SigmaPrime}),
-        SumContainer{MomentumSum{'q', 'p', 'r'}, IndexSum{Index::Sigma, Index::SigmaPrime}},
-        std::vector<Operator>({
-            c_q_sigma.hermitian_conjugate(),
-            c_q_sigma_prime.with_momentum('p').hermitian_conjugate(),
-            c_q_sigma_prime.with_momentum(Momentum("p-r")),
-            c_q_sigma.with_momentum(Momentum("q+r"))
-        })
-    );
-
-    const std::vector<Term> H = {H_kin, H_int};
-
-
-    const Term cut_generator_half(1, 
-        Coefficient::RealInversionSymmetric("\\alpha", MomentumList({Momentum('q'), Momentum('p'), Momentum('r')})),
-        SumContainer{MomentumSum{'q', 'p', 'r'}, IndexSum{Index::Sigma, Index::SigmaPrime}},
-        std::vector<Operator>({
-            c_q_sigma.hermitian_conjugate(),
-            c_q_sigma_prime.with_momentum('p').hermitian_conjugate(),
-            c_q_sigma_prime.with_momentum(Momentum("p-r")),
-            c_q_sigma.with_momentum(Momentum("q+r"))
-        })
-    );
-    Term cut_generator_second_half = cut_generator_half.hermitian_conjugate();
-    cut_generator_second_half.flip_sign();
-
-    const std::vector<Term> cut_generator = {cut_generator_half, cut_generator_second_half};
-
-    std::cout << "We work with the Hamiltonian \n\\begin{align}\nH =" << H 
-        << "\\end{align}\n, and the generator of the CUT\n\\begin{align}\n\\eta =" << cut_generator
-        << "\\end{align}\n. Here, the $\\ell$-dependence of the coefficients is implied. "
-        << "Note that, at $\\ell=0$, the interaction is independent of the momenta. " << std::endl;
-        
-    std::vector<Term> cut_commutator = commutator(H, cut_generator);
-    clean_up(cut_commutator);
-
-    std::cout << "\nThe commutator reads\n\\begin{align}\n[H, \\eta] =" << cut_commutator
-        << "\\end{align}" << std::endl;
-    
-    return cut_commutator;
-}
+using namespace NickelCUT::commute;
 
 int main(){
     const std::vector<Term> commutator = commutator_of_cut();
@@ -90,21 +34,9 @@ int main(){
         if (term.wick_expression.empty()) continue;
 
         // Rename indizes in the wick-ordered expression to one unified scheme
-        Index current_index = term.wick_expression[0].indizes[0];
-        Index target_index = Index::Sigma;
-        if (term.sums.spins.is_summed_over(current_index) && current_index != target_index) {
-            term.rename_indizes(target_index, Index::PlaceHolderIndex);
-            term.rename_indizes(current_index, target_index);
-            term.rename_indizes(Index::PlaceHolderIndex, current_index);
-        }
+        term.redistribute_indizes(term.wick_expression[0].indizes[0], Index::Sigma);
         if (term.wick_expression.size() == 4U) {
-            current_index = term.wick_expression[1].indizes[0];
-            target_index = Index::SigmaPrime;
-            if (term.sums.spins.is_summed_over(current_index) && current_index != target_index) {
-                term.rename_indizes(target_index, Index::PlaceHolderIndex);
-                term.rename_indizes(current_index, target_index);
-                term.rename_indizes(Index::PlaceHolderIndex, current_index);
-            }
+            term.redistribute_indizes(term.wick_expression[1].indizes[0], Index::SigmaPrime, {Index::Sigma});
 
             // Assert that quartic terms are (sigma) (sigma') (sigma') (sigma)
             if (term.wick_expression[2].indizes[0] == Index::Sigma) {
