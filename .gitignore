@@ -21,6 +21,7 @@ stderr*
 **/*auto_generated/
 *.bin
 paper/plots
+commute_output.tex
 
 #include literature
 !literature/*.pdf

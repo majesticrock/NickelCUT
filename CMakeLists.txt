@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.30)
 
-project(LatticeCUT VERSION 2.1.0 LANGUAGES CXX)
+project(NickelCUT VERSION 2.1.0 LANGUAGES CXX)
 
 # Set local user-specific settings
 # By default, this adds ~/usr/local/ and ../../.mrock/ to the cmake and include paths

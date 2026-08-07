@@ -178,16 +178,6 @@ void wick_decompose_internal(const std::vector<Operator>& operators,
 
 WickOrderedCollector wick_decompose(const Term& term, const std::vector<WickOperatorTemplate>& templates)
 {
-    // for debugging
-    //auto pairs_vec2 = get_pairings(6, 2);
-    //for (auto& pairs : pairs_vec2) {
-    //    std::cout << "[";
-    //    for (auto& pair : pairs) {
-    //        std::cout << "(" << pair.first << "," << pair.second << ")";
-    //    }
-    //    std::cout << "]" << "   Parity = " << pair_parity(pairs) << std::endl;;
-    //}
-
     const std::size_t estimated_size = double_factorial(term.get_operators().size()) * templates.size();
     WickOrderedCollector result;
     result.reserve(estimated_size);
@@ -235,16 +225,14 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
             it = terms.erase(it);
             continue;
         }
+
         it->discard_zero_momenta();
         it->rename_sums();
         it->sort();
 
-        // TODO: Maybe is_pauli_forbidden()
-
         for (const auto& symmetry : symmetries) {
             symmetry->apply_to(it->operators);
         }
-
         for (auto& coeff : it->coefficients) {
             coeff.apply_custom_symmetry();
         }
@@ -295,6 +283,11 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
     }
 
     auto predicate = [](const WickOrderedTerm& left, const WickOrderedTerm& right) -> bool {
+        if (left.wick_expression.size() < right.wick_expression.size())
+            return true;
+        else 
+            return false;
+
         if (left.coefficients.empty()) {
             if (!right.coefficients.empty())
                 return true;
@@ -308,11 +301,6 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
                     return true;
             }
         }
-
-        if (left.wick_expression.size() < right.wick_expression.size())
-            return true;
-        else 
-            return false;
 
         return false;
     };

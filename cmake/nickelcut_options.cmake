@@ -35,27 +35,6 @@ target_include_directories(nickelcut_options INTERFACE EXTRA_INCLUDE_DIRS)
 
 
 #
-# Tell the program where to find the commutator files
-#
-set(_APPEND_DIR "lattice_cut")
-
-set(COMMUTATOR_DIR
-    "${PROJECT_SOURCE_DIR}/../commutators/"
-    CACHE PATH
-    "Location where the result of the FermionCommute program is saved. The subdir name is added automatically and does not need to be specified."
-)
-cmake_path(
-    APPEND COMMUTATOR_DIR "${_APPEND_DIR}"
-    OUTPUT_VARIABLE COMMUTATOR_nickelcut_DIR
-)
-# Ensure the path ends in exactly one "/"
-string(REGEX REPLACE "/+$" "" COMMUTATOR_nickelcut_DIR "${COMMUTATOR_nickelcut_DIR}")
-string(APPEND COMMUTATOR_nickelcut_DIR "/")
-
-message(STATUS "${PROJECT_NAME} will look for the commutator files in ${COMMUTATOR_nickelcut_DIR}")
-target_compile_definitions(nickelcut_options INTERFACE COMMUTATOR_DIR="${COMMUTATOR_nickelcut_DIR}")
-
-#
 # Tell the program where to place the data files
 #
 set(OUTPUT_DATA_DIR
