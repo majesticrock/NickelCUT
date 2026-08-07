@@ -4,7 +4,11 @@
 
 #include <mrock/symbolic_operators/Commutation>
 #include <mrock/symbolic_operators/WickSymmetry.hpp>
+#include <mrock/symbolic_operators/WickTerm.hpp>
 
+#include <cstddef>
+#include <algorithm>
+#include <array>
 #include <vector>
 #include <iostream>
 
@@ -158,4 +162,67 @@ void restructure_quartic_term(experimental::WickOrderedTerm& term) {
     std::sort(term.sums.momenta.begin(), term.sums.momenta.end());
     std::sort(term.sums.spins.begin(), term.sums.spins.end());
 }
+
+std::array<WickTermCollector, 3> extract_flow_coefficients(const experimental::WickOrderedCollector& terms) {
+    std::array<WickTermCollector, 3> flow_coefficients;
+    flow_coefficients[0].reserve(std::count_if(terms.begin(), terms.end(), 
+        [](const experimental::WickOrderedTerm& term){
+            return term.is_identity();
+    }));
+    flow_coefficients[1].reserve(std::count_if(terms.begin(), terms.end(), 
+        [](const experimental::WickOrderedTerm& term){
+            return term.is_bilinear();
+    }));
+    flow_coefficients[2].reserve(std::count_if(terms.begin(), terms.end(), 
+        [](const experimental::WickOrderedTerm& term){
+            return term.is_quartic();
+    }));
+
+    auto wick_term_from_normal_ordered = [](const experimental::WickOrderedTerm& term) {
+        return WickTerm(
+                term.multiplicity,
+                term.coefficients,
+                term.sums,
+                term.delta_momenta,
+                term.delta_indizes,
+                term.operators
+            );
+    };
+
+    const std::vector<Index> removeable_indizes_bilinear = {Index::Sigma};
+    const std::vector<Index> removeable_indizes_quartic = {Index::Sigma, Index::SigmaPrime};
+
+    const std::vector<MomentumSymbol::name_type> removeable_momenta_bilinear = {'q'};
+    const std::vector<MomentumSymbol::name_type> removeable_momenta_quartic = {'q', 'p', 'r'};
+
+    auto remove_sums = [](WickTerm& term, const std::vector<Index>& indizes, const std::vector<MomentumSymbol::name_type>& momenta) {
+        auto& index_sums = term.sums.spins.summations;
+        auto& momentum_sums = term.sums.momenta.summations;
+
+        std::erase_if(index_sums, [&indizes](Index index) {
+            return exists_in(indizes, index);
+        });
+
+        std::erase_if(momentum_sums, [&momenta](MomentumSymbol::name_type momentum) {
+            return exists_in(momenta, momentum);
+        });
+    };
+
+    for (const auto& term : terms) {
+        if (term.is_identity()) {
+            flow_coefficients[0].push_back(wick_term_from_normal_ordered(term));
+        }
+        else if(term.is_bilinear()) {
+            flow_coefficients[1].push_back(wick_term_from_normal_ordered(term));
+            remove_sums(flow_coefficients[1].back(), removeable_indizes_bilinear, removeable_momenta_bilinear);
+        }
+        else if (term.is_quartic()) {
+            flow_coefficients[2].push_back(wick_term_from_normal_ordered(term));
+            remove_sums(flow_coefficients[2].back(), removeable_indizes_quartic, removeable_momenta_quartic);
+        }
+    }
+
+    return flow_coefficients;
+} 
+
 } // namespace NickelCUT::commute

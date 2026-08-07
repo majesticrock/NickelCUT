@@ -3,7 +3,11 @@
 
 #include <mrock/symbolic_operators/Commutation>
 #include <mrock/symbolic_operators/WickSymmetry.hpp>
+#include <mrock/symbolic_operators/SerializationHeaders.hpp>
 
+#include <cstddef>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <vector>
 #include <list>
@@ -65,6 +69,30 @@ int main(){
         }
     }
     std::cout << "\\end{align*}" << std::endl;
+
+    std::array<WickTerm, 3> flow_coefficients;
+
+    // serialization
+    std::filesystem::create_directories("apps/commute_output/");
+    // create an output file stream and a text archive to serialize the vector
+    {
+        std::ofstream ofs("apps/commute_output/identity.bin", std::ios::binary);
+        boost::archive::binary_oarchive oa(ofs);
+        oa << flow_coefficients[0];
+        ofs.close();
+    }
+    {
+        std::ofstream ofs("apps/commute_output/bilinear.bin", std::ios::binary);
+        boost::archive::binary_oarchive oa(ofs);
+        oa << flow_coefficients[1];
+        ofs.close();
+    }
+    {
+        std::ofstream ofs("apps/commute_output/quartic.bin", std::ios::binary);
+        boost::archive::binary_oarchive oa(ofs);
+        oa << flow_coefficients[2];
+        ofs.close();
+    }
 
     return 0;
 }

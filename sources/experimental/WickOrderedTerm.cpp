@@ -179,11 +179,11 @@ void WickOrderedTerm::sort()
     }
 }
 
-bool WickOrderedTerm::is_bilinear() {
+bool WickOrderedTerm::is_bilinear() const {
     return wick_expression.size() == 2U;
 }
 
-bool WickOrderedTerm::is_quartic() {
+bool WickOrderedTerm::is_quartic() const {
     return wick_expression.size() == 4U;
 }
 

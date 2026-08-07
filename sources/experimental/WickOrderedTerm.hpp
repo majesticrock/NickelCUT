@@ -67,14 +67,14 @@ public:
      * 
      * @return true if the term is bilinear
      */
-    bool is_bilinear();
+    bool is_bilinear() const;
 
     /**
      * @brief Returns true if the term is quartic
      * 
      * @return true if the term is quartic
      */
-    bool is_quartic();
+    bool is_quartic() const;
 };
 
 /**
