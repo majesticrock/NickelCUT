@@ -25,6 +25,11 @@ struct WickOrderedCollector {
      */
     WickOrderedCollector() = default;
 
+    /**
+     * @brief Combines duplicate terms
+     */
+    void combine_duplicates();
+
     MROCK_VECTOR_WRAPPER_FILL_MEMBERS(WickOrderedTerm, terms);
 };
 

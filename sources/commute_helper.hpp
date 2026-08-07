@@ -69,22 +69,22 @@ std::vector<Term> commutator_of_cut() {
         
     std::vector<Term> cut_commutator = commutator(H, cut_generator);
     clean_up(cut_commutator);
-
-    std::cout << "\nThe commutator reads\n\\begin{align}\n[H, \\eta] =" << cut_commutator
-        << "\\end{align}" << std::endl;
     
     return cut_commutator;
 }
 
-void restructure_expectation_values(experimental::WickOrderedTerm& term, std::vector<Index> do_not_touch) {
-    return;
-    Index target = do_not_touch.back();
-    ++target;
-
+void restructure_expectation_values(experimental::WickOrderedTerm& term, Index index_target,
+        std::vector<Index> index_do_not_touch,
+        MomentumSymbol::name_type momentum_target,
+        std::vector<MomentumSymbol::name_type> momentum_do_not_touch) 
+{
     for (auto& wick_operator : term.operators) {
         if (term.sums.spins.is_summed_over(wick_operator.indizes[0])) {
-            term.redistribute_indizes(wick_operator.indizes[0], target);
-            do_not_touch.push_back(target++);
+            while (exists_in(index_do_not_touch, index_target)) {
+                ++index_target;
+            }
+            term.redistribute_indizes(wick_operator.indizes[0], index_target, index_do_not_touch);
+            index_do_not_touch.push_back(index_target++);
         }
     }
 
@@ -93,8 +93,21 @@ void restructure_expectation_values(experimental::WickOrderedTerm& term, std::ve
             return true;
         else if (l.type > r.type)
             return false;
+        if (l.indizes.empty() || r.indizes.empty()) return false;
         return l.indizes[0] < r.indizes[0];
     });
+
+    for (auto& wick_operator : term.operators) {
+        while (exists_in(momentum_do_not_touch, momentum_target)) {
+            ++(momentum_target._n);
+        }
+        try {
+            term.redistribute_momenta(wick_operator.momentum, momentum_target, momentum_do_not_touch);
+            momentum_do_not_touch.push_back(momentum_target);
+            ++momentum_target._n;
+        } catch (std::invalid_argument& e) { };
+    }
+    
 }
 
 void restructure_bilinear_term(experimental::WickOrderedTerm& term) {
@@ -108,9 +121,7 @@ void restructure_bilinear_term(experimental::WickOrderedTerm& term) {
     // Rename momenta in the wick-ordered expression to one unified scheme
     term.redistribute_momenta(term.wick_expression[0].momentum, 'q');
 
-    if (term.sums.spins.size() > 1U) {
-        restructure_expectation_values(term, {Index::Sigma});
-    }
+    restructure_expectation_values(term, Index::SigmaPrime, {Index::Sigma}, 'p', {'q'});
 
     std::sort(term.sums.momenta.begin(), term.sums.momenta.end());
     std::sort(term.sums.spins.begin(), term.sums.spins.end());
@@ -131,22 +142,18 @@ void restructure_quartic_term(experimental::WickOrderedTerm& term) {
         std::swap(term.wick_expression[2], term.wick_expression[3]);
     }
 
-    if (term.sums.spins.size() > 2U) {
-        restructure_expectation_values(term, {Index::Sigma, Index::SigmaPrime});
-    }
-
     // Rename momenta in the wick-ordered expression to one unified scheme
     term.redistribute_momenta(term.wick_expression[0].momentum, 'q');
     term.redistribute_momenta(term.wick_expression[1].momentum, 'p', {'q'});
-    //try {
-    //    term.redistribute_momenta(term.wick_expression[2].momentum, 'r', {'q', 'p'});
-    //    term.transform_momentum_sum('r', Momentum("?+p"), '?');
-    //    term.rename_momenta('?', 'r');
-    //    term.invert_momentum_sum('r');
-    //}
-    //catch (std::invalid_argument& e) {};
+    try {
+        term.redistribute_momenta(term.wick_expression[2].momentum, 'r', {'q', 'p'});
+        term.transform_momentum_sum('r', Momentum("?+p"), '?');
+        term.rename_momenta('?', 'r');
+        term.invert_momentum_sum('r');
+    }
+    catch (std::invalid_argument& e) {};
 
-    
+    restructure_expectation_values(term, Index::GeneralSpin_S, {Index::Sigma, Index::SigmaPrime}, 's', {'q', 'p', 'r'});
 
     std::sort(term.sums.momenta.begin(), term.sums.momenta.end());
     std::sort(term.sums.spins.begin(), term.sums.spins.end());

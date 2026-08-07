@@ -234,7 +234,8 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
             symmetry->apply_to(it->operators);
         }
         for (auto& coeff : it->coefficients) {
-            coeff.apply_custom_symmetry();
+            coeff.use_custom_symmetry();
+            coeff.use_inversion_symmetry();
         }
         ++it;
     }
@@ -262,25 +263,8 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
             }
         }
     }
-    // remove duplicates
-    for (std::size_t i = 0U; i < terms.size(); i++) {
-        for (std::size_t j = i + 1U; j < terms.size(); j++) {
-            if (terms[i] == terms[j]) {
-                terms[i].multiplicity += terms[j].multiplicity;
-                terms.erase(terms.begin() + j);
-                --i;
-                break;
-            }
-        }
-    }
-    // removes any terms that have a 0 prefactor
-    for (auto it = terms.begin(); it != terms.end();) {
-        if (it->multiplicity == 0) {
-            it = terms.erase(it);
-        } else {
-            ++it;
-        }
-    }
+
+    terms.combine_duplicates();
 
     auto predicate = [](const WickOrderedTerm& left, const WickOrderedTerm& right) -> bool {
         if (left.wick_expression.size() < right.wick_expression.size())
@@ -324,4 +308,27 @@ std::ostream& operator<<(std::ostream& os, const WickOrderedCollector& terms) {
     }
     return os;
 }
+
+void WickOrderedCollector::combine_duplicates() 
+{
+    // remove duplicates
+    for (std::size_t i = 0U; i < terms.size(); ++i) {
+        for (std::size_t j = i + 1U; j < terms.size(); ++j) {
+            if (terms[i] == terms[j]) {
+                terms[i].multiplicity += terms[j].multiplicity;
+                terms.erase(terms.begin() + j);
+                --i;
+                break;
+            }
+        }
+    }
+    // removes any terms that have a 0 prefactor
+    for (auto it = terms.begin(); it != terms.end();) {
+        if (it->multiplicity == 0) {
+            it = terms.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
+}  // namespace mrock::symbolic_operators::experimental
