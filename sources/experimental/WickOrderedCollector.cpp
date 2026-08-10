@@ -228,7 +228,6 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
 
         it->discard_zero_momenta();
         it->rename_sums();
-        it->sort();
 
         for (const auto& symmetry : symmetries) {
             symmetry->apply_to(it->operators);

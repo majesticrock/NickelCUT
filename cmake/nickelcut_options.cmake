@@ -67,7 +67,7 @@ set(MKL_INTERFACE lp64)
 find_package(MKL CONFIG QUIET HINTS $ENV{MKLROOT})
 
 if (MKL_FOUND)
-    message(STATUS "Configuring lattice_cut to use Intel MKL")
+    message(STATUS "Configuring NickelCUT to use Intel MKL")
 
     target_compile_options(nickelcut_options INTERFACE $<TARGET_PROPERTY:MKL::MKL,INTERFACE_COMPILE_OPTIONS>)
     target_include_directories(nickelcut_options INTERFACE $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
@@ -75,5 +75,5 @@ if (MKL_FOUND)
     # Let Eigen use MKL
     target_compile_definitions(nickelcut_options INTERFACE EIGEN_USE_MKL_ALL MROCK_IEOM_DO_NOT_PARALLELIZE)
 else()
-    message(STATUS "MKL not found or not enabled; lattice_cut will not use Intel MKL")
+    message(STATUS "MKL not found or not enabled; NickeltCUT will not use Intel MKL")
 endif()

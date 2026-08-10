@@ -77,113 +77,20 @@ void WickOrderedTerm::discard_zero_momenta()
 
 void WickOrderedTerm::sort()
 {
-    for (auto& delta : delta_momenta) {
-        if (delta.first.momentum_list.size() == 1 && delta.second.momentum_list.size() == 1) {
-            // This comparison is well defined because we save the momentum as char i.e. byte
-            // which is easily comparable
-            if (delta.first.momentum_list[0].name < delta.second.momentum_list[0].name) {
-                std::swap(delta.first, delta.second);
-                if (delta.first.momentum_list[0].factor < 0) {
-                    delta.first.flip_momentum();
-                    delta.second.flip_momentum();
-                }
-                if (delta.first.add_Q) {
-                    delta.first.add_Q = false;
-                    delta.second.add_Q = !(delta.second.add_Q);
-                }
-            }
-            for (auto& op : operators) {
-                op.momentum.replace_occurances(delta.first.momentum_list[0].name, delta.second);
-            }
-            for (auto& coeff : coefficients) {
-                coeff.momenta.replace_occurances(delta.first.momentum_list[0].name, delta.second);
-            }
-        }
-    }
-
-    for (auto& op : operators) {
-        if (op.type == OperatorType::CDW && op.momentum.add_Q) {
-            op.momentum.add_Q = false;
-            op.is_daggered = !(op.is_daggered);
-        }
-    }
-
-    for (std::size_t i = 0U; i < operators.size(); ++i) {
-        for (std::size_t j = i + 1U; j < operators.size(); ++j) {
-            if (operators[i].type > operators[j].type) {
-                std::swap(operators[i], operators[j]);
-            } else if (operators[i].type == operators[j].type) {
-                if (momentum_order(operators[i].momentum, operators[j].momentum)) {
-                    std::swap(operators[i], operators[j]);
-                }
-            }
-        }
-    }
-
-    for (auto& coeff : coefficients) {
-        for (auto& momentum : coeff.momenta) {
-            momentum.sort();
-
-            if (coeff.inversion_symmetry && !momentum.momentum_list.empty()) {
-                if (momentum.momentum_list[0].factor < 0) {
-                    momentum.flip_momentum();
-                }
-            }
-            if (coeff.Q_changes_sign && momentum.add_Q) {
-                momentum.add_Q = false;
-                this->multiplicity *= -1;
-            }
-        }
-    }
-
-    for (auto& coeff : coefficients) {
-        if (coeff.momenta.size() == 3U) {
-            Momentum* first_momentum = &coeff.momenta.front();
-            if (first_momentum != nullptr && first_momentum->empty()) {
-                if (coeff.momenta.size() > 1U)
-                    first_momentum = &coeff.momenta[1];
-            }
-            if ((first_momentum != nullptr) && (!first_momentum->empty())) {
-                if (!first_momentum->first_momentum_is('k')) {
-                    coeff.use_symmetric_interaction_exchange();
-                }
-                if (sums.momenta.empty()) {
-                    if (coeff.momenta.back().first_momentum_is_negative()) {
-                        coeff.use_symmetric_interaction_inversion();
-                    }
-                } else if ((!sums.momenta.is_summed_over(first_momentum->front().name)) &&
-                           first_momentum->first_momentum_is_negative()) {
-                    coeff.use_symmetric_interaction_inversion();
-                }
-            }
-        }
-
-        for (auto& momentum : coeff.momenta) {
-            if (momentum.empty())
-                continue;
-            if ((!sums.momenta.is_summed_over(momentum.front().name)) && momentum.front().factor < 0) {
-                if (coeff.inversion_symmetry)
-                    momentum.flip_momentum();
-            }
-
-            for (const auto& sum : sums.momenta) {
-                int idx = momentum.is_used_at(sum);
-                if (idx < 0)
-                    continue;
-
-                if (momentum.momentum_list[idx].factor < 0) {
-                    invert_momentum_sum(sum);
-                }
-            }
-        }
-    }
+    std::sort(operators.begin(), operators.end());
+    std::sort(sums.momenta.begin(), sums.momenta.end());
+    std::sort(sums.spins.begin(), sums.spins.end());
 }
 
-bool WickOrderedTerm::is_bilinear() const {
+bool WickOrderedTerm::is_identity() const noexcept {
+    return wick_expression.empty();
+}
+
+bool WickOrderedTerm::is_bilinear() const noexcept {
     return wick_expression.size() == 2U;
 }
 
-bool WickOrderedTerm::is_quartic() const {
+bool WickOrderedTerm::is_quartic() const noexcept {
     return wick_expression.size() == 4U;
 }
 

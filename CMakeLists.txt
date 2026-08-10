@@ -47,12 +47,14 @@ target_include_directories(nickelcut_options INTERFACE ${MROCK_GENERATED_INCLUDE
 add_executable(commute apps/commute.cpp)
 
 add_subdirectory(sources/experimental)
+add_subdirectory(sources/commute)
 
 target_link_libraries(commute 
     PRIVATE 
         nickelcut_options 
         mrock::symbolic_operators
         SymOp_Experimental
+        commute_lib
 )
 
 option(BUILD_TESTING 

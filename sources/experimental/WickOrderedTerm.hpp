@@ -13,12 +13,11 @@
 namespace mrock::symbolic_operators::experimental {
 
 class WickOrderedTerm : public AbstractTerm<WickOperator> {
-protected:
+public:
     void for_each_momentum_except_deltas(const std::function<void(Momentum&)>& f) override;
 
     void for_each_index_except_deltas(const std::function<void(IndexWrapper&)>& f) override;
 
-public:
     WickOrderedExpression wick_expression;  ///< The Wick ordered expression associated with the term.
     
     /**
@@ -67,14 +66,21 @@ public:
      * 
      * @return true if the term is bilinear
      */
-    bool is_bilinear() const;
+    bool is_identity() const noexcept;
+
+    /**
+     * @brief Returns true if the term is bilinear
+     * 
+     * @return true if the term is bilinear
+     */
+    bool is_bilinear() const noexcept;
 
     /**
      * @brief Returns true if the term is quartic
      * 
      * @return true if the term is quartic
      */
-    bool is_quartic() const;
+    bool is_quartic() const noexcept;
 };
 
 /**

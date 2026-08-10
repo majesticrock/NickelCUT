@@ -1,3 +1,5 @@
+#include "../sources/flow/momentum_iterator.hpp"
+
 #include <array>
 #include <cmath>
 #include <numbers>
@@ -9,7 +11,9 @@ constexpr double beta = 10;
 
 constexpr int L = 6;
 constexpr int N = L*L;
+
 using coeff_array = std::array<double, N>;
+using mom_it = NickelCUT::flow::momentum_iterator<L>;
 
 double epsilon_0(double kx, double ky) {
     return -2. * (
@@ -26,19 +30,17 @@ struct FlowContainer {
     std::array<std::array<coeff_array, N>, N> interactions_same_spin;
     std::array<std::array<coeff_array, N>, N> interactions_differing_spin;
     coeff_array dispersion;
+    coeff_array epsilon_tilde; // TODO!
     coeff_array occupation_numbers;
     double constant{};
 
     FlowContainer() : constant{} 
     {
-        for (int x=0; x<L; ++x) {
-            const double kx = std::numbers::pi * (static_cast<double>(x) / static_cast<double>(L) - 1.0);
-            for (int y=0; y<L; ++y) {
-                const double ky = std::numbers::pi * (static_cast<double>(y) / static_cast<double>(L) - 1.0);
-                dispersion[x*L + y] = epsilon_0(kx, ky);
-                occupation_numbers[x*L + y] = fermi_function(dispersion[x*L + y]);
-            }
+        for (mom_it it = mom_it::begin(); it != mom_it::end(); ++it) {
+            dispersion[it.get_position()] = epsilon_0(it.get_kx(), it.get_ky());
+            occupation_numbers[it.get_position()] = fermi_function(dispersion[it.get_position()]);
         }
+
         for (int i=0; i<N; ++i) {
             for (int j=0; j<N; ++j) {
                 for (int k=0; k<N; ++k) {

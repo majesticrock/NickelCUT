@@ -1,7 +1,11 @@
 #include "../sources/experimental/WickOrderedCollector.hpp"
-#include "../sources/commute_helper.hpp"
+#include "../sources/commute/commutator_of_cut.hpp"
+#include "../sources/commute/extract_flow_coefficients.hpp"
+#include "../sources/commute/restructure_terms.hpp"
 
 #include <mrock/symbolic_operators/Commutation>
+#include <mrock/symbolic_operators/Wick.hpp>
+#include <mrock/symbolic_operators/WickTerm.hpp>
 #include <mrock/symbolic_operators/WickSymmetry.hpp>
 #include <mrock/symbolic_operators/SerializationHeaders.hpp>
 
@@ -18,7 +22,9 @@ using namespace NickelCUT::commute;
 
 int main(){
     const std::vector<Term> commutator = commutator_of_cut();
-    std::cout << "\nThe commutator reads\n\\begin{align}\n[H, \\eta] =" << commutator
+    std::cout << "\nThe commutator reads\n\\begin{align}\n[H, \\eta] =" 
+        << "\\text{2 pages of terms}" 
+        // << commutator
         << "\\end{align}" << std::endl;
 
     const std::vector<WickOperatorTemplate> wick_templates({ 
@@ -37,27 +43,13 @@ int main(){
         return term.wick_expression.size() > 4U;
     });
 
-    for (auto& term : normal_ordered_result) {
-        if (term.wick_expression.empty()) {
-            restructure_expectation_values(term, Index::Sigma, {}, 'p', {});
-        }
-        else if (term.is_bilinear()) {
-            restructure_bilinear_term(term);
-        }
-        else if (term.is_quartic()) {
-            restructure_quartic_term(term);
-        }
-
-        for (auto& coeff : term.coefficients) {
-            coeff.use_inversion_symmetry();
-        }
-    }
-
-    normal_ordered_result.combine_duplicates();
+    advanced_clean_up(normal_ordered_result);
 
     std::cout << "After normal ordering with respect to the Fermi sea, we omit any contribution with more than 4 operators. "
         << "The result reads\n\\begin{align*}\n\t"
-        << normal_ordered_result << "\\end{align*}" << std::endl;
+        << "\\text{10 pages of terms}"
+        // << normal_ordered_result 
+        << "\\end{align*}" << std::endl;
 
     std::cout << "The unique types of Wick-ordered expressions are\n\\begin{align*}\n";
 
@@ -70,7 +62,9 @@ int main(){
     }
     std::cout << "\\end{align*}" << std::endl;
 
-    std::array<WickTerm, 3> flow_coefficients;
+    std::array<WickTermCollector, 3> flow_coefficients = extract_flow_coefficients(normal_ordered_result);
+    for (auto& fc : flow_coefficients)
+        improve_flow_coefficient_structure(fc);
 
     // serialization
     std::filesystem::create_directories("apps/commute_output/");
@@ -93,6 +87,22 @@ int main(){
         oa << flow_coefficients[2];
         ofs.close();
     }
+
+    std::cout << "This leaves the flow of the coefficients as follows:\n\\begin{align*}\n\t"
+        << "\\partial_\\ell C_0 ="
+        << "\\text{3 pages of terms}"
+        //<< flow_coefficients[0] 
+        << "\\end{align*}" << std::endl;
+    
+    std::cout << "\\begin{align*}\n\t"
+        << "\\partial_\\ell \\varepsilon (\\mathbf{p}) ="
+        << flow_coefficients[1] 
+        << "\\end{align*}" << std::endl;
+
+    std::cout << "\\begin{align*}\n\t"
+        << "\\partial_\\ell U_{\\sigma, \\sigma'} (\\mathbf{q}, \\mathbf{p}, \\mathbf{r}) ="
+        << flow_coefficients[2] 
+        << "\\end{align*}" << std::endl;
 
     return 0;
 }
