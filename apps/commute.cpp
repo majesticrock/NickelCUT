@@ -2,6 +2,7 @@
 #include "../sources/commute/commutator_of_cut.hpp"
 #include "../sources/commute/extract_flow_coefficients.hpp"
 #include "../sources/commute/restructure_terms.hpp"
+#include "../sources/commute/export_as_flow_equation.hpp"
 
 #include <mrock/symbolic_operators/Commutation>
 #include <mrock/symbolic_operators/Wick.hpp>
@@ -70,39 +71,40 @@ int main(){
     std::filesystem::create_directories("apps/commute_output/");
     // create an output file stream and a text archive to serialize the vector
     {
-        std::ofstream ofs("apps/commute_output/identity.bin", std::ios::binary);
+        std::ofstream ofs("apps/commute_output/epsilon.bin", std::ios::binary);
         boost::archive::binary_oarchive oa(ofs);
         oa << flow_coefficients[0];
         ofs.close();
     }
     {
-        std::ofstream ofs("apps/commute_output/bilinear.bin", std::ios::binary);
+        std::ofstream ofs("apps/commute_output/U_anti.bin", std::ios::binary);
         boost::archive::binary_oarchive oa(ofs);
         oa << flow_coefficients[1];
         ofs.close();
     }
     {
-        std::ofstream ofs("apps/commute_output/quartic.bin", std::ios::binary);
+        std::ofstream ofs("apps/commute_output/U_para.bin", std::ios::binary);
         boost::archive::binary_oarchive oa(ofs);
         oa << flow_coefficients[2];
         ofs.close();
     }
 
     std::cout << "This leaves the flow of the coefficients as follows:\n\\begin{align*}\n\t"
-        << "\\partial_\\ell C_0 ="
-        << "\\text{3 pages of terms}"
-        //<< flow_coefficients[0] 
+        << "\\partial_\\ell \\varepsilon (\\mathbf{p}) ="
+        << flow_coefficients[0] 
         << "\\end{align*}" << std::endl;
     
     std::cout << "\\begin{align*}\n\t"
-        << "\\partial_\\ell \\varepsilon (\\mathbf{p}) ="
+        << "\\partial_\\ell U_{\\uparrow \\downarrow} (\\mathbf{q}, \\mathbf{p}, \\mathbf{r}) ="
         << flow_coefficients[1] 
         << "\\end{align*}" << std::endl;
 
     std::cout << "\\begin{align*}\n\t"
-        << "\\partial_\\ell U_{\\sigma, \\sigma'} (\\mathbf{q}, \\mathbf{p}, \\mathbf{r}) ="
+        << "\\partial_\\ell U_{\\parallel} (\\mathbf{q}, \\mathbf{p}, \\mathbf{r}) ="
         << flow_coefficients[2] 
         << "\\end{align*}" << std::endl;
+
+    export_as_flow_equation(flow_coefficients);
 
     return 0;
 }

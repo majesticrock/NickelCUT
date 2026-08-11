@@ -285,19 +285,39 @@ void improve_flow_coefficient_structure(WickTermCollector& terms)
     terms.combine_duplicates();
 
     // Carry out the spin summations
-    //for (std::size_t i=0U; i<terms.size(); ++i){
-    //    for (auto& coeff : terms[i].coefficients) {
-    //        if (coeff.indizes.size() < 2U) continue;
-    //        if (coeff.indizes[0] == coeff.indizes[1]) {
-    //            coeff.indizes.clear();
-    //            coeff.indizes.push_back(Index::Parallel);
-    //        }
-    //        else {
-    //            coeff.indizes.clear();
-    //            coeff.indizes.push_back(Index::AntiParallel);
-    //        }
-    //    }
-    //}
+    const std::size_t old_size = terms.size();
+    terms.reserve(old_size + std::count_if(terms.begin(), terms.end(), [](const WickTerm& term) { return !term.sums.spins.empty();}));
+
+    for (std::size_t i=0U; i<old_size; ++i){
+        if (!terms[i].sums.spins.empty()) {
+            assert(terms[i].sums.spins.size() == 1U);
+            WickTerm copy = terms[i];
+            
+            for (std::size_t c=0U; c<terms[i].coefficients.size(); ++c) {
+                Coefficient& coeff = terms[i].coefficients[c];
+                if(coeff.indizes.size() < 2U) continue;
+
+                terms[i].replace_each_index(terms[i].sums.spins[0], Index::SpinDown);
+                copy.replace_each_index(terms[i].sums.spins[0], Index::SpinUp);
+            }
+
+            terms[i].sums.spins.clear();
+        }
+    }
+
+    for (auto & term : terms) {
+        for (auto& coeff : term.coefficients) {
+            if (coeff.indizes.size() < 2U) continue;
+            if (coeff.indizes[0] == coeff.indizes[1]) {
+                coeff.indizes.clear();
+                coeff.indizes.push_back(Index::Parallel);
+            }
+            else {
+                coeff.indizes.clear();
+                coeff.indizes.push_back(Index::AntiParallel);
+            }
+        }
+    }
 
     std::sort(terms.begin(), terms.end(), [](const WickTerm& l, const WickTerm& r) {
         if (l.sums.momenta.size() < r.sums.momenta.size()) return true;

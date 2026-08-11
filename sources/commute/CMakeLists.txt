@@ -2,6 +2,7 @@ add_library(commute_lib STATIC
     commutator_of_cut.cpp
     restructure_terms.cpp
     extract_flow_coefficients.cpp
+    export_as_flow_equation.cpp
 )
 
 target_include_directories(commute_lib PUBLIC ${CMAKE_CURRENT_LIST_DIR})

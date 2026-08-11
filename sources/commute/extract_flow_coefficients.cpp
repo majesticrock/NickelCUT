@@ -52,17 +52,25 @@ std::array<WickTermCollector, 3> extract_flow_coefficients(const experimental::W
     };
 
     for (const auto& term : terms) {
-        if (term.wick_expression.empty()) {
+        if(term.is_bilinear()) {
             flow_coefficients[0].push_back(wick_term_from_normal_ordered(term));
-        }
-        else if(term.is_bilinear()) {
-            flow_coefficients[1].push_back(wick_term_from_normal_ordered(term));
-            remove_sums(flow_coefficients[1].back(), removeable_indizes_bilinear, removeable_momenta_bilinear);
+            remove_sums(flow_coefficients[0].back(), removeable_indizes_bilinear, removeable_momenta_bilinear);
         }
         else if (term.is_quartic()) {
-            flow_coefficients[2].push_back(wick_term_from_normal_ordered(term));
-            remove_sums(flow_coefficients[2].back(), removeable_indizes_quartic, removeable_momenta_quartic);
+            flow_coefficients[1].push_back(wick_term_from_normal_ordered(term));
+            remove_sums(flow_coefficients[1].back(), removeable_indizes_quartic, removeable_momenta_quartic);
         }
+    }
+
+    flow_coefficients[2] = flow_coefficients[1];
+    for (auto& term : flow_coefficients[1]) {
+        term.replace_each_index(Index::Sigma, Index::SpinUp);
+        term.replace_each_index(Index::SigmaPrime, Index::SpinDown);
+    }
+
+    for (auto& term : flow_coefficients[2]) {
+        term.replace_each_index(Index::Sigma, Index::SpinUp);
+        term.replace_each_index(Index::SigmaPrime, Index::SpinUp);
     }
 
     return flow_coefficients;
