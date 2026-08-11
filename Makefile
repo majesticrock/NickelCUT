@@ -1,21 +1,15 @@
-all: PRESET = default
-cascadelake: PRESET = cascadelake
-icelake: PRESET = icelake
-debug: PRESET = debug
-test: PRESET = test
+BUILD_DIR ?= build/default
 
-all cascadelake icelake debug:
-	cmake --preset $(PRESET)
-	+cmake --build --preset $(PRESET)
+all:
+	cmake -S . -B $(BUILD_DIR)
+	cmake --build $(BUILD_DIR) --parallel
 
-test:
-	cmake --preset $(PRESET)
-	+cmake --build --preset $(PRESET)
-	ctest --preset $(PRESET)
-
+commute:
+	cmake -S . -B $(BUILD_DIR)
+	cmake --build $(BUILD_DIR) --target run_commute --parallel
 
 clean:
 	rm -rf build
 	rm -rf auto_generated*
 
-.PHONY: all clean icelake cascadelake debug test
+.PHONY: all clean commute

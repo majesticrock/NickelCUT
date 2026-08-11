@@ -44,18 +44,11 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/nickelcut_options.cmake)
 # Sets include dir for the generated metadata header file
 target_include_directories(nickelcut_options INTERFACE ${MROCK_GENERATED_INCLUDE_DIR})
 
-add_executable(commute apps/commute.cpp)
-
 add_subdirectory(sources/experimental)
 add_subdirectory(sources/commute)
+add_subdirectory(sources/flow)
 
-target_link_libraries(commute 
-    PRIVATE 
-        nickelcut_options 
-        mrock::symbolic_operators
-        SymOp_Experimental
-        commute_lib
-)
+add_subdirectory(apps)
 
 option(BUILD_TESTING 
     "Build and configure the testing suit" 

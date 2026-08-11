@@ -9,7 +9,7 @@
 namespace NickelCUT::commute {
 using namespace mrock::symbolic_operators;
 
-std::vector<Term> commutator_of_cut() {
+std::vector<Term> commutator_of_cut(std::ostringstream& oss) {
     using namespace mrock::symbolic_operators;
 
     const Operator c_p_sigma        = Operator(Momentum('p'), Index::Sigma,      false);
@@ -86,10 +86,10 @@ std::vector<Term> commutator_of_cut() {
 
     // --------------------------------------------------------- //
 
-    std::cout << "We work with the Hamiltonian \n\\begin{align}\nH =" << H 
+    oss << "We work with the Hamiltonian \n\\begin{align}\nH =" << H 
         << ",\\end{align}\n or in its normal-ordered form\n\\begin{align}H="
         << H_normal << ".\\end{align}\nBased on this, we define the effective single-particle energy\n\\begin{align}"
-        << "\\varepsilon(\\mathbf{q}) = \\tilde{\\varepsilon}(\\mathbf{q}) + 2 \\sum_{\\mathbf{p}} \\left[ " 
+        << "\\varepsilon(\\mathbf{p}) = \\tilde{\\varepsilon}(\\mathbf{p}) + 2 \\sum_{\\mathbf{q}} \\left[ " 
         << "\\sum_{\\sigma'} U_{\\sigma\\sigma'} (\\mathbf{p}, \\mathbf{q}, 0) \\langle \\hat{n}_{\\mathbf{q},\\sigma'} \\rangle "
         << "- U_{\\sigma \\sigma} (\\mathbf{p}, \\mathbf{q}, \\mathbf{q} - \\mathbf{p}) \\langle \\hat{n}_{\\mathbf{q},\\sigma} \\rangle"
         << " \\right].\n\\end{align}\n"

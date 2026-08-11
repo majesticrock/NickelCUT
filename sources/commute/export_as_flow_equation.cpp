@@ -11,8 +11,8 @@ namespace NickelCUT::commute {
 using namespace mrock::symbolic_operators;
 
 std::string momentum_for_loop(std::string const& it_name) {
-    return "for (mom_it " + it_name + " = mom_it::begin(); " 
-        + it_name + " != mom_it::end(); ++" + it_name + ") {\n";
+    return "for (momentum_iterator<L> " + it_name + " = momentum_iterator<L>::begin(); " 
+        + it_name + " != momentum_iterator<L>::end(); ++" + it_name + ") {\n";
 }
 
 std::string sign_to_string(int factor) {
@@ -21,7 +21,7 @@ std::string sign_to_string(int factor) {
 
 std::string momentum_to_code(const Momentum& momentum) {
     if (momentum.is_zero()) {
-        return "(L + L*L) / 2";
+        return "GammaPoint<L>.get_position()";
     }
 
     std::string code = "(";
@@ -67,11 +67,12 @@ std::string access_coefficient(const Coefficient& coeff) {
         else {
             code += "current.interactions_differing_spin";
         }
-        for (const auto& momentum : coeff.momenta) {
-            code += "[";
-            code += momentum_to_code(momentum);
-            code += "]";
+        code += "(";
+        for (auto it = coeff.momenta.begin(); it != coeff.momenta.end(); ++it) {
+            code += momentum_to_code(*it);
+            if (it != coeff.momenta.end() - 1) code += ", ";
         }
+        code += ")";
     }
     if (coeff.name == "\\tilde{\\varepsilon}") {
         code += "current.epsilon_tilde[";
@@ -84,8 +85,10 @@ std::string access_coefficient(const Coefficient& coeff) {
 
 std::string generate_bilinear(const WickTermCollector& bilinears) 
 {
+    const std::string accessor = "dHdl.dispersion[p.get_position()]";
+
     std::string code = momentum_for_loop("p");
-    code += "result.dispersion[p.get_position()] = 0.0;\n";
+    code += accessor + " = 0.0;\n";
     code += momentum_for_loop("q");
     code += "double nr_value{};\ndouble one_value{};\n";
     code += momentum_for_loop("r");
@@ -111,7 +114,7 @@ std::string generate_bilinear(const WickTermCollector& bilinears)
 
     code += "nr_value *= current.occupation_numbers[r.get_position()];\n";
     code += "} // r-loop\n";
-    code += "result.dispersion[p.get_position()] += (nr_value + one_value) * current.occupation_numbers[q.get_position()];\n";
+    code += accessor + " += (nr_value + one_value) * current.occupation_numbers[q.get_position()];\n";
     code += "} // q-loop\n";
     code += "} // p-loop\n";
     return code;
@@ -120,9 +123,9 @@ std::string generate_bilinear(const WickTermCollector& bilinears)
 
 
 std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
-    const std::string accessor = std::string("result.") 
+    const std::string accessor = std::string("dHdl.") 
         + (parallel ? std::string("interactions_same_spin") : std::string("interactions_differing_spin"))
-        + std::string("[p.get_position()][q.get_position()][r.get_position()]");
+        + std::string("(p.get_position(), q.get_position(), r.get_position())");
 
     std::string code = momentum_for_loop("p");
     code += momentum_for_loop("q");
@@ -183,13 +186,13 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
     return code;
 }
 
-
-
 void export_as_flow_equation(const std::array<WickTermCollector, 3> flow_coeffs) 
 {
-    const std::string file_header = "#include \"momentum_iterator.hpp\"\n#include \"FlowContainer.hpp\"\n\n"
+    const std::string file_header = 
+        "#include \"FlowEquation.hpp\"\n\n"
+        "#include \"momentum_iterator.hpp\"\n#include \"FlowContainer.hpp\"\n\n"
         "namespace NickelCUT::flow {\n\n"
-        "void flow_step(FlowContainer<L>& result, const FlowContainer<L>& current) {";
+        "void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/) {\n";
 
     const std::string file_footer = "}\n} // namespace NickelCUT::flow";
 
@@ -198,8 +201,8 @@ void export_as_flow_equation(const std::array<WickTermCollector, 3> flow_coeffs)
     const std::string u_anti_code = generate_quartic(flow_coeffs[1], false)
         + "\n//--------------------------------------------------------------//\n";
     const std::string u_para_code = generate_quartic(flow_coeffs[2], true);
-    
-    mrock::utility::save_string_raw(file_header + bilinear_code + u_anti_code + u_para_code + file_footer, "sources/flow/test.cpp");
+
+    mrock::utility::save_string_raw(file_header + bilinear_code + u_anti_code + u_para_code + file_footer, "sources/flow/FlowEquation.cpp");
 }
 
 }

@@ -10,7 +10,10 @@
 #include <mrock/symbolic_operators/WickSymmetry.hpp>
 #include <mrock/symbolic_operators/SerializationHeaders.hpp>
 
+#include <mrock/utility/OutputConvenience.hpp>
+
 #include <cstddef>
+#include <sstream>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -22,8 +25,10 @@ using namespace mrock::symbolic_operators;
 using namespace NickelCUT::commute;
 
 int main(){
-    const std::vector<Term> commutator = commutator_of_cut();
-    std::cout << "\nThe commutator reads\n\\begin{align}\n[H, \\eta] =" 
+    std::ostringstream oss;
+
+    const std::vector<Term> commutator = commutator_of_cut(oss);
+    oss << "\nThe commutator reads\n\\begin{align}\n[H, \\eta] =" 
         << "\\text{2 pages of terms}" 
         // << commutator
         << "\\end{align}" << std::endl;
@@ -46,63 +51,43 @@ int main(){
 
     advanced_clean_up(normal_ordered_result);
 
-    std::cout << "After normal ordering with respect to the Fermi sea, we omit any contribution with more than 4 operators. "
+    oss << "After normal ordering with respect to the Fermi sea, we omit any contribution with more than 4 operators. "
         << "The result reads\n\\begin{align*}\n\t"
         << "\\text{10 pages of terms}"
         // << normal_ordered_result 
         << "\\end{align*}" << std::endl;
 
-    std::cout << "The unique types of Wick-ordered expressions are\n\\begin{align*}\n";
+    oss << "The unique types of Wick-ordered expressions are\n\\begin{align*}\n";
 
     std::list<experimental::WickOrderedExpression> unique_wicks;
     for(const auto& term : normal_ordered_result) {
         if (!exists_in(unique_wicks, term.wick_expression)) {
             unique_wicks.push_back(term.wick_expression);
-            std::cout << "\t&" << term.wick_expression << "\\\\\n";
+            oss << "\t&" << term.wick_expression << "\\\\\n";
         }
     }
-    std::cout << "\\end{align*}" << std::endl;
+    oss << "\\end{align*}" << std::endl;
 
     std::array<WickTermCollector, 3> flow_coefficients = extract_flow_coefficients(normal_ordered_result);
     for (auto& fc : flow_coefficients)
         improve_flow_coefficient_structure(fc);
 
-    // serialization
-    std::filesystem::create_directories("apps/commute_output/");
-    // create an output file stream and a text archive to serialize the vector
-    {
-        std::ofstream ofs("apps/commute_output/epsilon.bin", std::ios::binary);
-        boost::archive::binary_oarchive oa(ofs);
-        oa << flow_coefficients[0];
-        ofs.close();
-    }
-    {
-        std::ofstream ofs("apps/commute_output/U_anti.bin", std::ios::binary);
-        boost::archive::binary_oarchive oa(ofs);
-        oa << flow_coefficients[1];
-        ofs.close();
-    }
-    {
-        std::ofstream ofs("apps/commute_output/U_para.bin", std::ios::binary);
-        boost::archive::binary_oarchive oa(ofs);
-        oa << flow_coefficients[2];
-        ofs.close();
-    }
-
-    std::cout << "This leaves the flow of the coefficients as follows:\n\\begin{align*}\n\t"
+    oss << "This leaves the flow of the coefficients as follows:\n\\begin{align*}\n\t"
         << "\\partial_\\ell \\varepsilon (\\mathbf{p}) ="
         << flow_coefficients[0] 
         << "\\end{align*}" << std::endl;
     
-    std::cout << "\\begin{align*}\n\t"
+    oss << "\\begin{align*}\n\t"
         << "\\partial_\\ell U_{\\uparrow \\downarrow} (\\mathbf{q}, \\mathbf{p}, \\mathbf{r}) ="
         << flow_coefficients[1] 
         << "\\end{align*}" << std::endl;
 
-    std::cout << "\\begin{align*}\n\t"
+    oss << "\\begin{align*}\n\t"
         << "\\partial_\\ell U_{\\parallel} (\\mathbf{q}, \\mathbf{p}, \\mathbf{r}) ="
         << flow_coefficients[2] 
         << "\\end{align*}" << std::endl;
+
+    mrock::utility::save_string_raw(oss.str(), "commute_output.tex");
 
     export_as_flow_equation(flow_coefficients);
 

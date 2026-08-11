@@ -11,7 +11,7 @@ namespace detail {
     constexpr std::array<double, _L> fill_momentum_cache() {
         std::array<double, _L> ret;
         for (int i=0; i<_L; ++i) {
-            ret[i] = std::numbers::pi * (static_cast<double>(i) / static_cast<double>(_L) - 0.5);
+            ret[i] = std::numbers::pi * (static_cast<double>(2 * i) / static_cast<double>(_L) - 1.0);
         }
         return ret;
     }
@@ -19,7 +19,8 @@ namespace detail {
 
 template<int _L>
 struct momentum_iterator {
-    static constexpr std::array<double, _L> momentum_cache = detail::fill_momentum_cache<L>();
+    static_assert(_L % 2 == 0);
+    static constexpr std::array<double, _L> momentum_cache = detail::fill_momentum_cache<_L>();
 
     constexpr double get_kx() const noexcept {
         return momentum_cache[_x];
@@ -55,7 +56,7 @@ struct momentum_iterator {
         return tmp;
     }
 
-    constexpr momentum_iterator(int x, int y) noexcept : _x(x), _y(y), _pos(x + L*y) {}
+    constexpr momentum_iterator(int x, int y) noexcept : _x(x), _y(y), _pos(x + _L*y) {}
 
     static constexpr momentum_iterator begin() noexcept {
         return momentum_iterator(0, 0);
@@ -97,11 +98,18 @@ struct momentum_iterator {
     constexpr momentum_iterator& operator-() noexcept {
         _x = _L - _x;
         _y = _L - _y;
+        return *this;
     }
 private:
     int _x{};
     int _y{};
     int _pos{};
 };
+
+template <int _L>
+static constexpr momentum_iterator<_L> GammaPoint = momentum_iterator<_L>(_L / 2, _L / 2);
+
+static_assert(GammaPoint<10>.get_kx() == 0.0);
+static_assert(GammaPoint<10>.get_ky() == 0.0);
 
 } // namespace NickelCUT::flow
