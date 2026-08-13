@@ -2,6 +2,7 @@
 
 #include <array>
 #include <numbers>
+#include <ostream>
 #include <utility>
 
 namespace NickelCUT::flow {
@@ -16,6 +17,12 @@ namespace detail {
         return ret;
     }
 }
+
+template<int _L>
+struct momentum_iterator;
+
+template <int _L>
+static constexpr momentum_iterator<_L> GammaPoint = momentum_iterator<_L>(_L / 2, _L / 2);
 
 template<int _L>
 struct momentum_iterator {
@@ -45,7 +52,7 @@ struct momentum_iterator {
         if(++_x >= _L) {
             _x = 0;
             ++_y;
-        } 
+        }
         ++_pos;
         return *this;
     }
@@ -58,6 +65,10 @@ struct momentum_iterator {
 
     constexpr momentum_iterator(int x, int y) noexcept : _x(x), _y(y), _pos(x + _L*y) {}
 
+    constexpr operator std::size_t() const noexcept {
+        return static_cast<std::size_t>(_pos);
+    }
+
     static constexpr momentum_iterator begin() noexcept {
         return momentum_iterator(0, 0);
     }
@@ -69,16 +80,16 @@ struct momentum_iterator {
     constexpr bool operator!=(const momentum_iterator& other) const noexcept { return !(*this == other); }
 
     constexpr momentum_iterator& operator+=(momentum_iterator other) noexcept {
-        _x += other._x;
-        _y += other._y;
+        _x += other._x + _L / 2;
+        _y += other._y + _L / 2;
         _x %= _L;
         _y %= _L;
         _pos = _x + _L*_y;
         return *this;
     }
     constexpr momentum_iterator& operator-=(momentum_iterator other) noexcept {
-        _x -= other._x - _L; // + _L to avoid negative values; _L will be cancelled by the modulo anyway
-        _y -= other._y - _L; 
+        _x -= other._x - 3 * _L / 2;
+        _y -= other._y - 3 * _L / 2; 
         _x %= _L;
         _y %= _L;
         _pos = _x + _L*_y;
@@ -95,10 +106,8 @@ struct momentum_iterator {
         tmp -= other;
         return tmp;
     }
-    constexpr momentum_iterator& operator-() noexcept {
-        _x = _L - _x;
-        _y = _L - _y;
-        return *this;
+    constexpr momentum_iterator operator-() const noexcept {
+        return GammaPoint<_L> - (*this);
     }
 private:
     int _x{};
@@ -106,8 +115,14 @@ private:
     int _pos{};
 };
 
-template <int _L>
-static constexpr momentum_iterator<_L> GammaPoint = momentum_iterator<_L>(_L / 2, _L / 2);
+template<int _L>
+std::ostream& operator<<(std::ostream& os, momentum_iterator<_L> mom_it) {
+    os << "(" << mom_it.get_kx() << ", " << mom_it.get_ky() << ")";
+    return os; 
+}
+
+static_assert(GammaPoint<6>.get_kx() == 0.0);
+static_assert(GammaPoint<6>.get_ky() == 0.0);
 
 static_assert(GammaPoint<10>.get_kx() == 0.0);
 static_assert(GammaPoint<10>.get_ky() == 0.0);

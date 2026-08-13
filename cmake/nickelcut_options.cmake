@@ -24,9 +24,9 @@ if(TARGET_ARCH)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(nickelcut_options INTERFACE
-        $<$<CXX_COMPILER_ID:GNU,Clang>:-ffast-math> 
-    )
+    #target_compile_options(nickelcut_options INTERFACE
+    #    $<$<CXX_COMPILER_ID:GNU,Clang>:-ffast-math> 
+    #)
 else()
     target_compile_definitions(nickelcut_options INTERFACE DEBUG)
 endif()

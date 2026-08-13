@@ -100,7 +100,40 @@ std::vector<Term> commutator_of_cut(std::ostringstream& oss) {
         << " U_{\\sigma \\sigma'} (\\mathbf{p}, \\mathbf{q}, \\mathbf{r})."
         << "\\end{equation}\nThe $\\ell$-dependence of the coefficients is implied. "
         << "Note that, at $\\ell=0$, the interaction is independent of the momenta. " << std::endl;
-        
+    
+    std::vector<Term> lw_generator = commutator(H_kin, H_int);
+    clean_up(lw_generator);
+    for (auto& term : lw_generator) {
+        if (term.operators.size() == 6U) {
+            if (exists_in( term.coefficients[0].indizes, Index::GeneralSpin_S)) {
+                term.rename_indizes(Index::Sigma, Index::PlaceHolderIndex);
+                term.rename_indizes(Index::GeneralSpin_S, Index::Sigma);
+                term.rename_indizes(Index::PlaceHolderIndex, Index::GeneralSpin_S);
+            }
+        }
+    }
+    clean_up(lw_generator);
+    for (auto& term : lw_generator) {
+        term.redistribute_momenta(term.operators[0].momentum, 'p');
+        term.redistribute_momenta(term.operators[1].momentum, 'q', {'p'});
+        if(term.operators.size() == 6U) {
+            if (term.operators[2].momentum == Momentum('s')) {
+                term.swap_momenta('s', 'r');
+            }
+        }
+        else {
+            term.redistribute_momenta(term.coefficients[0].momenta.back(), 'r', {'p', 'q'});
+        }
+        std::sort(term.sums.momenta.begin(), term.sums.momenta.end());
+    }
+    clean_up(lw_generator);
+    
+    oss << "I am also interested in the Lenz-Wegner generator, which is computed via"
+        << "\n\\begin{align*}\n\t[H_\\mathrm{kin}, H_\\mathrm{int}] = "
+        << lw_generator
+        << "\\end{align*}\n"
+        << "Thus, this generator is the same as before, except that the signum is replaced by the energies themselves.";
+
     std::vector<Term> cut_commutator = commutator(H, cut_generator);
     clean_up(cut_commutator);
     

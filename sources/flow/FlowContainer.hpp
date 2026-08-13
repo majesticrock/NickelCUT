@@ -13,11 +13,6 @@
 
 namespace NickelCUT::flow {
 
-constexpr double sign(double x) {
-    if (x == 0.0) return 0.0;
-    return (x < 0.0 ? -1. : 1.);
-}
-
 struct FlowContainer {
     using coeff_array = std::array<double, N>;
     using mom_it = NickelCUT::flow::momentum_iterator<L>;
@@ -28,20 +23,14 @@ struct FlowContainer {
     coeff_array epsilon_tilde;
     coeff_array occupation_numbers;
 
-    FlowContainer() = default;
-
-    FlowContainer(const Model& model) 
-        : interactions_same_spin(), interactions_differing_spin(model.U_0 / N)
-    {
-        for (mom_it p = mom_it::begin(); p != mom_it::end(); ++p) {
-            dispersion[p.get_position()] = model.epsilon_0(p.get_kx(), p.get_ky());
-            occupation_numbers[p.get_position()] = model.fermi_function(dispersion[p.get_position()]);
-        }
-
-        fill_epsilon_tilde();
-    }
+    FlowContainer();
+    FlowContainer(const Model& model);
 
     void fill_epsilon_tilde();
+
+    void fill(double value) noexcept;
+    void reset() noexcept;
+    bool contains_nan_or_inf() const noexcept;
 
     // Required for boost odeint
     double abs() const; ///< uses the L1 norm
