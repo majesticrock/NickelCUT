@@ -1,6 +1,9 @@
 #pragma once
 
+#include "../L.hpp"
 #include "FlowContainer.hpp"
+
+#include <array>
 
 namespace NickelCUT::flow {
 

@@ -11,6 +11,8 @@
 namespace NickelCUT::commute {
 using namespace mrock::symbolic_operators;
 
+const std::string outer_p_loop = "#pragma omp parallel for\nfor (int p_pos=0; p_pos < N; ++p_pos) {\nmomentum_iterator<L> p(p_pos);\n";
+
 std::string momentum_for_loop(std::string const& it_name) {
     return "for (momentum_iterator<L> " + it_name + " = momentum_iterator<L>::begin(); " 
         + it_name + " != momentum_iterator<L>::end(); ++" + it_name + ") {\n";
@@ -87,8 +89,7 @@ std::string generate_bilinear(const WickTermCollector& bilinears)
 {
     const std::string accessor = "dHdl.dispersion[p]";
 
-    std::string code = momentum_for_loop("p");
-    code += accessor + " = 0.0;\n";
+    std::string code = outer_p_loop;
     code += momentum_for_loop("q");
     code += "double nr_value{};\ndouble one_value{};\n";
     code += momentum_for_loop("r");
@@ -117,9 +118,9 @@ std::string generate_bilinear(const WickTermCollector& bilinears)
         code += ";\n";
     }
 
-    code += "nr_value *= current.occupation_numbers[r];\n";
+    code += "nr_value *= occupation_numbers[r];\n";
     code += "} // r-loop\n";
-    code += accessor + " += (nr_value + one_value) * current.occupation_numbers[q];\n";
+    code += accessor + " += (nr_value + one_value) * occupation_numbers[q];\n";
     code += "} // q-loop\n";
     code += "} // p-loop\n";
     return code;
@@ -132,7 +133,7 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
         + (parallel ? std::string("interactions_same_spin") : std::string("interactions_differing_spin"))
         + std::string("(p, q, r)");
 
-    std::string code = momentum_for_loop("p");
+    std::string code = outer_p_loop;
     code += momentum_for_loop("q");
     if (parallel) {
         code += "if (p==q) continue; // Pauli principle\n";
@@ -141,7 +142,6 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
     if (parallel) {
         code += "if (p+r==q-r) continue; // Pauli principle\n";
     }
-    code += accessor + " = 0.0;\n";
 
     for (auto it = quartics.begin(); it != quartics.end() && it->sums.momenta.empty(); ++it) {
         code += accessor + (it->multiplicity > 0 ? "+= " : "-= ");
@@ -156,15 +156,15 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
 
         if (!(it->operators.empty())) {
             assert(it->operators.size() == 1U);
-            code += "\n\t* current.occupation_numbers[";
+            code += "\n\t* occupation_numbers[";
             code += momentum_to_code(it->operators[0].momentum);
             code += "]";
         }
         code += ";\n";
     }
 
-    code += "double ns_value{};\ndouble one_value{};\n";
     code += momentum_for_loop("s");
+    code += "double ns_value{};\ndouble one_value{};\n";
     
     for (auto& term : quartics) {
         if (term.sums.momenta.empty()) continue;
@@ -181,7 +181,7 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
         code += access_coefficient(term.coefficients[1]);
 
         if (term.operators.size() == 2U) {
-            code += "\n\t* current.occupation_numbers[";
+            code += "\n\t* occupation_numbers[";
             if (term.operators[0].momentum == Momentum('s')) {
                 code += momentum_to_code(term.operators[1].momentum);
             }
@@ -197,7 +197,7 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
         code += ";\n";
     }
 
-    code += accessor + " += one_value + current.occupation_numbers[s] * ns_value;\n";
+    code += accessor + " += one_value + occupation_numbers[s] * ns_value;\n";
 
     code += "} // s-loop\n";
 
@@ -212,11 +212,16 @@ void export_as_flow_equation(const std::array<WickTermCollector, 3> flow_coeffs)
 {
     const std::string file_header = 
         "#include \"FlowEquation.hpp\"\n\n"
-        "#include \"momentum_iterator.hpp\"\n#include \"FlowContainer.hpp\"\n"
+        "#include \"momentum_iterator.hpp\"\n"
+        "#include \"FlowContainer.hpp\"\n"
+        "#include \"occupation_numbers.hpp\"\n"
         "#include \"../helper_functions.hpp\"\n"
         "\n"
+        "#include <omp.h>\n"
+        "\n"
         "namespace NickelCUT::flow {\n\n"
-        "void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/) {\n";
+        "void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/) {\n"
+        "dHdl.reset();\n";
 
     const std::string file_footer = "dHdl.interactions_same_spin.symmetrize();\n"
         "dHdl.interactions_differing_spin.symmetrize();\n"

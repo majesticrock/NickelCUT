@@ -24,11 +24,11 @@
 using namespace mrock::symbolic_operators;
 using namespace NickelCUT::commute;
 
-int main(){
+int main(int /*argc*/, char** /*argv*/) {
     std::ostringstream oss;
 
     const std::vector<Term> commutator = commutator_of_cut(oss);
-    oss << "\nThe commutator reads\n\\begin{align}\n[H, \\eta] =" 
+    oss << "\nThe commutator reads\n\\begin{align}\n[\\eta, H] =" 
         << "\\text{2 pages of terms}" 
         // << commutator
         << "\\end{align}" << std::endl;

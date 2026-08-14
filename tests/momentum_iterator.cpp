@@ -21,7 +21,7 @@ bool float_equal(double l, double r) {
     return std::abs(l - r) < 1e-12;
 }
 
-int main() {
+int main(int /*argc*/, char** /*argv*/) {
     int n = 0;
     for(it_type p = it_type::begin(); p != it_type::end(); ++p) {
         if(p.get_position() != n) {

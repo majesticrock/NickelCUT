@@ -1,31 +1,39 @@
 #pragma once
 
-#include "compare_abs.hpp"
+#include "../helper_functions.hpp"
 #include "momentum_iterator.hpp"
 
 #include <cassert>
+#include <cstddef>
 #include <utility>
 #include <algorithm>
-#include <array>
+#include <vector>
+#include <iostream>
 
 namespace NickelCUT::flow {
 
 template<int _N>
 class InteractionDataFrame {
-    static constexpr int total_size = _N * _N * _N;
-    std::array<double, total_size> _data;
+    static constexpr std::size_t total_size = _N * _N * _N;
+    std::vector<double> _data;
 
 public:
-    constexpr InteractionDataFrame() {
-        _data.fill(double{});
+    template<class Archive>
+    void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
+        ar & _data;
     }
-    constexpr InteractionDataFrame(double value) {
-        _data.fill(value);
-    }
-    constexpr InteractionDataFrame(const std::array<std::array<std::array<double, _N>, _N>, _N>& data)
-        : _data(data) {};
-    constexpr InteractionDataFrame(std::array<std::array<std::array<double, _N>, _N>, _N>&& data)
-        : _data(std::move(data)) {};
+
+    InteractionDataFrame()
+        : _data(total_size, 0.0)
+    {}
+    InteractionDataFrame(double value)
+        : _data(total_size, value)
+    {}
+
+    constexpr InteractionDataFrame(const std::vector<double>& data)
+        : _data(data) { assert(data.size() == total_size); };
+    constexpr InteractionDataFrame(std::vector<double>&& data)
+        : _data(std::move(data)) { assert(data.size() == total_size); };
 
     constexpr double& operator()(std::size_t x,
                                  std::size_t y,
@@ -57,16 +65,30 @@ public:
         }}}
     }
 
-    // Required for boost odeint
-    constexpr double abs() const noexcept {  ///< uses the L1 norm
+    constexpr void fill(double value) noexcept {
+        for (auto& element : _data) {
+            element = value;
+        }
+    }
+
+    constexpr double abs_squared() const noexcept {  ///< the square of the L2 norm
         double val{};
         for(const auto& element : _data) {
-            val += std::abs(element);
+            val += element*element;
         }
         return val;
     };
-    constexpr double norm_inf() const noexcept {  ///< uses the L_infinity norm
-        return *std::max_element(_data.begin(), _data.end(), LessThanAbs());
+
+    constexpr std::size_t size() const noexcept {
+        return _data.size();
+    }
+
+    // Required for boost odeint
+    constexpr double abs() const noexcept {  ///< the L2 norm
+        return std::sqrt(abs_squared());
+    };
+    constexpr double norm_inf() const noexcept {  ///< the L_infinity norm
+        return std::abs(*std::max_element(_data.begin(), _data.end(), LessThanAbs()));
     };
 
     constexpr InteractionDataFrame& operator+=(const InteractionDataFrame& other) noexcept {
@@ -111,16 +133,16 @@ public:
         return *this;
     }
 
-    constexpr std::array<double, total_size>& get_data() noexcept {
+    constexpr std::vector<double>& get_data() noexcept {
         return _data;
     }
 
-    constexpr const std::array<double, total_size>& get_data() const noexcept {
+    constexpr const std::vector<double>& get_data() const noexcept {
         return _data;
     }
 
-    constexpr std::array<std::array<std::array<double, _N>, _N>, _N> as_3D_array() const noexcept {
-        std::array<std::array<std::array<double, _N>, _N>, _N> result;
+    constexpr std::vector<std::vector<std::vector<double>>> as_3D_array() const noexcept {
+        std::vector<std::vector<std::vector<double>>> result(_N, std::vector<std::vector<double>>(_N, std::vector<double>(_N)));
 
         for (std::size_t x=0; x < _N; ++x) {
             for (std::size_t y=0; y < _N; ++y) {

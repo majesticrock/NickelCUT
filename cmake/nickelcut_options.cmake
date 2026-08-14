@@ -23,12 +23,19 @@ if(TARGET_ARCH)
     message(STATUS "Building for architecture ${TARGET_ARCH}!")
 endif()
 
-if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    #target_compile_options(nickelcut_options INTERFACE
-    #    $<$<CXX_COMPILER_ID:GNU,Clang>:-ffast-math> 
-    #)
-else()
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_definitions(nickelcut_options INTERFACE DEBUG)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(nickelcut_options INTERFACE
+            -g
+            -O0
+            -fno-omit-frame-pointer
+            -fsanitize=address,undefined
+        )
+        target_link_options(nickelcut_options INTERFACE
+            -fsanitize=address,undefined
+        )
+    endif()
 endif()
 
 target_include_directories(nickelcut_options INTERFACE EXTRA_INCLUDE_DIRS)
@@ -38,7 +45,7 @@ target_include_directories(nickelcut_options INTERFACE EXTRA_INCLUDE_DIRS)
 # Tell the program where to place the data files
 #
 set(OUTPUT_DATA_DIR
-    "${PROJECT_SOURCE_DIR}/../../data/"
+    "${PROJECT_SOURCE_DIR}/build/"#../../data
     CACHE PATH
     "Location where the result of the simulation should be saved. The subdir name is added automatically and does not need to be specified."
 )

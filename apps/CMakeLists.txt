@@ -23,4 +23,6 @@ target_link_libraries(flow
         nickelcut_options
         flow_lib
         mrock::utility
+        Boost::serialization
+        Boost::iostreams
 )

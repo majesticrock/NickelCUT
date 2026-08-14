@@ -26,6 +26,12 @@ message(STATUS "Build type is '${CMAKE_BUILD_TYPE}'.")
 #
 
 find_package(OpenMP REQUIRED COMPONENTS CXX)
+find_package(
+    Boost REQUIRED
+    COMPONENTS
+        serialization
+        iostreams
+)
 find_package(mrock 
     REQUIRED 
     COMPONENTS 

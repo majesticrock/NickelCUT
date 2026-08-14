@@ -14,8 +14,10 @@ if(NICKELCUT_RUN_COMMUTE OR NICKELCUT_FORCE_FLOW_EQUATION_REGEN OR NOT EXISTS "$
 endif()
 
 add_library(flow_lib STATIC
+    BookKeeper.cpp
     Model.cpp
     FlowContainer.cpp
+    occupation_numbers.cpp
     "${FLOW_EQUATION_SOURCE}"
 )
 
@@ -27,4 +29,6 @@ target_include_directories(flow_lib PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(flow_lib 
     PRIVATE 
         nickelcut_options
+        mrock::utility
+        OpenMP::OpenMP_CXX 
 )

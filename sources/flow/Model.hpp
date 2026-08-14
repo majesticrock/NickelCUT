@@ -4,10 +4,10 @@ namespace NickelCUT::flow
 {
 
 struct Model {
-    double U_0;
-    double tprime;
-    double chemical_potential;
-    double beta;
+    const double U_0{};
+    const double tprime{};
+    double chemical_potential{};
+    const double beta{};
 
     double epsilon_0(double kx, double ky) const noexcept;
 

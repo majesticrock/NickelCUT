@@ -1,8 +1,10 @@
 #pragma once
 
 #include <limits>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <bit>
 
 namespace NickelCUT {
 /* This function abuses the structure of our desired precision:
@@ -24,5 +26,11 @@ constexpr double sign(double x) {
 constexpr bool float_equal(double l, double r) {
     return is_zero(std::abs(l - r));
 }
+
+struct LessThanAbs {
+    constexpr bool operator()(const double lhs, const double rhs) {
+        return std::abs(lhs) < std::abs(rhs);
+    }  
+};
 
 }

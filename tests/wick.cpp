@@ -4,7 +4,7 @@
 
 using namespace mrock::symbolic_operators;
 
-int main() {
+int main(int /*argc*/, char** /*argv*/) {
     const Operator c_q_up     = Operator(Momentum('q'), Index::SpinUp,   false);
     const Operator c_q_down   = Operator(Momentum('q'), Index::SpinDown, false);
     const Operator c_q_sigma  = Operator(Momentum('q'), Index::Sigma,    false);

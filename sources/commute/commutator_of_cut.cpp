@@ -134,7 +134,7 @@ std::vector<Term> commutator_of_cut(std::ostringstream& oss) {
         << "\\end{align*}\n"
         << "Thus, this generator is the same as before, except that the signum is replaced by the energies themselves.";
 
-    std::vector<Term> cut_commutator = commutator(H, cut_generator);
+    std::vector<Term> cut_commutator = commutator(cut_generator, H);
     clean_up(cut_commutator);
     
     return cut_commutator;

@@ -1,6 +1,7 @@
 #include "FlowContainer.hpp"
 #include "momentum_iterator.hpp"
-#include "compare_abs.hpp"
+#include "occupation_numbers.hpp"
+#include "../helper_functions.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -12,7 +13,6 @@ FlowContainer::FlowContainer()
     : interactions_same_spin(), interactions_differing_spin()
 {
     dispersion.fill(double{});
-    occupation_numbers.fill(double{});
     epsilon_tilde.fill(double{});
 }
 
@@ -21,17 +21,15 @@ FlowContainer::FlowContainer(const Model& model)
 {
     for (mom_it p = mom_it::begin(); p != mom_it::end(); ++p) {
         dispersion[p.get_position()] = model.epsilon_0(p.get_kx(), p.get_ky());
-        occupation_numbers[p.get_position()] = model.fermi_function(dispersion[p.get_position()]);
     }
     fill_epsilon_tilde();
 }
 
 void FlowContainer::fill(double value) noexcept
 {
-    interactions_same_spin.get_data().fill(value);
-    interactions_differing_spin.get_data().fill(value);
+    interactions_same_spin.fill(value);
+    interactions_differing_spin.fill(value);
     dispersion.fill(value);
-    occupation_numbers.fill(value);
     epsilon_tilde.fill(value);
 }
 
@@ -56,6 +54,10 @@ bool FlowContainer::contains_nan_or_inf() const noexcept {
     return false;
 }
 
+double FlowContainer::residual_offdiagonality() const noexcept {
+    return std::sqrt(interactions_same_spin.abs_squared() + interactions_differing_spin.abs_squared());
+}
+
 void FlowContainer::fill_epsilon_tilde() {
     for (mom_it p = mom_it::begin(); p != mom_it::end(); ++p) {
         epsilon_tilde[p.get_position()] = 0;
@@ -74,11 +76,11 @@ void FlowContainer::fill_epsilon_tilde() {
 
 double FlowContainer::abs() const
 {
-    double val = interactions_same_spin.abs() + interactions_differing_spin.abs();
+    double val = interactions_same_spin.abs_squared() + interactions_differing_spin.abs_squared();
     for (const auto& element : dispersion) {
-        val += std::abs(element);
+        val += element*element;
     }
-    return val;
+    return std::sqrt(val);
 }
 double FlowContainer::norm_inf() const
 {
@@ -87,7 +89,7 @@ double FlowContainer::norm_inf() const
     double comp = interactions_differing_spin.norm_inf();
     if(val < comp) val = comp;
 
-    comp = *std::max_element(dispersion.begin(), dispersion.end(), LessThanAbs());
+    comp = std::abs(*std::max_element(dispersion.begin(), dispersion.end(), LessThanAbs()));
     if(val < comp) val = comp;
 
     return val;

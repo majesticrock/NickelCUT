@@ -17,6 +17,9 @@ commute:
 	cmake -S . -B $(BUILD_DIR)
 	cmake --build $(BUILD_DIR) --target run_commute --parallel
 
+build/main.pdf: main.tex
+	latexmk -lualatex -interaction=nonstopmode -halt-on-error -output-directory=build main.tex 1> build/log || cat build/log
+
 clean:
 	rm -rf build
 	rm -rf auto_generated*

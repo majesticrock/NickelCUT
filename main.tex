@@ -14,6 +14,7 @@
 \usepackage{amsmath}
 \usepackage{mathtools}
 \usepackage{graphicx}
+\usepackage{braket}
 \usepackage[colorlinks=true, allcolors=blue]{hyperref}
 
 \usepackage{bm}
@@ -36,5 +37,97 @@
 \section{Flow}
 \input{commute_output}
 
+\section{After the flow}
+
+We track the the residual offdiagonality (ROD)
+\begin{equation}
+  \mathrm{ROD} (\ell) \coloneqq \sqrt{\sum_{\mathbf{p} \mathbf{q} \mathbf{r}} \left( U_{\uparrow \downarrow}^2 (\mathbf{p}, \mathbf{q}, \mathbf{r}; \ell) + U_{\parallel}^2 (\mathbf{p}, \mathbf{q}, \mathbf{r}; \ell) \right)}
+\end{equation}
+across the flow.
+At some finite $\ell_0$ it will be minimized, though not zero.
+At this point, we stop the flow and use the effective Hamiltonian $H_\mathrm{eff} \coloneqq H(\ell_0)$ for the remainder.
+Besides the global constant, which we do not care about, it reads
+\begin{align}
+  H_\mathrm{eff} &= \sum_{\mathbf{p} \sigma} \tilde{\varepsilon}(\mathbf{p}; \ell_0) \hat{c}_{ \mathbf{p}, \sigma }^\dagger \hat{c}_{ \mathbf{p}, \sigma }^{\phantom{\dagger}} \\
+    &+ \sum_{ \mathbf{p} \mathbf{q} \mathbf{r} } \sum_{ \sigma } U_{ \uparrow \downarrow }( \mathbf{p}, \mathbf{q}, \mathbf{r}; \ell_0 )   \hat{c}_{ \mathbf{p}, \sigma }^\dagger  \hat{c}_{ \mathbf{q}, -\sigma }^\dagger  \hat{c}_{ \mathbf{q}-\mathbf{r}, -\sigma }^{\phantom{\dagger}} \hat{c}_{ \mathbf{p}+\mathbf{r}, \sigma }^{\phantom{\dagger}} \\
+    &+ \sum_{ \mathbf{p} \mathbf{q} \mathbf{r} } \sum_{ \sigma } U_{ \parallel }( \mathbf{p}, \mathbf{q}, \mathbf{r}; \ell_0 )   \hat{c}_{ \mathbf{p}, \sigma }^\dagger  \hat{c}_{ \mathbf{q}, \sigma }^\dagger  \hat{c}_{ \mathbf{q}-\mathbf{r}, \sigma }^{\phantom{\dagger}} \hat{c}_{ \mathbf{p}+\mathbf{r}, \sigma }^{\phantom{\dagger}} .
+\end{align}
+The goal is to apply a mean-field approximation to this effective Hamiltonian.
+Besides the number operators, we will retain the expectation values relevant to superconductivity (SC) and density waves (DW), i.e,
+\begin{align}
+  \langle n_{\mathbf{p},\sigma} \rangle &\coloneqq \langle \hat{c}_{ \mathbf{p}, \sigma }^\dagger \hat{c}_{ \mathbf{p}, \sigma }^{\phantom{\dagger}} \rangle \\
+  \langle g_{\mathbf{p},\sigma} \rangle &\coloneqq \langle \hat{c}_{ \mathbf{p}, \sigma }^\dagger \hat{c}_{ \mathbf{p} + \mathbf{Q}, \sigma }^{\phantom{\dagger}} \rangle \\
+  \langle f_\mathbf{p} \rangle &\coloneqq \langle \hat{c}_{ -\mathbf{p}, \downarrow }^{\phantom{\dagger}} \hat{c}_{ \mathbf{p}, \uparrow }^{\phantom{\dagger}} \rangle.
+\end{align}
+The mean-field Hamiltonian thus reads
+\begin{equation}
+  H_\mathrm{MF} = \sum_{\mathbf{p}}' \mathbf{\Psi}_{\mathbf{p}}^\dagger
+  \begin{pmatrix}
+    \varepsilon^\uparrow (\mathbf{p}) & \bar{\Delta}_\mathrm{DW}^{\uparrow} (\mathbf{p}) & \bar{\Delta}_\mathrm{SC} (\mathbf{p}) & 0 \\
+    \Delta_\mathrm{DW}^{\uparrow} (\mathbf{p}) & \varepsilon^\uparrow (\mathbf{p} + \mathbf{Q}) & 0 & \bar{\Delta}_\mathrm{SC} (\mathbf{p} + \mathbf{Q}) \\
+    \Delta_\mathrm{SC} (\mathbf{p}) & 0 & - \varepsilon^\downarrow (- \mathbf{p}) & -\bar{\Delta}_\mathrm{DW}^{\downarrow} (-\mathbf{p}) \\
+    0 & \Delta_\mathrm{SC} (\mathbf{p} + \mathbf{Q}) & -\Delta_\mathrm{DW}^{\downarrow} (-\mathbf{p}) & - \varepsilon^\downarrow (- \mathbf{p} - \mathbf{Q})
+  \end{pmatrix}
+  \mathbf{\Psi}_{\mathbf{p}}
+\end{equation}
+with the spinors
+\begin{equation}
+  \mathbf{\Psi}_{\mathbf{p}}^\dagger \coloneqq \begin{pmatrix}
+    \hat{c}_{ \mathbf{p}, \uparrow }^\dagger & \hat{c}_{ \mathbf{p} + \mathbf{Q}, \uparrow }^\dagger & \hat{c}_{ -\mathbf{p}, \downarrow }^{\phantom{\dagger}} & \hat{c}_{ -\mathbf{p} - \mathbf{Q}, \downarrow }^{\phantom{\dagger}}
+  \end{pmatrix}
+  \quad\text{ and }\quad 
+  \mathbf{\Psi}_{\mathbf{p}} \coloneqq \begin{pmatrix}
+    \hat{c}_{ \mathbf{p}, \uparrow }^{\phantom{\dagger}} \\ \hat{c}_{ \mathbf{p} + \mathbf{Q}, \uparrow }^{\phantom{\dagger}} \\ \hat{c}_{ -\mathbf{p}, \downarrow }^{\dagger} \\ \hat{c}_{ -\mathbf{p} - \mathbf{Q}, \downarrow }^{\dagger}
+  \end{pmatrix}.
+\end{equation}
+The primed sum indicates summation over the magnetic Brillouin zone to avoid double counting.
+The mean-field parameters
+\begin{align}
+  \Delta_\mathrm{SC}(\mathbf{p}) &= 2 \sum_{\mathbf{q}} U_{\uparrow \downarrow} (\mathbf{p}, \mathbf{-p}, \mathbf{q} - \mathbf{p}; \ell_0) \langle f_{\mathbf{p}} \rangle \\
+  \Delta_\mathrm{DW}^{\sigma} (\mathbf{p}) &= 2 \sum_{\mathbf{q}} U_{\uparrow \downarrow} (\mathbf{p}, \mathbf{q}, \mathbf{Q}; \ell_0) \langle g_{\mathbf{q}, -\sigma} \rangle \\
+    &+ 2 \sum_{\mathbf{q}} \Big[  U_{\parallel} (\mathbf{p}, \mathbf{q}, \mathbf{Q}; \ell_0)  
+     - U_{\parallel} (\mathbf{p}, \mathbf{q}, \mathbf{q} - \mathbf{p} + \mathbf{Q}; \ell_0) \Big] \langle g_{\mathbf{q}, \sigma} \rangle \\
+  \varepsilon_\mathrm{I}^{\sigma}(\mathbf{p}) &= 2 \sum_{\mathbf{q}} U_{\uparrow \downarrow} (\mathbf{p}, \mathbf{q}, 0; \ell_0) \langle n_{\mathbf{q}, -\sigma} \rangle \\
+    &+ 2 \sum_{\mathbf{q}} \Big[  U_{\parallel} (\mathbf{p}, \mathbf{q}, 0; \ell_0)  
+     - U_{\parallel} (\mathbf{p}, \mathbf{q}, \mathbf{q} - \mathbf{p}; \ell_0) \Big] \langle n_{\mathbf{q}, \sigma} \rangle \\
+  \varepsilon^\sigma (\mathbf{p}) &= \tilde{\varepsilon}(\mathbf{p}; \ell_0) + \varepsilon_\mathrm{I}^{\sigma}(\mathbf{p}).
+\end{align}
+must be computed self-consistently.
+Note that $\mathbf{Q} = (\pi, \pi)^\mathrm{T}$ and that therefore $g_{\mathbf{q}, \sigma} = g_{\mathbf{q} + \mathbf{Q}, \sigma}^\dagger$.
+We abused the following relations
+\begin{align}
+  U_{\alpha} (\mathbf{p}, \mathbf{q}, \mathbf{r}) &= U_{\alpha} (\mathbf{q}, \mathbf{p}, -\mathbf{r}) \\
+  U_{\alpha} (\mathbf{p}, \mathbf{q}, \mathbf{Q}) &= U_{\alpha} (\mathbf{q}, \mathbf{p}, \mathbf{Q}).
+\end{align}
+The order parameter of the superconducting phase is $\Delta_\mathrm{SC}(\mathbf{p})$, the order parameter of the charge-ordered phase is 
+\begin{equation}
+  \Delta_\mathrm{CDW} (\mathbf{p}) \coloneqq \frac{ \Delta_\mathrm{DW}^{\uparrow}(\mathbf{p}) + \Delta_\mathrm{DW}^{\downarrow}(\mathbf{p}) }{2},
+\end{equation}
+and the one of the antiferromagnetic phase is
+\begin{equation}
+  \Delta_\mathrm{AFM} (\mathbf{p}) \coloneqq \frac{ \Delta_\mathrm{DW}^{\uparrow}(\mathbf{p}) - \Delta_\mathrm{DW}^{\downarrow}(\mathbf{p}) }{2}.
+\end{equation}
+
+The next step is to compute the pertinent expectation values.
+To do so, let $\mathcal{U}_{\mathbf{p}}$ be the unitary transformation that diagonalizes $H_\mathrm{MF}$, i.e.,
+\begin{align}
+  H_\mathrm{MF} = &\sum_{\mathbf{p}} \mathbf{\Psi}_{\mathbf{p}}^\dagger \mathcal{U}_{\mathbf{p}} \ \mathrm{diag}(E_1, E_2, E_3, E_4)\ \mathcal{U}_{\mathbf{p}}^\dagger \mathbf{\Psi}_{\mathbf{p}} \\
+    \coloneqq &\sum_{\mathbf{p}} \mathbf{\Phi}_{\mathbf{p}}^\dagger \ \mathrm{diag}(E_1, E_2, E_3, E_4)\ \mathbf{\Phi}_{\mathbf{p}}.
+\end{align}
+Then, we know that
+\begin{equation}
+    \braket{\mathbf{\Phi}_{\mathbf{p}} \mathbf{\Phi}_{\mathbf{p}}^\dagger}_{ij} = \delta_{ij} (1 - F(\beta E_i))\,,
+\end{equation}
+where $F(x)$ is the Fermi function and $\beta$ the inverse temperature.
+Transforming back into the original basis yields the desired expectation values
+\begin{equation}
+  \rho_{\mathbf{p}} = \braket{\mathbf{\Psi}_{\mathbf{p}} \mathbf{\Psi}_{\mathbf{p}}^\dagger} = \mathcal{U}_{\mathbf{p}} \braket{\mathbf{\Phi}_{\mathbf{p}} \mathbf{\Phi}_{\mathbf{p}}^\dagger} \mathcal{U}_{\mathbf{p}}^\dagger 
+  = \begin{pmatrix}
+        1 - \braket{n_{\mathbf{p},\uparrow}} & -\braket{g_{\mathbf{p},\uparrow}^\dagger} & -\braket{f_{\mathbf{p}}} & 0 \\
+        -\braket{g_{\mathbf{p},\uparrow}} & 1 - \braket{n_{\mathbf{p}+\mathbf{Q},\uparrow}} & 0 & -\braket{f_{\mathbf{p}+\mathbf{Q}}} \\
+        -\braket{f_{\mathbf{p}}^\dagger} & 0 & \braket{n_{-k\downarrow}} & \braket{g_{-\mathbf{p},\downarrow}} \\
+        0 & -\braket{f_{\mathbf{p}+\mathbf{Q}}^\dagger} & \braket{g_{-\mathbf{p},\downarrow}^\dagger} & \braket{n_{-\mathbf{p}-\mathbf{Q},\downarrow}}
+    \end{pmatrix}.
+\end{equation}
 
 \end{document}

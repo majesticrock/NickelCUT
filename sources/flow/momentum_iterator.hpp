@@ -24,6 +24,9 @@ struct momentum_iterator;
 template <int _L>
 static constexpr momentum_iterator<_L> GammaPoint = momentum_iterator<_L>(_L / 2, _L / 2);
 
+template <int _L>
+static constexpr momentum_iterator<_L> Q = momentum_iterator<_L>(0, 0);
+
 template<int _L>
 struct momentum_iterator {
     static_assert(_L % 2 == 0);
@@ -65,6 +68,8 @@ struct momentum_iterator {
 
     constexpr momentum_iterator(int x, int y) noexcept : _x(x), _y(y), _pos(x + _L*y) {}
 
+    constexpr momentum_iterator(int pos) noexcept : _x(pos % _L), _y(pos / _L), _pos(pos) {}
+
     constexpr operator std::size_t() const noexcept {
         return static_cast<std::size_t>(_pos);
     }
@@ -74,6 +79,10 @@ struct momentum_iterator {
     }
     static constexpr momentum_iterator end() noexcept {
         return momentum_iterator(0, _L);
+    }
+    // For iterating half of the first BZ
+    static constexpr momentum_iterator half_end() noexcept {
+        return momentum_iterator(0, _L / 2);
     }
 
     constexpr bool operator==(const momentum_iterator& other) const noexcept { return _pos == other._pos; }

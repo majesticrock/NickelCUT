@@ -1,7 +1,6 @@
 #pragma once
 
-#include "L.hpp"
-#include "FlowContainerIterator.hpp"
+#include "../L.hpp"
 #include "InteractionDataFrame.hpp"
 #include "momentum_iterator.hpp"
 #include "Model.hpp"
@@ -21,7 +20,14 @@ struct FlowContainer {
     InteractionDataFrame<N> interactions_differing_spin;
     coeff_array dispersion;
     coeff_array epsilon_tilde;
-    coeff_array occupation_numbers;
+
+    template<class Archive>
+    void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
+        ar & interactions_same_spin;
+        ar & interactions_differing_spin;
+        ar & dispersion;
+        ar & epsilon_tilde;
+    }
 
     FlowContainer();
     FlowContainer(const Model& model);
@@ -31,10 +37,11 @@ struct FlowContainer {
     void fill(double value) noexcept;
     void reset() noexcept;
     bool contains_nan_or_inf() const noexcept;
+    double residual_offdiagonality() const noexcept;
 
     // Required for boost odeint
-    double abs() const; ///< uses the L1 norm
-    double norm_inf() const; ///< uses the L_infinity norm
+    double abs() const; ///< the L2 norm
+    double norm_inf() const; ///< the L_infinity norm
 
     FlowContainer& operator+=(const FlowContainer& other);
     FlowContainer& operator-=(const FlowContainer& other);
@@ -43,44 +50,6 @@ struct FlowContainer {
 
     FlowContainer& operator*=(const double other);
     FlowContainer& operator/=(const double other);
-
-    using iterator = FlowContainerIterator<FlowContainer>;
-    using const_iterator = FlowContainerIterator<const FlowContainer>;
-
-    constexpr iterator begin() noexcept { return iterator(this, 0); }
-    constexpr iterator end() noexcept { return iterator(this, total_value_count); }
-
-    constexpr const_iterator begin() const noexcept { return const_iterator(this, 0); }
-    constexpr const_iterator end() const noexcept { return const_iterator(this, total_value_count); }
-    constexpr const_iterator cbegin() const noexcept { return begin(); }
-    constexpr const_iterator cend() const noexcept { return end(); }
-
-    constexpr double& value_at(std::size_t idx) noexcept {
-        if (idx < interaction_size) {
-            return interactions_same_spin.get_data()[idx];
-        }
-        idx -= interaction_size;
-        if (idx < interaction_size) {
-            return interactions_differing_spin.get_data()[idx];
-        }
-        idx -= interaction_size;
-        return dispersion[idx];
-    }
-
-    constexpr const double& value_at(std::size_t idx) const noexcept {
-        if (idx < interaction_size) {
-            return interactions_same_spin.get_data()[idx];
-        }
-        idx -= interaction_size;
-        if (idx < interaction_size) {
-            return interactions_differing_spin.get_data()[idx];
-        }
-        idx -= interaction_size;
-        return dispersion[idx];
-    }
-
-    static constexpr std::size_t interaction_size = N * N * N;
-    static constexpr std::size_t total_value_count = 2 * interaction_size + N;
 };
 
 inline FlowContainer operator+(FlowContainer lhs, const FlowContainer& rhs) { return (lhs += rhs); }
