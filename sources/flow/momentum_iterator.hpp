@@ -48,6 +48,7 @@ struct momentum_iterator {
     }
 
     constexpr std::pair<double, double> operator[](int n) const noexcept {
+        assert(n >= 0 && n < _L*_L);
         return {momentum_cache[n % _L], momentum_cache[n / _L]};
     }
 
@@ -89,8 +90,10 @@ struct momentum_iterator {
     constexpr bool operator!=(const momentum_iterator& other) const noexcept { return !(*this == other); }
 
     constexpr momentum_iterator& operator+=(momentum_iterator other) noexcept {
-        _x += other._x + _L / 2;
-        _y += other._y + _L / 2;
+        _x += other._x + 3 * _L / 2;
+        _y += other._y + 3 * _L / 2;
+        assert(_x >= 0);
+        assert(_y >= 0);
         _x %= _L;
         _y %= _L;
         _pos = _x + _L*_y;
@@ -99,6 +102,8 @@ struct momentum_iterator {
     constexpr momentum_iterator& operator-=(momentum_iterator other) noexcept {
         _x -= other._x - 3 * _L / 2;
         _y -= other._y - 3 * _L / 2; 
+        assert(_x >= 0);
+        assert(_y >= 0);
         _x %= _L;
         _y %= _L;
         _pos = _x + _L*_y;
@@ -118,6 +123,7 @@ struct momentum_iterator {
     constexpr momentum_iterator operator-() const noexcept {
         return GammaPoint<_L> - (*this);
     }
+    
 private:
     int _x{};
     int _y{};
@@ -126,7 +132,7 @@ private:
 
 template<int _L>
 std::ostream& operator<<(std::ostream& os, momentum_iterator<_L> mom_it) {
-    os << "(" << mom_it.get_kx() << ", " << mom_it.get_ky() << ")";
+    os << "(" << mom_it.get_kx() / std::numbers::pi << ", " << mom_it.get_ky() / std::numbers::pi << ")";
     return os; 
 }
 

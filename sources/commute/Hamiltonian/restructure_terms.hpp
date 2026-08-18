@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../experimental/WickOrderedTerm.hpp"
-#include "../experimental/WickOrderedCollector.hpp"
+#include "../../experimental/WickOrderedTerm.hpp"
+#include "../../experimental/WickOrderedCollector.hpp"
 
 #include <mrock/symbolic_operators/MomentumSymbol.hpp>
 #include <mrock/symbolic_operators/IndexWrapper.hpp>
@@ -9,7 +9,7 @@
 
 #include <vector>
 
-namespace NickelCUT::commute {
+namespace NickelCUT::commute::Hamiltonian {
 using namespace mrock::symbolic_operators;
 
 void restructure_expectation_values(experimental::WickOrderedTerm& term, Index index_target,

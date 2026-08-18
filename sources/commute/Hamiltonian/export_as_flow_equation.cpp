@@ -8,7 +8,7 @@
 #include <string>
 #include <iostream>
 
-namespace NickelCUT::commute {
+namespace NickelCUT::commute::Hamiltonian {
 using namespace mrock::symbolic_operators;
 
 const std::string outer_p_loop = "#pragma omp parallel for\nfor (int p_pos=0; p_pos < N; ++p_pos) {\nmomentum_iterator<L> p(p_pos);\n";

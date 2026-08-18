@@ -30,5 +30,6 @@ target_link_libraries(flow_lib
     PRIVATE 
         nickelcut_options
         mrock::utility
+    PUBLIC
         OpenMP::OpenMP_CXX 
 )

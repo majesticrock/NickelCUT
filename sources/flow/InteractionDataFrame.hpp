@@ -3,6 +3,8 @@
 #include "../helper_functions.hpp"
 #include "momentum_iterator.hpp"
 
+#include <omp.h>
+
 #include <cassert>
 #include <cstddef>
 #include <utility>
@@ -14,7 +16,7 @@ namespace NickelCUT::flow {
 
 template<int _N>
 class InteractionDataFrame {
-    static constexpr std::size_t total_size = _N * _N * _N;
+    static constexpr int total_size = _N * _N * _N;
     std::vector<double> _data;
 
 public:
@@ -92,42 +94,48 @@ public:
     };
 
     constexpr InteractionDataFrame& operator+=(const InteractionDataFrame& other) noexcept {
-        for (std::size_t i=0U; i < total_size; ++i) {
+#pragma omp parallel for
+        for (int i=0; i < total_size; ++i) {
             _data[i] += other._data[i];
         }
         return *this;
     }
 
     constexpr InteractionDataFrame& operator-=(const InteractionDataFrame& other) noexcept {
-        for (std::size_t i=0U; i < total_size; ++i) {
+#pragma omp parallel for
+        for (int i=0; i < total_size; ++i) {
             _data[i] -= other._data[i];
         }
         return *this;
     }
 
     constexpr InteractionDataFrame& operator*=(const InteractionDataFrame& other) noexcept {
-        for (std::size_t i=0U; i < total_size; ++i) {
+#pragma omp parallel for
+        for (int i=0; i < total_size; ++i) {
             _data[i] *= other._data[i];
         }
         return *this;
     }
 
     constexpr InteractionDataFrame& operator/=(const InteractionDataFrame& other) noexcept {
-        for (std::size_t i=0U; i < total_size; ++i) {
+#pragma omp parallel for
+        for (int i=0; i < total_size; ++i) {
             _data[i] /= other._data[i];
         }
         return *this;
     }
 
     constexpr InteractionDataFrame& operator*=(const double other) noexcept {
-        for (std::size_t i=0U; i < total_size; ++i) {
+#pragma omp parallel for
+        for (int i=0; i < total_size; ++i) {
             _data[i] *= other;
         }
         return *this;
     }
 
     constexpr InteractionDataFrame& operator/=(const double other) noexcept {
-        for (std::size_t i=0U; i < total_size; ++i) {
+#pragma omp parallel for
+        for (int i=0; i < total_size; ++i) {
             _data[i] /= other;
         }
         return *this;
@@ -144,9 +152,9 @@ public:
     constexpr std::vector<std::vector<std::vector<double>>> as_3D_array() const noexcept {
         std::vector<std::vector<std::vector<double>>> result(_N, std::vector<std::vector<double>>(_N, std::vector<double>(_N)));
 
-        for (std::size_t x=0; x < _N; ++x) {
-            for (std::size_t y=0; y < _N; ++y) {
-                for (std::size_t z=0; z < _N; ++z) {
+        for (std::size_t x=0U; x < _N; ++x) {
+            for (std::size_t y=0U; y < _N; ++y) {
+                for (std::size_t z=0U; z < _N; ++z) {
                     result[x][y][z] = (*this)(x, y, z);
                 }
             }

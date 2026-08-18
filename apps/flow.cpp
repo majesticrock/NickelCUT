@@ -31,7 +31,7 @@ using namespace boost::numeric::odeint;
 //constexpr double abs_error = 1e-10;
 //constexpr double rel_error = 1e-6;
 
-constexpr double l_final = 2.5;
+constexpr double l_final = 1.5;
 constexpr double dl_output = 0.05;
 constexpr double dl_use = dl_output / 10;
 
@@ -49,9 +49,10 @@ void serialize_flow_state(const FlowContainer& state, const std::string& output_
 }
 
 int main(int /*argc*/, char** /*argv*/) {
-    const Model model{ 0.5, 0.0, 0.0, -1.0 };
+    const Model model{ -0.5, 0.0, 0.0, -1.0 };
     FlowContainer flow_state(model);
-    compute_occupation_numbers(model, flow_state);
+    const double filling = compute_occupation_numbers(model, flow_state);
+    std::cout << "Constructed initial states. The filling of the system is " << filling << std::endl;
 
     FlowEquation flow_equation;
 
@@ -84,7 +85,7 @@ int main(int /*argc*/, char** /*argv*/) {
             --lowest_ROD_it;
         };
 
-        if (residual_offdiagonalities.back() > 50 * residual_offdiagonalities.front()) break;
+        if (residual_offdiagonalities.back() > 2 * residual_offdiagonalities.front()) break;
     }
 
     nlohmann::json jData = {
@@ -96,7 +97,12 @@ int main(int /*argc*/, char** /*argv*/) {
         { "residual_offdiagonalities", residual_offdiagonalities },
         { "lowest_ROD", book_keeper.lowest_ROD },
         { "index_of_lowest_ROD", book_keeper.index_of_lowest_ROD },
-        { "l_of_lowest_ROD", book_keeper.l_of_lowest_ROD }
+        { "l_of_lowest_ROD", book_keeper.l_of_lowest_ROD },
+        { "filling", filling },
+        { "U_0", model.U_0 },
+        { "tprime", model.tprime },
+        { "chemical_potential", model.chemical_potential },
+        { "beta", model.beta }
     };
 
     // Checks whether inversion symmetry is preserved (it should be!)
@@ -104,6 +110,19 @@ int main(int /*argc*/, char** /*argv*/) {
         for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
             if (!NickelCUT::float_equal(state.dispersion[p], state.dispersion[-p])) {
                 std::cerr << "Dispersions: " << state.dispersion[p] << "  " << state.dispersion[-p] << std::endl;
+            }
+        }
+
+        for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
+            for (momentum_iterator<L> q = momentum_iterator<L>::begin(); q != momentum_iterator<L>::end(); ++q) {
+                for (momentum_iterator<L> r = momentum_iterator<L>::begin(); r != momentum_iterator<L>::end(); ++r) {
+                    if(!NickelCUT::float_equal(state.interactions_differing_spin(p, q, r), state.interactions_differing_spin(-p, -q, -r))) {
+                        std::cerr << "Interaction: " 
+                            << state.interactions_differing_spin(p, q, r) 
+                            << "  " << state.interactions_differing_spin(-p, -q, -r)
+                            << std::endl;
+                    }
+                }
             }
         }
     }

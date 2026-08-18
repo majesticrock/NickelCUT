@@ -83,7 +83,7 @@ with the spinors
 The primed sum indicates summation over the magnetic Brillouin zone to avoid double counting.
 The mean-field parameters
 \begin{align}
-  \Delta_\mathrm{SC}(\mathbf{p}) &= 2 \sum_{\mathbf{q}} U_{\uparrow \downarrow} (\mathbf{p}, \mathbf{-p}, \mathbf{q} - \mathbf{p}; \ell_0) \langle f_{\mathbf{p}} \rangle \\
+  \Delta_\mathrm{SC}(\mathbf{p}) &= 2 \sum_{\mathbf{q}} U_{\uparrow \downarrow} (\mathbf{p}, \mathbf{-p}, \mathbf{q} - \mathbf{p}; \ell_0) \langle f_{\mathbf{q}} \rangle \\
   \Delta_\mathrm{DW}^{\sigma} (\mathbf{p}) &= 2 \sum_{\mathbf{q}} U_{\uparrow \downarrow} (\mathbf{p}, \mathbf{q}, \mathbf{Q}; \ell_0) \langle g_{\mathbf{q}, -\sigma} \rangle \\
     &+ 2 \sum_{\mathbf{q}} \Big[  U_{\parallel} (\mathbf{p}, \mathbf{q}, \mathbf{Q}; \ell_0)  
      - U_{\parallel} (\mathbf{p}, \mathbf{q}, \mathbf{q} - \mathbf{p} + \mathbf{Q}; \ell_0) \Big] \langle g_{\mathbf{q}, \sigma} \rangle \\
@@ -125,7 +125,7 @@ Transforming back into the original basis yields the desired expectation values
   = \begin{pmatrix}
         1 - \braket{n_{\mathbf{p},\uparrow}} & -\braket{g_{\mathbf{p},\uparrow}^\dagger} & -\braket{f_{\mathbf{p}}} & 0 \\
         -\braket{g_{\mathbf{p},\uparrow}} & 1 - \braket{n_{\mathbf{p}+\mathbf{Q},\uparrow}} & 0 & -\braket{f_{\mathbf{p}+\mathbf{Q}}} \\
-        -\braket{f_{\mathbf{p}}^\dagger} & 0 & \braket{n_{-k\downarrow}} & \braket{g_{-\mathbf{p},\downarrow}} \\
+        -\braket{f_{\mathbf{p}}^\dagger} & 0 & \braket{n_{-\mathbf{p},\downarrow}} & \braket{g_{-\mathbf{p},\downarrow}} \\
         0 & -\braket{f_{\mathbf{p}+\mathbf{Q}}^\dagger} & \braket{g_{-\mathbf{p},\downarrow}^\dagger} & \braket{n_{-\mathbf{p}-\mathbf{Q},\downarrow}}
     \end{pmatrix}.
 \end{equation}

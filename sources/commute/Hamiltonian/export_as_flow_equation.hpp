@@ -4,7 +4,7 @@
 
 #include <array>
 
-namespace NickelCUT::commute {
+namespace NickelCUT::commute::Hamiltonian {
 using namespace mrock::symbolic_operators;
 
 void export_as_flow_equation(const std::array<WickTermCollector, 3> flow_coeffs);

@@ -33,7 +33,7 @@ bool BookKeeper::process_step(double current_l, double ROD) {
         << "Step #" << current_idx << "\t" << mrock::utility::time_stamp() << "\n"
         << "l = " << current_l
         << "\t\tROD = " << ROD << "\n"
-        << "Step took " << std::chrono::duration_cast<std::chrono::milliseconds>(now - last) << " to execute."
+        << "Step took " << std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count() << "ms to execute."
         << std::endl;
     last = now;
     return updated;
@@ -46,7 +46,7 @@ void BookKeeper::print_final() const {
         << mrock::utility::time_stamp() << "\n"
         << "lowest ROD achieved after " << index_of_lowest_ROD << " steps at l=" << l_of_lowest_ROD << "."
         << "\t\tlowest ROD = " << lowest_ROD << "\n"
-        << "Total executation took " << std::chrono::duration_cast<std::chrono::seconds>(now - begin) << ".\n"
+        << "Total executation took " << std::chrono::duration_cast<std::chrono::seconds>(now - begin).count() << "s.\n"
         << "Goodbye."
         << std::endl;
 }

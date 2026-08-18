@@ -1,5 +1,4 @@
 #pragma once
-#include "GlobalDefinitions.hpp"
 
 #include <mrock/utility/UnderlyingRealType.hpp>
 #include <mrock/utility/is_complex.hpp>

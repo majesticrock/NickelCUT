@@ -25,4 +25,13 @@ target_link_libraries(flow
         mrock::utility
         Boost::serialization
         Boost::iostreams
+        OpenMP::OpenMP_CXX 
+)
+
+add_executable(mean_field mean_field.cpp)
+target_link_libraries(mean_field
+    PRIVATE
+        nickelcut_options
+        mrock::utility
+        mean_field_lib
 )

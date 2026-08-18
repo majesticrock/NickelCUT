@@ -3,7 +3,7 @@
 #include <array>
 #include <vector>
 
-namespace NickelCUT::commute {
+namespace NickelCUT::commute::Hamiltonian {
 using namespace mrock::symbolic_operators;
 
 void restructure_expectation_values(experimental::WickOrderedTerm& term, Index index_target,
