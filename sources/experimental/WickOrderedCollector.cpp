@@ -330,4 +330,48 @@ void WickOrderedCollector::combine_duplicates()
         }
     }
 }
+
+WickOrderedCollector& WickOrderedCollector::hermitian_conjugate_inplace() noexcept
+{
+    for (auto& term : terms) {
+        term.hermitian_conjugate_inplace();
+    }
+    return *this;
+}
+
+WickOrderedCollector WickOrderedCollector::hermitian_conjugate() const noexcept
+{
+    WickOrderedCollector copy(*this);
+    copy.hermitian_conjugate_inplace();
+    return copy;
+}
+
+WickOrderedCollector& WickOrderedCollector::operator+=(const WickOrderedCollector& other)
+{
+    append_vector(this->terms, other.terms);
+    return *this;
+}
+
+WickOrderedCollector& WickOrderedCollector::operator-=(const WickOrderedCollector& other)
+{
+    const std::size_t old_size = size();
+    append_vector(this->terms, other.terms);
+
+    for(std::size_t i = old_size; i < size(); ++i) {
+        terms[i].multiplicity *= -1;
+    }
+    return *this;
+}
+
+WickOrderedCollector operator+(WickOrderedCollector lhs, const WickOrderedCollector& rhs)
+{
+    return (lhs += rhs);
+}
+
+WickOrderedCollector operator-(WickOrderedCollector lhs, const WickOrderedCollector& rhs)
+{
+    return (lhs -= rhs);
+}
+
+
 }  // namespace mrock::symbolic_operators::experimental

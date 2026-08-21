@@ -55,7 +55,7 @@ bool FlowContainer::contains_nan_or_inf() const noexcept {
 }
 
 double FlowContainer::residual_offdiagonality() const noexcept {
-    return std::sqrt(interactions_same_spin.abs_squared() + interactions_differing_spin.abs_squared());
+    return std::sqrt(interactions_same_spin.abs_squared_total() + interactions_differing_spin.abs_squared_total());
 }
 
 void FlowContainer::fill_epsilon_tilde() {
@@ -63,8 +63,8 @@ void FlowContainer::fill_epsilon_tilde() {
         epsilon_tilde[p.get_position()] = 0;
 
         for (mom_it q = mom_it::begin(); q != mom_it::end(); ++q) {
-            epsilon_tilde[p.get_position()] += (interactions_differing_spin(p.get_position(), q.get_position(), GammaPoint<L>.get_position())
-                                                   + interactions_same_spin(p.get_position(), q.get_position(), GammaPoint<L>.get_position())
+            epsilon_tilde[p.get_position()] += (interactions_differing_spin(p.get_position(), q.get_position(), Gamma<L>.get_position())
+                                                   + interactions_same_spin(p.get_position(), q.get_position(), Gamma<L>.get_position())
                                                    - interactions_same_spin(p.get_position(), q.get_position(), (p-q).get_position())
                     
                                                 ) * occupation_numbers[q.get_position()];
@@ -74,14 +74,15 @@ void FlowContainer::fill_epsilon_tilde() {
     }
 };
 
-double FlowContainer::abs() const
+double FlowContainer::abs_total() const
 {
-    double val = interactions_same_spin.abs_squared() + interactions_differing_spin.abs_squared();
+    double val = interactions_same_spin.abs_squared_total() + interactions_differing_spin.abs_squared_total();
     for (const auto& element : dispersion) {
         val += element*element;
     }
     return std::sqrt(val);
 }
+
 double FlowContainer::norm_inf() const
 {
     double val = interactions_same_spin.norm_inf();
@@ -93,6 +94,16 @@ double FlowContainer::norm_inf() const
     if(val < comp) val = comp;
 
     return val;
+}
+
+FlowContainer abs(FlowContainer input)
+{
+    input.interactions_differing_spin.abs_in_place();
+    input.interactions_same_spin.abs_in_place();
+    for (auto& val : input.dispersion) {
+        val = std::abs(val);
+    }
+    return input;
 }
 
 FlowContainer& FlowContainer::operator+=(const FlowContainer& other)
@@ -170,7 +181,19 @@ FlowContainer& FlowContainer::operator/=(const double other)
     return *this;
 }
 
-void to_json(nlohmann::json& j, const FlowContainer& container)
+FlowContainer& FlowContainer::operator+=(const double other) {
+    interactions_same_spin += other;
+    interactions_differing_spin += other;
+    for (int i=0; i<N; ++i) {
+        dispersion[i] += other;
+    }
+
+    fill_epsilon_tilde();
+
+    return *this;
+}
+
+void to_json(nlohmann::json& j, const FlowContainer& container) noexcept
 {
     j = nlohmann::json{
         { "dispersion",                  container.dispersion                                },

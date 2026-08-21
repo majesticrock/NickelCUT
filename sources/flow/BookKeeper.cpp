@@ -1,22 +1,38 @@
 #include "BookKeeper.hpp"
+#include "DecouplingChannel.hpp"
+#include "FlowContainer.hpp"
 
 #include <mrock/utility/OutputConvenience.hpp>
 
+#include <utility>
+#include <list>
 #include <iostream>
 
 namespace NickelCUT::flow
 {
 
-BookKeeper::BookKeeper(double initial_ROD) 
-    : lowest_ROD{ initial_ROD },
+ExtractionContainer::ExtractionContainer(const FlowContainer& x)
+    : single_particle_energy(DecouplingChannel::SingleParticleEnergy(x)),
+    density_wave(DecouplingChannel::DensityWave(x)),
+    superconductivity(DecouplingChannel::Superconductivity(x)),
+    dispersion(x.dispersion)
+{ }
+
+BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _dl) 
+    : lowest_ROD{ initial_flow_state.residual_offdiagonality() },
     l_of_lowest_ROD{ 0.0 },
     index_of_lowest_ROD{ 0U },
+    l_times{ 0.0 },
+    residual_offdiagonalities{ lowest_ROD },
+    extracted_channels{ ExtractionContainer(initial_flow_state) },
+    lowest_ROD_state{ initial_flow_state },
+    dl{ _dl },
     begin(clock::now()), 
     last(begin),
     current_idx{ 0U }
 {
     std::cout << mrock::utility::time_stamp() << "   -   " << "Starting calculations...\n"
-        << "Initial ROD = " << initial_ROD << std::endl;
+        << "Initial ROD = " << lowest_ROD << "        spacing saves at at least dl = " << dl << std::endl;
 };
 
 bool BookKeeper::process_step(double current_l, double ROD) {
@@ -49,6 +65,48 @@ void BookKeeper::print_final() const {
         << "Total executation took " << std::chrono::duration_cast<std::chrono::seconds>(now - begin).count() << "s.\n"
         << "Goodbye."
         << std::endl;
+}
+
+void BookKeeper::operator()(const FlowContainer &x, double l)
+{
+    if (l - l_times.back() < dl) return;
+
+    l_times.push_back(l);
+    residual_offdiagonalities.push_back(x.residual_offdiagonality());
+    extracted_channels.push_back(ExtractionContainer(x));
+
+    if (process_step(l, residual_offdiagonalities.back())) {
+        lowest_ROD_state = x;
+    }
+    if (residual_offdiagonalities.back() > 5 * residual_offdiagonalities.front()) {
+        throw LargeRODException();
+    }
+}
+
+void to_json(nlohmann::json& j, const ExtractionContainer& extracted_channels) noexcept
+{
+    j = nlohmann::json{
+        { "single_particle_energy_differing",   extracted_channels.single_particle_energy.first.as_2D_array()  },
+        { "single_particle_energy_same",        extracted_channels.single_particle_energy.second.as_2D_array() },
+        { "density_wave_differing",             extracted_channels.density_wave.first.as_2D_array()            },
+        { "density_wave_same",                  extracted_channels.density_wave.second.as_2D_array()           },
+        { "superconductivity",                  extracted_channels.superconductivity.as_2D_array()             },
+        { "dispersion",                         extracted_channels.dispersion                                  }
+    };
+}
+
+void to_json(nlohmann::json& j, const BookKeeper& book_keeper) noexcept
+{
+    j = nlohmann::json{
+        { "l_times",                    book_keeper.l_times                   },
+        { "number_of_data_points",      book_keeper.l_times.size()            },
+        { "residual_offdiagonalities",  book_keeper.residual_offdiagonalities },
+        { "lowest_ROD",                 book_keeper.lowest_ROD                },
+        { "index_of_lowest_ROD",        book_keeper.index_of_lowest_ROD       },
+        { "l_of_lowest_ROD",            book_keeper.l_of_lowest_ROD           },
+        { "extracted_channels",         book_keeper.extracted_channels        },
+        { "lowest_ROD_state",           book_keeper.lowest_ROD_state          }
+    };
 }
 
 } // namespace NickelCUT::flow

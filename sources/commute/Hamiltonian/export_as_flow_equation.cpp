@@ -24,7 +24,7 @@ std::string sign_to_string(int factor) {
 
 std::string momentum_to_code(const Momentum& momentum) {
     if (momentum.is_zero()) {
-        return "GammaPoint<L>";
+        return "Gamma<L>";
     }
 
     std::string code = "";

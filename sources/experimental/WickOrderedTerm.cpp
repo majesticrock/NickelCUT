@@ -94,6 +94,20 @@ bool WickOrderedTerm::is_quartic() const noexcept {
     return wick_expression.size() == 4U;
 }
 
+WickOrderedTerm& WickOrderedTerm::hermitian_conjugate_inplace() noexcept
+{
+    wick_expression.hermitian_conjugate_inplace();
+    return *this;
+}
+
+WickOrderedTerm WickOrderedTerm::hermitian_conjugate() const noexcept
+{
+    WickOrderedTerm copy(*this);
+    copy.hermitian_conjugate_inplace();
+    return copy;
+}
+
+
 std::ostream& operator<<(std::ostream& os, const WickOrderedTerm& term)
 {
     if (term.multiplicity > 0) {

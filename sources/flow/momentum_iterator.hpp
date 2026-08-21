@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <array>
 #include <numbers>
 #include <ostream>
@@ -22,7 +23,7 @@ template<int _L>
 struct momentum_iterator;
 
 template <int _L>
-static constexpr momentum_iterator<_L> GammaPoint = momentum_iterator<_L>(_L / 2, _L / 2);
+static constexpr momentum_iterator<_L> Gamma = momentum_iterator<_L>(_L / 2, _L / 2);
 
 template <int _L>
 static constexpr momentum_iterator<_L> Q = momentum_iterator<_L>(0, 0);
@@ -121,7 +122,7 @@ struct momentum_iterator {
         return tmp;
     }
     constexpr momentum_iterator operator-() const noexcept {
-        return GammaPoint<_L> - (*this);
+        return Gamma<_L> - (*this);
     }
     
 private:
@@ -136,10 +137,10 @@ std::ostream& operator<<(std::ostream& os, momentum_iterator<_L> mom_it) {
     return os; 
 }
 
-static_assert(GammaPoint<6>.get_kx() == 0.0);
-static_assert(GammaPoint<6>.get_ky() == 0.0);
+static_assert(Gamma<6>.get_kx() == 0.0);
+static_assert(Gamma<6>.get_ky() == 0.0);
 
-static_assert(GammaPoint<10>.get_kx() == 0.0);
-static_assert(GammaPoint<10>.get_ky() == 0.0);
+static_assert(Gamma<10>.get_kx() == 0.0);
+static_assert(Gamma<10>.get_ky() == 0.0);
 
 } // namespace NickelCUT::flow

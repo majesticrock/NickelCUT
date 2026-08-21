@@ -4,5 +4,5 @@
 
 namespace NickelCUT::commute::PairAnnihilation
 {
-    void commute_and_print(std::ostringstream& oss);
+    void commute_and_extract(std::ostringstream& oss);
 } // namespace NickelCUT::commute::PairAnnihilation

@@ -110,21 +110,21 @@ void Model::iteration_step(const ParameterVector& initial_values, ParameterVecto
             //}
 
             // epsilon_I_up
-            result(p.get_position() + 3*N) += flow_state.interactions_differing_spin(p, -q, flow::GammaPoint<L>) * rho(2, 2)
-                + flow_state.interactions_differing_spin(p, flow::Q<L> - q, flow::GammaPoint<L>) * rho(3, 3);
+            result(p.get_position() + 3*N) += flow_state.interactions_differing_spin(p, -q, flow::Gamma<L>) * rho(2, 2)
+                + flow_state.interactions_differing_spin(p, flow::Q<L> - q, flow::Gamma<L>) * rho(3, 3);
             result(p.get_position() + 3*N) -= (
-                    flow_state.interactions_same_spin(p, q, flow::GammaPoint<L>) - flow_state.interactions_same_spin(p, q, q - p)
+                    flow_state.interactions_same_spin(p, q, flow::Gamma<L>) - flow_state.interactions_same_spin(p, q, q - p)
                 ) * (1. - rho(0, 0)) + (
-                    flow_state.interactions_same_spin(p, q + flow::Q<L>, flow::GammaPoint<L>) - flow_state.interactions_same_spin(p, q + flow::Q<L>, q - p + flow::Q<L>)
+                    flow_state.interactions_same_spin(p, q + flow::Q<L>, flow::Gamma<L>) - flow_state.interactions_same_spin(p, q + flow::Q<L>, q - p + flow::Q<L>)
                 ) * (1. - rho(1, 1));
 
             // epsilon_I_down
-            result(p.get_position() + 4*N) += flow_state.interactions_differing_spin(p, q, flow::GammaPoint<L>) * (1. - rho(0, 0))
-                + flow_state.interactions_differing_spin(p, flow::Q<L> + q, flow::GammaPoint<L>) * (1. - rho(1, 1));
+            result(p.get_position() + 4*N) += flow_state.interactions_differing_spin(p, q, flow::Gamma<L>) * (1. - rho(0, 0))
+                + flow_state.interactions_differing_spin(p, flow::Q<L> + q, flow::Gamma<L>) * (1. - rho(1, 1));
             result(p.get_position() + 4*N) -= (
-                    flow_state.interactions_same_spin(p, -q, flow::GammaPoint<L>) - flow_state.interactions_same_spin(p, -q, -q - p)
+                    flow_state.interactions_same_spin(p, -q, flow::Gamma<L>) - flow_state.interactions_same_spin(p, -q, -q - p)
                 ) * rho(2, 2) + (
-                    flow_state.interactions_same_spin(p, -q + flow::Q<L>, flow::GammaPoint<L>) - flow_state.interactions_same_spin(p, -q + flow::Q<L>, -q - p + flow::Q<L>)
+                    flow_state.interactions_same_spin(p, -q + flow::Q<L>, flow::Gamma<L>) - flow_state.interactions_same_spin(p, -q + flow::Q<L>, -q - p + flow::Q<L>)
                 ) * rho(3, 3);
         }
     }

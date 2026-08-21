@@ -9,7 +9,7 @@ set(TARGET_ARCH
 add_library(nickelcut_options INTERFACE)
 target_compile_features(nickelcut_options
     INTERFACE
-        cxx_std_20
+        cxx_std_23
 )
 
 target_compile_options(nickelcut_options INTERFACE

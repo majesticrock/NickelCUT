@@ -1,4 +1,4 @@
-#include "commute_and_print.hpp"
+#include "commute_and_extract.hpp"
 
 //#include "extract_flow_coefficients.hpp"
 #include "restructure_terms.hpp"
@@ -18,7 +18,7 @@ namespace NickelCUT::commute::PairAnnihilation
 using namespace mrock::symbolic_operators;
 using namespace NickelCUT::commute;
 
-void commute_and_print(std::ostringstream& oss)
+void commute_and_extract(std::ostringstream& oss)
 {
     std::vector<Term> commutator = commutator_pair_annihilation(oss);
     const std::vector<WickOperatorTemplate> wick_templates = get_wick_templates();

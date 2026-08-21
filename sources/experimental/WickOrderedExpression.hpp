@@ -11,6 +11,9 @@ namespace mrock::symbolic_operators::experimental {
 struct WickOrderedExpression {
     std::vector<Operator> operators;  ///< The operators in the Wick ordered expression.
 
+    WickOrderedExpression& hermitian_conjugate_inplace() noexcept;
+    WickOrderedExpression hermitian_conjugate() const noexcept;
+
     MROCK_VECTOR_WRAPPER_FILL_MEMBERS(Operator, operators);
 };
 

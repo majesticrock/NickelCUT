@@ -35,30 +35,8 @@ std::vector<std::unique_ptr<WickSymmetry>> get_symmetries() {
     return symmetries;
 }
 
-std::vector<Term> get_cut_generator() {
-    const Term cut_generator_half(1, 
-        Coefficient::RealInteraction("\\alpha", 
-            MomentumList({Momentum('p'), Momentum('q'), Momentum('r')}), 
-            IndexWrapper{Index::Sigma, Index::SigmaPrime},
-            spin_symmetry
-        ),
-        SumContainer{MomentumSum{'p', 'q', 'r'}, IndexSum{Index::Sigma, Index::SigmaPrime}},
-        std::vector<Operator>({
-            c_p_sigma.hermitian_conjugate(),
-            c_p_sigma_prime.with_momentum('q').hermitian_conjugate(),
-            c_p_sigma_prime.with_momentum(Momentum("q-r")),
-            c_p_sigma.with_momentum(Momentum("p+r"))
-        })
-    );
-    Term cut_generator_second_half = cut_generator_half.hermitian_conjugate();
-    cut_generator_second_half.flip_sign();
-
-    const std::vector<Term> cut_generator = {cut_generator_half, cut_generator_second_half};
-
-    return cut_generator;
-}
-
-std::vector<Term> commutator_of_cut(std::ostringstream& oss) {
+std::vector<Term> get_Hamiltonian()
+{
     const Term H_kin(1, 
         Coefficient::RealInversionSymmetric("\\tilde{\\varepsilon}", MomentumList(Momentum('p'))),
         SumContainer{MomentumSum{'p'}, IndexSum{ Index::Sigma }},
@@ -82,10 +60,34 @@ std::vector<Term> commutator_of_cut(std::ostringstream& oss) {
         })
     );
 
-    const std::vector<Term> H = {H_kin, H_int};
+    return {H_kin, H_int};
+}
 
-    // --------------------------------------------------------- //
+std::vector<Term> get_cut_generator() {
+    const Term cut_generator_half(2, 
+        Coefficient::RealInteraction("\\alpha", 
+            MomentumList({Momentum('p'), Momentum('q'), Momentum('r')}), 
+            IndexWrapper{Index::Sigma, Index::SigmaPrime},
+            spin_symmetry
+        ),
+        SumContainer{MomentumSum{'p', 'q', 'r'}, IndexSum{Index::Sigma, Index::SigmaPrime}},
+        std::vector<Operator>({
+            c_p_sigma.hermitian_conjugate(),
+            c_p_sigma_prime.with_momentum('q').hermitian_conjugate(),
+            c_p_sigma_prime.with_momentum(Momentum("q-r")),
+            c_p_sigma.with_momentum(Momentum("p+r"))
+        })
+    );
 
+    //Term cut_generator_second_half = cut_generator_half.hermitian_conjugate();
+    //cut_generator_second_half.flip_sign();
+    //const std::vector<Term> cut_generator = {cut_generator_half, cut_generator_second_half};
+
+    return {cut_generator_half};
+}
+
+std::vector<Term> commutator_of_cut(std::ostringstream& oss) {
+    const std::vector<Term> H = get_Hamiltonian();
     const std::vector<Term> cut_generator = get_cut_generator();
     std::vector<Term> cut_commutator = commutator(cut_generator, H);
     clean_up(cut_commutator);
@@ -107,8 +109,8 @@ std::vector<Term> commutator_of_cut(std::ostringstream& oss) {
         << "Note that, at $\\ell=0$, the interaction is independent of the momenta. " << std::endl;
     
     oss << "\nThe commutator reads\n\\begin{align}\n[\\eta, H] =" 
-        << "\\text{2 pages of terms}" 
-        // << cut_commutator
+        //<< "\\text{2 pages of terms}" 
+        << cut_commutator
         << "\\end{align}" << std::endl;
 
     return cut_commutator;

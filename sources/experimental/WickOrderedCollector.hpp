@@ -30,6 +30,24 @@ struct WickOrderedCollector {
      */
     void combine_duplicates();
 
+    /**
+     * @brief Takes the Hermitian conjugate of the current expression in place
+     * 
+     * @return A reference to \c *this after the Hermitian conjugation 
+     */
+    WickOrderedCollector& hermitian_conjugate_inplace() noexcept;
+
+    /**
+     * @brief Takes the Hermitian conjugate of the current expression in a copy
+     * 
+     * @return A copy of \c *this after the Hermitian conjugation 
+     */
+    WickOrderedCollector hermitian_conjugate() const noexcept;
+
+    WickOrderedCollector& operator+=(const WickOrderedCollector& other);
+
+    WickOrderedCollector& operator-=(const WickOrderedCollector& other);
+
     MROCK_VECTOR_WRAPPER_FILL_MEMBERS(WickOrderedTerm, terms);
 };
 
@@ -48,5 +66,9 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
     const std::vector<std::unique_ptr<WickSymmetry>>& symmetries = std::vector<std::unique_ptr<WickSymmetry>>{});
 
 std::ostream& operator<<(std::ostream& os, const WickOrderedCollector& terms);
+
+WickOrderedCollector operator+(WickOrderedCollector lhs, const WickOrderedCollector& rhs);
+
+WickOrderedCollector operator-(WickOrderedCollector lhs, const WickOrderedCollector& rhs);
 
 } // namespace mrock::symbolic_operators::experimental

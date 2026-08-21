@@ -1,4 +1,4 @@
-#include "commute_and_print.hpp"
+#include "commute_and_extract.hpp"
 
 #include "extract_flow_coefficients.hpp"
 #include "restructure_terms.hpp"
@@ -18,7 +18,8 @@ namespace NickelCUT::commute::Hamiltonian
 using namespace mrock::symbolic_operators;
 using namespace NickelCUT::commute;
 
-void commute_and_print(std::ostringstream& oss) {
+experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& oss)
+{
     const std::vector<Term> commutator = commutator_of_cut(oss);
     const std::vector<WickOperatorTemplate> wick_templates = get_wick_templates();
     const std::vector<std::unique_ptr<WickSymmetry>> symmetries = get_symmetries();
@@ -37,9 +38,14 @@ void commute_and_print(std::ostringstream& oss) {
         << "\\text{10 pages of terms}"
         // << normal_ordered_result 
         << "\\end{align*}" << std::endl;
+    
+    return normal_ordered_result;
+}
+
+void commute_and_extract(std::ostringstream& oss) {
+    experimental::WickOrderedCollector normal_ordered_result = commute_and_normal_order(oss);
 
     oss << "The unique types of Wick-ordered expressions are\n\\begin{align*}\n";
-
     std::list<experimental::WickOrderedExpression> unique_wicks;
     for(const auto& term : normal_ordered_result) {
         if (!exists_in(unique_wicks, term.wick_expression)) {

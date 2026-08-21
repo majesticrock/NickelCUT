@@ -15,6 +15,7 @@ endif()
 
 add_library(flow_lib STATIC
     BookKeeper.cpp
+    DecouplingChannel.cpp
     Model.cpp
     FlowContainer.cpp
     occupation_numbers.cpp

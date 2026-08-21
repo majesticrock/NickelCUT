@@ -16,8 +16,8 @@ struct FlowContainer {
     using coeff_array = std::array<double, N>;
     using mom_it = NickelCUT::flow::momentum_iterator<L>;
 
-    InteractionDataFrame<N> interactions_same_spin;
-    InteractionDataFrame<N> interactions_differing_spin;
+    InteractionDataFrame interactions_same_spin;
+    InteractionDataFrame interactions_differing_spin;
     coeff_array dispersion;
     coeff_array epsilon_tilde;
 
@@ -39,10 +39,10 @@ struct FlowContainer {
     bool contains_nan_or_inf() const noexcept;
     double residual_offdiagonality() const noexcept;
 
-    // Required for boost odeint
-    double abs() const; ///< the L2 norm
+    double abs_total() const; ///< the L2 norm
     double norm_inf() const; ///< the L_infinity norm
 
+    // Required for boost odeint
     FlowContainer& operator+=(const FlowContainer& other);
     FlowContainer& operator-=(const FlowContainer& other);
     FlowContainer& operator*=(const FlowContainer& other);
@@ -50,6 +50,7 @@ struct FlowContainer {
 
     FlowContainer& operator*=(const double other);
     FlowContainer& operator/=(const double other);
+    FlowContainer& operator+=(const double other);
 };
 
 inline FlowContainer operator+(FlowContainer lhs, const FlowContainer& rhs) { return (lhs += rhs); }
@@ -60,7 +61,11 @@ inline FlowContainer operator/(FlowContainer lhs, const FlowContainer& rhs) { re
 inline FlowContainer operator*(FlowContainer lhs, const double rhs) { return (lhs *= rhs); }
 inline FlowContainer operator*(const double lhs, FlowContainer rhs) { return (rhs *= lhs); }
 inline FlowContainer operator/(FlowContainer lhs, const double rhs) { return (lhs /= rhs); }
+inline FlowContainer operator+(FlowContainer lhs, const double rhs) { return (lhs += rhs); }
+inline FlowContainer operator+(const double lhs, FlowContainer rhs) { return (rhs += lhs); }
 
-void to_json(nlohmann::json& j, const FlowContainer& container);
+FlowContainer abs(FlowContainer input); ///< elementwise L2 norm
+
+void to_json(nlohmann::json& j, const FlowContainer& container) noexcept;
 
 } // namespace NickelCUT::flow

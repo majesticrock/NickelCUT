@@ -47,9 +47,9 @@ int main(int /*argc*/, char** /*argv*/) {
         return 1;
     }
 
-    if(GammaPoint<L>.get_position() != L / 2 + L * (L / 2)
-        || GammaPoint<L>.get_momentum() != std::pair<double, double>{0.0, 0.0}) {
-        std::cerr << "GammaPoint is not at zero momentum!" << std::endl;
+    if(Gamma<L>.get_position() != L / 2 + L * (L / 2)
+        || Gamma<L>.get_momentum() != std::pair<double, double>{0.0, 0.0}) {
+        std::cerr << "Gamma is not at zero momentum!" << std::endl;
         return 1;
     }
 
@@ -102,15 +102,15 @@ int main(int /*argc*/, char** /*argv*/) {
             return 1;
         }
 
-        it_type tmp = p + GammaPoint<L>;
+        it_type tmp = p + Gamma<L>;
         if(p != tmp){
-            std::cerr << "p + GammaPoint<L> == p     failed!" << std::endl;
+            std::cerr << "p + Gamma<L> == p     failed!" << std::endl;
             return 1;
         }
 
-        it_type tmp2 = p - GammaPoint<L>;
+        it_type tmp2 = p - Gamma<L>;
         if(p != tmp2){
-            std::cerr << "p - GammaPoint<L> == p     failed!" << std::endl;
+            std::cerr << "p - Gamma<L> == p     failed!" << std::endl;
             return 1;
         }
 

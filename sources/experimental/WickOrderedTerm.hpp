@@ -81,6 +81,20 @@ public:
      * @return true if the term is quartic
      */
     bool is_quartic() const noexcept;
+
+    /**
+     * @brief Takes the Hermitian conjugate of the current expression in place
+     * 
+     * @return A reference to \c *this after the Hermitian conjugation 
+     */
+    WickOrderedTerm& hermitian_conjugate_inplace() noexcept;
+
+    /**
+     * @brief Takes the Hermitian conjugate of the current expression in a copy
+     * 
+     * @return A copy of \c *this after the Hermitian conjugation 
+     */
+    WickOrderedTerm hermitian_conjugate() const noexcept;
 };
 
 /**
