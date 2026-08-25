@@ -10,14 +10,14 @@
 namespace NickelCUT::commute {
 using namespace mrock::symbolic_operators;
 
-std::vector<Term> get_Hamiltonian();
-std::vector<Term> get_cut_generator();
+TermCollector get_Hamiltonian();
+TermCollector get_cut_generator();
 
 std::vector<WickOperatorTemplate> get_wick_templates();
 std::vector<std::unique_ptr<WickSymmetry>> get_symmetries();
 
-std::vector<Term> commutator_of_cut(std::ostringstream& oss);
+TermCollector commutator_of_cut(std::ostringstream& oss);
 
-std::vector<Term> commutator_pair_annihilation(std::ostringstream& oss);
+TermCollector commutator_pair_annihilation(std::ostringstream& oss);
 
 } // namespace NickelCUT::commute

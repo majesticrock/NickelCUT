@@ -1,8 +1,11 @@
 #include "restructure_terms.hpp"
 
+#include <mrock/symbolic_operators/WickTermCollector.hpp>
+
 #include <array>
 #include <vector>
 #include <list>
+#include <string>
 #include <utility>
 
 namespace NickelCUT::commute::Hamiltonian {
@@ -14,13 +17,13 @@ void restructure_expectation_values(experimental::WickOrderedTerm& term, Index i
         std::vector<MomentumSymbol::name_type> momentum_do_not_touch) 
 {
     for (auto& wick_operator : term.operators) {
-        //if (term.sums.spins.is_summed_over(wick_operator.indizes[0])) {
-        //    while (exists_in(index_do_not_touch, index_target)) {
-        //        ++index_target;
-        //    }
-        //    term.redistribute_indizes(wick_operator.indizes[0], index_target, index_do_not_touch);
-        //    index_do_not_touch.push_back(index_target++);
-        //}
+        if (term.sums.spins.is_summed_over(wick_operator.indizes[0])) {
+            while (exists_in(index_do_not_touch, index_target)) {
+                ++index_target;
+            }
+            term.redistribute_indizes(wick_operator.indizes[0], index_target, index_do_not_touch);
+            index_do_not_touch.push_back(index_target++);
+        }
         wick_operator.indizes.front() = Index::SpinUp; // Use the spin symmetry
     }
 
@@ -32,7 +35,7 @@ void restructure_expectation_values(experimental::WickOrderedTerm& term, Index i
             term.redistribute_momenta(wick_operator.momentum, momentum_target, momentum_do_not_touch);
             momentum_do_not_touch.push_back(momentum_target);
             ++momentum_target._n;
-        } catch (std::invalid_argument& e) { };
+        } catch (redistribution_error& e) { };
     }
 
     term.sort();
@@ -49,7 +52,7 @@ void restructure_coefficients(experimental::WickOrderedTerm& term,
                 momentum_do_not_touch.push_back(momentum_target);
                 ++momentum_target._n;
                 if (momentum_do_not_touch.size() >= term.sums.momenta.size()) goto restructure_end_loop;
-            } catch (std::invalid_argument& e) { };
+            } catch (redistribution_error& e) { };
         }
     }
     restructure_end_loop:
@@ -58,10 +61,10 @@ void restructure_coefficients(experimental::WickOrderedTerm& term,
 
     if (term.is_bilinear()) {
         for (std::size_t i=0U; i<term.operators.size(); ++i) {
-            if (term.operators[i].momentum != Momentum('p') && term.operators[i].momentum != Momentum('q')) continue;
+            if (term.operators[i].momentum != Momentum('K') && term.operators[i].momentum != Momentum('P')) continue;
             for (std::size_t j=i+1U; j<term.sums.momenta.size(); ++j) {
                 if (term.operators[i].momentum == term.operators[j].momentum) {
-                    term.rename_momenta(term.operators[i].momentum.front().name, 'q');
+                    term.rename_momenta(term.operators[i].momentum.front().name, 'P');
                 }
             }
         }
@@ -78,36 +81,9 @@ void restructure_bilinear_term(experimental::WickOrderedTerm& term) {
     // Rename indizes in the wick-ordered expression to one unified scheme
     term.redistribute_indizes(term.wick_expression[0].indizes[0], Index::Sigma);
     // Rename momenta in the wick-ordered expression to one unified scheme
-    term.redistribute_momenta(term.wick_expression[0].momentum, 'p');
+    term.redistribute_momenta(term.wick_expression[0].momentum, 'K');
 
-    restructure_expectation_values(term, Index::SigmaPrime, {Index::Sigma}, 'q', {'p'});
-
-    // The elements in this lists may be swapped without changing the value of expectation value string
-    // e.g., <n_q> <n_p> is invariant under q <---> p
-    //std::list<std::pair<MomentumSymbol::name_type, MomentumSymbol::name_type>> may_be_swapped;
-    //for (std::size_t i=0U; i<term.sums.momenta.size(); ++i) {
-    //    int count_i=0;
-    //    for (const auto& op : term.operators) {
-    //        if (op.momentum == Momentum(term.sums.momenta[i])) {
-    //            ++count_i;
-    //        }
-    //    }
-    //    if (count_i != 1) continue;
-//
-    //    for (std::size_t j=i+1U; j<term.sums.momenta.size(); ++j) {
-    //        int count_j=0;
-    //        for (const auto& op : term.operators) {
-    //            if (op.momentum == Momentum(term.sums.momenta[j])) {
-    //                ++count_j;
-    //            }
-    //        }
-    //        if (count_j != 1) continue;
-//
-    //        may_be_swapped.push_back(std::make_pair(term.sums.momenta[i], term.sums.momenta[j]));
-    //    }
-    //}
-
-
+    restructure_expectation_values(term, Index::SigmaPrime, {Index::Sigma}, 'P', {'K'});
 }
 
 void restructure_quartic_term(experimental::WickOrderedTerm& term) {
@@ -126,24 +102,24 @@ void restructure_quartic_term(experimental::WickOrderedTerm& term) {
     }
 
     // Rename momenta in the wick-ordered expression to one unified scheme
-    term.redistribute_momenta(term.wick_expression[0].momentum, 'p');
-    term.redistribute_momenta(term.wick_expression[1].momentum, 'q', {'p'});
+    term.redistribute_momenta(term.wick_expression[0].momentum, 'K');
+    term.redistribute_momenta(term.wick_expression[1].momentum, 'P', {'K'});
     try {
-        term.redistribute_momenta(term.wick_expression[2].momentum, 'r', {'p', 'q'});
-        term.transform_momentum_sum('r', Momentum("?+q"), '?');
-        term.rename_momenta('?', 'r');
-        term.invert_momentum_sum('r');
+        term.redistribute_momenta(term.wick_expression[2].momentum, 'Q', {'K', 'P'});
+        term.transform_momentum_sum('Q', Momentum(std::string(1, PLACEHOLDER_SYMBOL._n) + "+P"), PLACEHOLDER_SYMBOL);
+        term.rename_momenta(PLACEHOLDER_SYMBOL, 'Q');
+        term.invert_momentum_sum('Q');
     }
-    catch (std::invalid_argument& e) {};
+    catch (redistribution_error& e) {};
 
-    restructure_expectation_values(term, Index::GeneralSpin_S, {Index::Sigma, Index::SigmaPrime}, 's', {'p', 'q', 'r'});
+    restructure_expectation_values(term, Index::GeneralSpin_S, {Index::Sigma, Index::SigmaPrime}, 'R', {'K', 'P', 'Q'});
 }
 
 void advanced_clean_up(experimental::WickOrderedCollector& terms)
 {
     for (auto& term : terms) {
         if (term.wick_expression.empty()) {
-            restructure_expectation_values(term, Index::Sigma, {}, 'p', {});
+            restructure_expectation_values(term, Index::Sigma, {}, 'K', {});
         }
         else if (term.is_bilinear()) {
             restructure_bilinear_term(term);
@@ -178,18 +154,18 @@ void advanced_clean_up(experimental::WickOrderedCollector& terms)
     terms.combine_duplicates();
 
     const std::array<std::vector<MomentumSymbol::name_type>, 3> base_do_not_touch{ std::vector<MomentumSymbol::name_type>{}, 
-        std::vector<MomentumSymbol::name_type>{'p'}, 
-        std::vector<MomentumSymbol::name_type>{'p', 'q', 'r'} };
+        std::vector<MomentumSymbol::name_type>{'K'}, 
+        std::vector<MomentumSymbol::name_type>{'K', 'P', 'Q'} };
 
     for (auto& term : terms) {
         if (term.wick_expression.empty()) {
-            restructure_coefficients(term, 'p', base_do_not_touch[0]);
+            restructure_coefficients(term, 'K', base_do_not_touch[0]);
         }
         else if (term.is_bilinear()) {
-            restructure_coefficients(term, 'q', base_do_not_touch[1]);
+            restructure_coefficients(term, 'P', base_do_not_touch[1]);
         }
         else if (term.is_quartic()) {
-            restructure_coefficients(term, 's', base_do_not_touch[2]);
+            restructure_coefficients(term, 'R', base_do_not_touch[2]);
         }
 
         for (auto& coeff : term.coefficients) {
@@ -260,10 +236,10 @@ void advanced_clean_up(experimental::WickOrderedCollector& terms)
         if (!term.is_bilinear()) continue;
         if (term.coefficients[0].momenta.size() != 3U) continue;
 
-        if (term.coefficients[0].momenta[2].is_used_at('r') >= 0 && term.coefficients[0].momenta[2].is_used_at('q') < 0) {
-            term.rename_momenta('q', '_');
-            term.rename_momenta('r', 'q');
-            term.rename_momenta('_', 'r');
+        if (term.coefficients[0].momenta[2].is_used_at('Q') >= 0 && term.coefficients[0].momenta[2].is_used_at('P') < 0) {
+            term.rename_momenta('P', PLACEHOLDER_SYMBOL);
+            term.rename_momenta('Q', 'P');
+            term.rename_momenta(PLACEHOLDER_SYMBOL, 'Q');
         }
 
         for (auto& coeff : term.coefficients) {
@@ -301,7 +277,7 @@ void improve_flow_coefficient_structure(WickTermCollector& terms)
                 term.redistribute_momenta(op.momentum, target, used);
                 used.push_back(target);
                 ++target._n;
-            } catch (std::invalid_argument& e){};
+            } catch (redistribution_error& e){};
         }
 
         for (auto& coeff : term.coefficients) {

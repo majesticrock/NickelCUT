@@ -1,6 +1,6 @@
 #include "export_as_flow_equation.hpp"
 
-#include <mrock/symbolic_operators/WickTerm.hpp>
+#include <mrock/symbolic_operators/WickTermCollector.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
 
 #include <cmath>
@@ -87,15 +87,15 @@ std::string access_coefficient(const Coefficient& coeff) {
 
 std::string generate_bilinear(const WickTermCollector& bilinears) 
 {
-    const std::string accessor = "dHdl.dispersion[p]";
+    const std::string accessor = "dHdl.dispersion[K]";
 
     std::string code = outer_p_loop;
-    code += momentum_for_loop("q");
-    code += "double nr_value{};\ndouble one_value{};\n";
-    code += momentum_for_loop("r");
+    code += momentum_for_loop("P");
+    code += "double nQ_value{};\ndouble one_value{};\n";
+    code += momentum_for_loop("Q");
 
     for (const auto& term : bilinears) {
-        assert(term.operators[0].momentum == Momentum('q'));
+        assert(term.operators[0].momentum == Momentum('P'));
         assert(term.coefficients[0].name == "U");
         assert(term.coefficients[1].name == "\\alpha");
 
@@ -103,8 +103,8 @@ std::string generate_bilinear(const WickTermCollector& bilinears)
             code += "one_value ";
         }
         else {
-            assert(term.operators[1].momentum == Momentum('r'));
-            code += "nr_value ";
+            assert(term.operators[1].momentum == Momentum('Q'));
+            code += "nQ_value ";
         }
         code += term.multiplicity > 0 ? "+= " : "-= ";
         if (term.multiplicity != 1 && term.multiplicity != -1) {
@@ -118,9 +118,9 @@ std::string generate_bilinear(const WickTermCollector& bilinears)
         code += ";\n";
     }
 
-    code += "nr_value *= occupation_numbers[r];\n";
+    code += "nQ_value *= occupation_numbers[Q];\n";
     code += "} // r-loop\n";
-    code += accessor + " += (nr_value + one_value) * occupation_numbers[q];\n";
+    code += accessor + " += (nQ_value + one_value) * occupation_numbers[P];\n";
     code += "} // q-loop\n";
     code += "} // p-loop\n";
     return code;
@@ -131,16 +131,16 @@ std::string generate_bilinear(const WickTermCollector& bilinears)
 std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
     const std::string accessor = std::string("dHdl.") 
         + (parallel ? std::string("interactions_same_spin") : std::string("interactions_differing_spin"))
-        + std::string("(p, q, r)");
+        + std::string("(K, P, Q)");
 
     std::string code = outer_p_loop;
-    code += momentum_for_loop("q");
+    code += momentum_for_loop("P");
     if (parallel) {
-        code += "if (p==q) continue; // Pauli principle\n";
+        code += "if (K==P) continue; // Pauli principle\n";
     }
-    code += momentum_for_loop("r");
+    code += momentum_for_loop("Q");
     if (parallel) {
-        code += "if (p+r==q-r) continue; // Pauli principle\n";
+        code += "if (K+Q==P-Q) continue; // Pauli principle\n";
     }
 
     for (auto it = quartics.begin(); it != quartics.end() && it->sums.momenta.empty(); ++it) {
@@ -164,12 +164,12 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
     }
 
     code += momentum_for_loop("s");
-    code += "double ns_value{};\ndouble one_value{};\n";
+    code += "double nR_value{};\ndouble one_value{};\n";
     
     for (auto& term : quartics) {
         if (term.sums.momenta.empty()) continue;
 
-        code += term.operators.empty() ? "one_value " : "ns_value ";
+        code += term.operators.empty() ? "one_value " : "nR_value ";
         code += term.multiplicity > 0 ? "+= " : "-= ";
         if (term.multiplicity != 1 && term.multiplicity != -1) {
             code += std::to_string(std::abs(static_cast<double>(term.multiplicity)));
@@ -182,14 +182,14 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
 
         if (term.operators.size() == 2U) {
             code += "\n\t* occupation_numbers[";
-            if (term.operators[0].momentum == Momentum('s')) {
+            if (term.operators[0].momentum == Momentum('R')) {
                 code += momentum_to_code(term.operators[1].momentum);
             }
-            else if (term.operators[1].momentum == Momentum('s')) {
+            else if (term.operators[1].momentum == Momentum('R')) {
                 code += momentum_to_code(term.operators[0].momentum);
             }
             else {
-                code += "QUARTIC ONE SHOULD BE S!";
+                code += "QUARTIC ONE SHOULD BE R!";
                 return code;
             }
             code += "]";
@@ -197,7 +197,7 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
         code += ";\n";
     }
 
-    code += accessor + " += one_value + occupation_numbers[s] * ns_value;\n";
+    code += accessor + " += one_value + occupation_numbers[R] * nR_value;\n";
 
     code += "} // s-loop\n";
 

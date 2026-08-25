@@ -3,8 +3,10 @@
 #include "WickOrderedTerm.hpp"
 
 #include <mrock/symbolic_operators/Term.hpp>
+#include <mrock/symbolic_operators/TermCollector.hpp>
 #include <mrock/symbolic_operators/WickOperatorTemplate.hpp>
 #include <mrock/symbolic_operators/WickSymmetry.hpp>
+#include <mrock/symbolic_operators/AbstractCollector.hpp>
 #include <mrock/symbolic_operators/detail/vector_macro.hpp>
 
 #include <memory>
@@ -17,18 +19,10 @@ namespace mrock::symbolic_operators::experimental {
 /**
  * @brief A collector for managing WickOrderedTerm objects.
  */
-struct WickOrderedCollector {
-    std::vector<WickOrderedTerm> terms;  ///< The collected \c WickTerm objects
+struct WickOrderedCollector : public mrock::symbolic_operators::AbstractCollector<WickOrderedTerm> {
+    MROCK_FORWARD_CONSTRUCTORS(WickOrderedCollector, mrock::symbolic_operators::AbstractCollector<WickOrderedTerm>)
 
-    /**
-     * @brief Default constructor for WickOrderedCollector.
-     */
-    WickOrderedCollector() = default;
-
-    /**
-     * @brief Combines duplicate terms
-     */
-    void combine_duplicates();
+    MROCK_FORWARD_ASSIGNMENT(WickOrderedCollector, terms)
 
     /**
      * @brief Takes the Hermitian conjugate of the current expression in place
@@ -47,8 +41,6 @@ struct WickOrderedCollector {
     WickOrderedCollector& operator+=(const WickOrderedCollector& other);
 
     WickOrderedCollector& operator-=(const WickOrderedCollector& other);
-
-    MROCK_VECTOR_WRAPPER_FILL_MEMBERS(WickOrderedTerm, terms);
 };
 
 /**
@@ -60,7 +52,7 @@ struct WickOrderedCollector {
  */
 WickOrderedCollector wick_decompose(const Term& term, const std::vector<WickOperatorTemplate>& templates);
 
-WickOrderedCollector wick_decompose(const std::vector<Term>& terms, const std::vector<WickOperatorTemplate>& templates);
+WickOrderedCollector wick_decompose(const TermCollector& terms, const std::vector<WickOperatorTemplate>& templates);
 
 void clean_wick_ordered_terms(WickOrderedCollector& terms,
     const std::vector<std::unique_ptr<WickSymmetry>>& symmetries = std::vector<std::unique_ptr<WickSymmetry>>{});

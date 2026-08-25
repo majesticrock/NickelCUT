@@ -5,7 +5,7 @@
 
 #include <mrock/symbolic_operators/MomentumSymbol.hpp>
 #include <mrock/symbolic_operators/IndexWrapper.hpp>
-#include <mrock/symbolic_operators/WickTerm.hpp>
+#include <mrock/symbolic_operators/WickTermCollector.hpp>
 
 #include <vector>
 

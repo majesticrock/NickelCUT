@@ -20,7 +20,7 @@ using namespace NickelCUT::commute;
 
 void commute_and_extract(std::ostringstream& oss)
 {
-    std::vector<Term> commutator = commutator_pair_annihilation(oss);
+    TermCollector commutator = commutator_pair_annihilation(oss);
     const std::vector<WickOperatorTemplate> wick_templates = get_wick_templates();
     const std::vector<std::unique_ptr<WickSymmetry>> symmetries = get_symmetries();
 

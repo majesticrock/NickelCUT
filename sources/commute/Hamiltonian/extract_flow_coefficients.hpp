@@ -2,7 +2,7 @@
 
 #include "../../experimental/WickOrderedCollector.hpp"
 
-#include <mrock/symbolic_operators/WickTerm.hpp>
+#include <mrock/symbolic_operators/WickTermCollector.hpp>
 
 #include <array>
 

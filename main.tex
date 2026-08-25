@@ -34,8 +34,14 @@
 \begin{document}
 \maketitle
 
-\section{Test}
-\input{build/default/test_output.tex}
+\IfFileExists{filename}{%
+  \section{Test}
+  \input{build/default/test_output.tex}
+}{%
+  \section{No test output found.}
+}%
+
+
 
 \section{Flow}
 \input{commute_output}

@@ -188,7 +188,7 @@ WickOrderedCollector wick_decompose(const Term& term, const std::vector<WickOper
     return result;
 }
 
-WickOrderedCollector wick_decompose(const std::vector<Term>& terms,
+WickOrderedCollector wick_decompose(const TermCollector& terms,
                                     const std::vector<WickOperatorTemplate>& templates) 
 {
     WickOrderedCollector result;
@@ -256,9 +256,9 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
             const Momentum remainder = delta.second - l_mom;
             delta -= remainder;
             std::swap(delta.first, delta.second);
-            if (delta.first.add_Q) {
-                delta.second.add_Q = !delta.second.add_Q;
-                delta.first.add_Q = false;
+            if (delta.first.add_PI) {
+                delta.second.add_PI = !delta.second.add_PI;
+                delta.first.add_PI = false;
             }
         }
     }
@@ -306,29 +306,6 @@ std::ostream& operator<<(std::ostream& os, const WickOrderedCollector& terms) {
         os << "\n";
     }
     return os;
-}
-
-void WickOrderedCollector::combine_duplicates() 
-{
-    // remove duplicates
-    for (std::size_t i = 0U; i < terms.size(); ++i) {
-        for (std::size_t j = i + 1U; j < terms.size(); ++j) {
-            if (terms[i] == terms[j]) {
-                terms[i].multiplicity += terms[j].multiplicity;
-                terms.erase(terms.begin() + j);
-                --i;
-                break;
-            }
-        }
-    }
-    // removes any terms that have a 0 prefactor
-    for (auto it = terms.begin(); it != terms.end();) {
-        if (it->multiplicity == 0) {
-            it = terms.erase(it);
-        } else {
-            ++it;
-        }
-    }
 }
 
 WickOrderedCollector& WickOrderedCollector::hermitian_conjugate_inplace() noexcept

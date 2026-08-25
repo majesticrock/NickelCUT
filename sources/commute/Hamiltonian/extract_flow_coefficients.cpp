@@ -2,7 +2,7 @@
 
 #include "../../experimental/WickOrderedCollector.hpp"
 
-#include <mrock/symbolic_operators/WickTerm.hpp>
+#include <mrock/symbolic_operators/WickTermCollector.hpp>
 
 #include <array>
 
@@ -38,8 +38,8 @@ std::array<WickTermCollector, 3> extract_flow_coefficients(const experimental::W
     const std::vector<Index> removeable_indizes_bilinear = {Index::Sigma};
     const std::vector<Index> removeable_indizes_quartic = {Index::Sigma, Index::SigmaPrime};
 
-    const std::vector<MomentumSymbol::name_type> removeable_momenta_bilinear = {'p'};
-    const std::vector<MomentumSymbol::name_type> removeable_momenta_quartic = {'p', 'q', 'r'};
+    const std::vector<MomentumSymbol::name_type> removeable_momenta_bilinear = {'K'};
+    const std::vector<MomentumSymbol::name_type> removeable_momenta_quartic = {'K', 'P', 'Q'};
 
     auto remove_sums = [](WickTerm& term, const std::vector<Index>& indizes, const std::vector<MomentumSymbol::name_type>& momenta) {
         std::erase_if(term.sums.spins.summations, [&indizes](Index index) {

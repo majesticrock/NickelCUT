@@ -20,7 +20,8 @@ using namespace NickelCUT::commute;
 
 experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& oss)
 {
-    const std::vector<Term> commutator = commutator_of_cut(oss);
+    const TermCollector commutator = commutator_of_cut(oss);
+
     const std::vector<WickOperatorTemplate> wick_templates = get_wick_templates();
     const std::vector<std::unique_ptr<WickSymmetry>> symmetries = get_symmetries();
 
@@ -43,8 +44,7 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
 }
 
 void commute_and_extract(std::ostringstream& oss) {
-    experimental::WickOrderedCollector normal_ordered_result = commute_and_normal_order(oss);
-
+    experimental::WickOrderedCollector normal_ordered_result = commute_and_normal_order(oss); 
     oss << "The unique types of Wick-ordered expressions are\n\\begin{align*}\n";
     std::list<experimental::WickOrderedExpression> unique_wicks;
     for(const auto& term : normal_ordered_result) {
@@ -60,17 +60,17 @@ void commute_and_extract(std::ostringstream& oss) {
         improve_flow_coefficient_structure(fc);
 
     oss << "This leaves the flow of the coefficients as follows:\n\\begin{align*}\n\t"
-        << "\\partial_\\ell \\varepsilon (\\mathbf{p}) ="
+        << "\\partial_\\ell \\varepsilon (\\mathbf{K}) ="
         << flow_coefficients[0] 
         << "\\end{align*}" << std::endl;
     
     oss << "\\begin{align*}\n\t"
-        << "\\partial_\\ell U_{\\uparrow \\downarrow} (\\mathbf{q}, \\mathbf{p}, \\mathbf{r}) ="
+        << "\\partial_\\ell U_{\\uparrow \\downarrow} (\\mathbf{K}, \\mathbf{P}, \\mathbf{Q}) ="
         << flow_coefficients[1] 
         << "\\end{align*}" << std::endl;
 
     oss << "\\begin{align*}\n\t"
-        << "\\partial_\\ell U_{\\parallel} (\\mathbf{q}, \\mathbf{p}, \\mathbf{r}) ="
+        << "\\partial_\\ell U_{\\parallel} (\\mathbf{K}, \\mathbf{P}, \\mathbf{Q}) ="
         << flow_coefficients[2] 
         << "\\end{align*}" << std::endl;
 
