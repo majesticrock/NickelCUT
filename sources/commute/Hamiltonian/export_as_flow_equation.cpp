@@ -11,7 +11,7 @@
 namespace NickelCUT::commute::Hamiltonian {
 using namespace mrock::symbolic_operators;
 
-const std::string outer_p_loop = "#pragma omp parallel for\nfor (int p_pos=0; p_pos < N; ++p_pos) {\nmomentum_iterator<L> p(p_pos);\n";
+const std::string outer_K_loop = "#pragma omp parallel for\nfor (int K_pos=0; K_pos < N; ++K_pos) {\nmomentum_iterator<L> K(K_pos);\n";
 
 std::string momentum_for_loop(std::string const& it_name) {
     return "for (momentum_iterator<L> " + it_name + " = momentum_iterator<L>::begin(); " 
@@ -89,7 +89,7 @@ std::string generate_bilinear(const WickTermCollector& bilinears)
 {
     const std::string accessor = "dHdl.dispersion[K]";
 
-    std::string code = outer_p_loop;
+    std::string code = outer_K_loop;
     code += momentum_for_loop("P");
     code += "double nQ_value{};\ndouble one_value{};\n";
     code += momentum_for_loop("Q");
@@ -126,14 +126,12 @@ std::string generate_bilinear(const WickTermCollector& bilinears)
     return code;
 }
 
-
-
 std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
     const std::string accessor = std::string("dHdl.") 
         + (parallel ? std::string("interactions_same_spin") : std::string("interactions_differing_spin"))
         + std::string("(K, P, Q)");
 
-    std::string code = outer_p_loop;
+    std::string code = outer_K_loop;
     code += momentum_for_loop("P");
     if (parallel) {
         code += "if (K==P) continue; // Pauli principle\n";
@@ -163,7 +161,7 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
         code += ";\n";
     }
 
-    code += momentum_for_loop("s");
+    code += momentum_for_loop("R");
     code += "double nR_value{};\ndouble one_value{};\n";
     
     for (auto& term : quartics) {

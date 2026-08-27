@@ -44,6 +44,15 @@
         "CMAKE_BUILD_TYPE": "Debug"
       }
     },
+
+    {
+      "name": "BetaTest",
+      "inherits": "base",
+      "binaryDir": "${sourceDir}/build/BetaTest",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "BetaTest"
+      }
+    },
     
     {
       "name": "test",
@@ -74,6 +83,10 @@
     {
       "name": "debug",
       "configurePreset": "debug"
+    },
+    {
+      "name": "BetaTest",
+      "configurePreset": "BetaTest"
     }
   ],
   "testPresets": [

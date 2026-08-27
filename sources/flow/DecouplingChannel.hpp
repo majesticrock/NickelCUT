@@ -34,13 +34,13 @@ public:
     static DecouplingChannel Superconductivity(const FlowContainer& base); 
 
     inline double& operator()(std::size_t p, std::size_t q) noexcept {
-        assert(p < _N);
-        assert(q < _N);
+        assert(p < static_cast<std::size_t>(_N));
+        assert(q < static_cast<std::size_t>(_N));
         return _data[_N*p + q];
     }
     inline double operator()(std::size_t p, std::size_t q) const noexcept {
-        assert(p < _N);
-        assert(q < _N);
+        assert(p < static_cast<std::size_t>(_N));
+        assert(q < static_cast<std::size_t>(_N));
         return _data[_N*p + q];
     }
 

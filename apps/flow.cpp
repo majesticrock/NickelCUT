@@ -32,7 +32,7 @@ constexpr double _ROD_0 = (U < 0. ? -1. : 1.) * U * L;
 constexpr double abs_error = 1e-6;
 constexpr double rel_error = 1e-6;
 
-constexpr double l_final   = (1.5 / _ROD_0);
+constexpr double l_final   = (12. / _ROD_0);
 constexpr double target_dl = (1. / (5. * L * _ROD_0));
 constexpr double dl = target_dl / 50.;
 

@@ -11,19 +11,11 @@
 namespace NickelCUT::commute::Hamiltonian {
 using namespace mrock::symbolic_operators;
 
-void restructure_expectation_values(experimental::WickOrderedTerm& term, Index index_target,
-        std::vector<Index> index_do_not_touch,
+void restructure_expectation_values(experimental::WickOrderedTerm& term,
         MomentumSymbol::name_type momentum_target,
         std::vector<MomentumSymbol::name_type> momentum_do_not_touch) 
 {
     for (auto& wick_operator : term.operators) {
-        if (term.sums.spins.is_summed_over(wick_operator.indizes[0])) {
-            while (exists_in(index_do_not_touch, index_target)) {
-                ++index_target;
-            }
-            term.redistribute_indizes(wick_operator.indizes[0], index_target, index_do_not_touch);
-            index_do_not_touch.push_back(index_target++);
-        }
         wick_operator.indizes.front() = Index::SpinUp; // Use the spin symmetry
     }
 
@@ -57,19 +49,11 @@ void restructure_coefficients(experimental::WickOrderedTerm& term,
     }
     restructure_end_loop:
 
-    term.sort();
-
-    if (term.is_bilinear()) {
-        for (std::size_t i=0U; i<term.operators.size(); ++i) {
-            if (term.operators[i].momentum != Momentum('K') && term.operators[i].momentum != Momentum('P')) continue;
-            for (std::size_t j=i+1U; j<term.sums.momenta.size(); ++j) {
-                if (term.operators[i].momentum == term.operators[j].momentum) {
-                    term.rename_momenta(term.operators[i].momentum.front().name, 'P');
-                }
-            }
-        }
-        term.sort();
+    for (auto& coeff : term.coefficients) {
+        std::sort(coeff.indizes.begin(), coeff.indizes.end());
     }
+
+    term.sort();
 }
 
 void restructure_bilinear_term(experimental::WickOrderedTerm& term) {
@@ -83,7 +67,7 @@ void restructure_bilinear_term(experimental::WickOrderedTerm& term) {
     // Rename momenta in the wick-ordered expression to one unified scheme
     term.redistribute_momenta(term.wick_expression[0].momentum, 'K');
 
-    restructure_expectation_values(term, Index::SigmaPrime, {Index::Sigma}, 'P', {'K'});
+    restructure_expectation_values(term, 'P', {'K'});
 }
 
 void restructure_quartic_term(experimental::WickOrderedTerm& term) {
@@ -112,14 +96,28 @@ void restructure_quartic_term(experimental::WickOrderedTerm& term) {
     }
     catch (redistribution_error& e) {};
 
-    restructure_expectation_values(term, Index::GeneralSpin_S, {Index::Sigma, Index::SigmaPrime}, 'R', {'K', 'P', 'Q'});
+    restructure_expectation_values(term, 'R', {'K', 'P', 'Q'});
 }
 
 void advanced_clean_up(experimental::WickOrderedCollector& terms)
 {
+    {
+        auto it = std::remove_if(terms.begin(), terms.end(), [](const experimental::WickOrderedTerm& term){
+            for (const auto& coeff : term.coefficients) {
+                if (coeff.name != "\\alpha") continue;
+                // The alpha-coefficient is proportional to sign(eps(k) + eps(p) - eps(p-q) - eps(k+q))
+                // Now, if q=0 (the last Momentum in momenta), then this reads sign(0), which is just 0
+                // Hence, the term does not contribute
+                if (coeff.momenta.back() == Momentum()) return true;
+            }
+            return false;
+        });
+        terms.erase(it, terms.end());
+    }
+
     for (auto& term : terms) {
         if (term.wick_expression.empty()) {
-            restructure_expectation_values(term, Index::Sigma, {}, 'K', {});
+            restructure_expectation_values(term, 'K', {});
         }
         else if (term.is_bilinear()) {
             restructure_bilinear_term(term);
@@ -190,19 +188,6 @@ void advanced_clean_up(experimental::WickOrderedCollector& terms)
     }
     terms.combine_duplicates();
 
-    std::sort(terms.begin(), terms.end(), [](const experimental::WickOrderedTerm& l, const experimental::WickOrderedTerm& r){
-        if (l.sums.momenta.size() < r.sums.momenta.size()) return true;
-        if (l.sums.momenta.size() > r.sums.momenta.size()) return false;
-
-        if (l.sums.spins.size() < r.sums.spins.size()) return true;
-        if (l.sums.spins.size() > r.sums.spins.size()) return false;
-
-        if (l.operators.size() < r.operators.size()) return true;
-        if (l.operators.size() > r.operators.size()) return false;
-
-        return false;
-    });
-
     for (auto& term : terms) {
         std::vector<MomentumSymbol::name_type> do_not_touch = base_do_not_touch[term.wick_expression.size() / 2];
         for (auto& summed : term.sums.momenta) {
@@ -250,12 +235,30 @@ void advanced_clean_up(experimental::WickOrderedCollector& terms)
                 coeff.use_symmetric_interaction_inversion();
             }
         }
-
+        
         term.sort();
     }
+
     terms.combine_duplicates();
 
-    //std::cerr << "# Terms: " << terms.size() << std::endl;
+    std::sort(terms.begin(), terms.end(), 
+        [](const experimental::WickOrderedTerm& l, const experimental::WickOrderedTerm& r) {
+            if (l.wick_expression.size() < r.wick_expression.size()) return true;
+            if (l.wick_expression.size() > r.wick_expression.size()) return false;
+
+            if (l.sums.momenta.size() < r.sums.momenta.size()) return true;
+            if (l.sums.momenta.size() > r.sums.momenta.size()) return false;
+
+            if (l.sums.spins.size() < r.sums.spins.size()) return true;
+            if (l.sums.spins.size() > r.sums.spins.size()) return false;
+            
+            if (l.operators.size() < r.operators.size()) return true;
+            if (l.operators.size() > r.operators.size()) return false;
+
+            return false;
+        });
+
+    std::cout << "# Terms: " << terms.size() << std::endl;
 }
 
 void improve_flow_coefficient_structure(WickTermCollector& terms)

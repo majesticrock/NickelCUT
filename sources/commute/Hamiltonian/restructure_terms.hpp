@@ -12,8 +12,7 @@
 namespace NickelCUT::commute::Hamiltonian {
 using namespace mrock::symbolic_operators;
 
-void restructure_expectation_values(experimental::WickOrderedTerm& term, Index index_target,
-        std::vector<Index> index_do_not_touch,
+void restructure_expectation_values(experimental::WickOrderedTerm& term,
         MomentumSymbol::name_type momentum_target,
         std::vector<MomentumSymbol::name_type> momentum_do_not_touch);
 

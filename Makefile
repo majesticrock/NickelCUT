@@ -8,6 +8,10 @@ debug:
 	cmake --preset debug
 	cmake --build --preset debug --parallel
 
+BetaTest:
+	cmake --preset BetaTest
+	cmake --build --preset BetaTest --parallel
+
 test:
 	cmake --preset test
 	cmake --build --preset test --parallel
@@ -28,4 +32,4 @@ clean:
 	rm -rf build
 	rm -rf auto_generated*
 
-.PHONY: all clean commute debug
+.PHONY: all clean commute debug BetaTest

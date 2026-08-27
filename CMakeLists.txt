@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.30)
 
 project(NickelCUT VERSION 2.1.0 LANGUAGES CXX)
 
+# Keep Release optimizations while leaving assertions enabled.
+set(CMAKE_CXX_FLAGS_BETA_TEST "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING
+    "Flags for an optimized build with assertions enabled." FORCE)
+string(REGEX REPLACE "(^| )[/-]DNDEBUG( |$)" "\\1\\2"
+    CMAKE_CXX_FLAGS_BETA_TEST "${CMAKE_CXX_FLAGS_BETA_TEST}")
+
 # Set local user-specific settings
 # By default, this adds ~/usr/local/ and ../../.mrock/ to the cmake and include paths
 # If additional configurations/includes are needed, provide them in cmake/user_settings.cmake
@@ -15,7 +21,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
       STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+        "Debug" "Release" "RelWithDebInfo" "BetaTest" "MinSizeRel")
 endif()
 message(STATUS "Build type is '${CMAKE_BUILD_TYPE}'.")
 

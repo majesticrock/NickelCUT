@@ -36,8 +36,8 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
 
     oss << "After normal ordering with respect to the Fermi sea, we omit any contribution with more than 4 operators. "
         << "The result reads\n\\begin{align*}\n\t"
-        << "\\text{10 pages of terms}"
-        // << normal_ordered_result 
+        << "\\text{3 pages of terms}"
+        //<< normal_ordered_result 
         << "\\end{align*}" << std::endl;
     
     return normal_ordered_result;
