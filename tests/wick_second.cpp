@@ -14,8 +14,8 @@ using namespace mrock::symbolic_operators::experimental;
 int main(int /*argc*/, char** /*argv*/) {
     std::ostringstream oss;
 
-    const std::vector<Term> H = get_Hamiltonian();
-    const std::vector<Term> cut_generator = get_cut_generator();
+    const TermCollector H = get_Hamiltonian();
+    const TermCollector cut_generator = get_cut_generator();
 
     const std::vector<WickOperatorTemplate> wick_templates = get_wick_templates();
     const std::vector<std::unique_ptr<WickSymmetry>> symmetries = get_symmetries();

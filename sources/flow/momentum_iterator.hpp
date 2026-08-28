@@ -67,6 +67,8 @@ struct momentum_iterator {
         ++(*this);
         return tmp;
     }
+    
+    constexpr momentum_iterator() = default;
 
     constexpr momentum_iterator(int x, int y) noexcept : _x(x), _y(y), _pos(x + _L*y) {}
 
@@ -110,7 +112,26 @@ struct momentum_iterator {
         _pos = _x + _L*_y;
         return *this;
     }
-    
+    constexpr momentum_iterator& operator*=(int factor) noexcept {
+        if (factor == 0) {
+            *this = Gamma<_L>;
+            return *this;
+        }
+
+        const momentum_iterator original = *this;
+        *this = Gamma<_L>;
+        if (factor > 0) {
+            for (int count = 0; count < factor; ++count) {
+                *this += original;
+            }
+        } else {
+            for (int count = 0; count > factor; --count) {
+                *this -= original;
+            }
+        }
+        return *this;
+    }
+
     constexpr momentum_iterator operator+(momentum_iterator other) const noexcept {
         auto tmp = *this;
         tmp += other;
@@ -119,6 +140,11 @@ struct momentum_iterator {
     constexpr momentum_iterator operator-(momentum_iterator other) const noexcept {
         auto tmp = *this;
         tmp -= other;
+        return tmp;
+    }
+    constexpr momentum_iterator operator*(int factor) const noexcept {
+        auto tmp = *this;
+        tmp *= factor;
         return tmp;
     }
     constexpr momentum_iterator operator-() const noexcept {
@@ -135,6 +161,12 @@ template<int _L>
 std::ostream& operator<<(std::ostream& os, momentum_iterator<_L> mom_it) {
     os << "(" << mom_it.get_kx() / std::numbers::pi << ", " << mom_it.get_ky() / std::numbers::pi << ")";
     return os; 
+}
+
+template<int _L>
+constexpr momentum_iterator<_L> operator*(int factor, momentum_iterator<_L> momentum) noexcept {
+    momentum *= factor;
+    return momentum;
 }
 
 static_assert(Gamma<6>.get_kx() == 0.0);
