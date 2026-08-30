@@ -70,11 +70,11 @@ void generate_pairings(
     }
 }
 
-PairingVector get_pairings(std::size_t n_indizes, std::size_t n_pairings) {
+PairingVector get_pairings(std::size_t n_indices, std::size_t n_pairings) {
     PairingVector result;
     Pairing current;
 
-    IndexVector indices(n_indizes);
+    IndexVector indices(n_indices);
     std::iota(indices.begin(), indices.end(), std::size_t{});
 
     generate_pairings(indices, n_pairings, current, result);

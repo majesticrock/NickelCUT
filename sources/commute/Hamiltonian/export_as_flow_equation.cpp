@@ -63,7 +63,7 @@ std::string access_coefficient(const Coefficient& coeff) {
         code += ") \n\t* ";
     }
     if (coeff.name == "U" || coeff.name == "\\alpha") {
-        if (coeff.indizes[0] == Index::Parallel) {
+        if (coeff.indices[0] == Index::Parallel) {
             code += "current.interactions_same_spin";
         }
         else {

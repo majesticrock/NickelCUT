@@ -30,20 +30,20 @@ std::array<WickTermCollector, 3> extract_flow_coefficients(const experimental::W
                 term.coefficients,
                 term.sums,
                 term.delta_momenta,
-                term.delta_indizes,
+                term.delta_indices,
                 term.operators
             );
     };
 
-    const std::vector<Index> removeable_indizes_bilinear = {Index::Sigma};
-    const std::vector<Index> removeable_indizes_quartic = {Index::Sigma, Index::SigmaPrime};
+    const std::vector<Index> removeable_indices_bilinear = {Index::Sigma};
+    const std::vector<Index> removeable_indices_quartic = {Index::Sigma, Index::SigmaPrime};
 
     const std::vector<MomentumSymbol::name_type> removeable_momenta_bilinear = {'K'};
     const std::vector<MomentumSymbol::name_type> removeable_momenta_quartic = {'K', 'P', 'Q'};
 
-    auto remove_sums = [](WickTerm& term, const std::vector<Index>& indizes, const std::vector<MomentumSymbol::name_type>& momenta) {
-        std::erase_if(term.sums.spins.summations, [&indizes](Index index) {
-            return exists_in(indizes, index);
+    auto remove_sums = [](WickTerm& term, const std::vector<Index>& indices, const std::vector<MomentumSymbol::name_type>& momenta) {
+        std::erase_if(term.sums.spins.summations, [&indices](Index index) {
+            return exists_in(indices, index);
         });
 
         std::erase_if(term.sums.momenta.summations, [&momenta](MomentumSymbol::name_type momentum) {
@@ -54,11 +54,11 @@ std::array<WickTermCollector, 3> extract_flow_coefficients(const experimental::W
     for (const auto& term : terms) {
         if(term.is_bilinear()) {
             flow_coefficients[0].push_back(wick_term_from_normal_ordered(term));
-            remove_sums(flow_coefficients[0].back(), removeable_indizes_bilinear, removeable_momenta_bilinear);
+            remove_sums(flow_coefficients[0].back(), removeable_indices_bilinear, removeable_momenta_bilinear);
         }
         else if (term.is_quartic()) {
             flow_coefficients[1].push_back(wick_term_from_normal_ordered(term));
-            remove_sums(flow_coefficients[1].back(), removeable_indizes_quartic, removeable_momenta_quartic);
+            remove_sums(flow_coefficients[1].back(), removeable_indices_quartic, removeable_momenta_quartic);
         }
     }
 

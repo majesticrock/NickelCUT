@@ -16,9 +16,8 @@
 
 namespace mrock::symbolic_operators::experimental {
 
-/**
- * @brief A collector for managing WickOrderedTerm objects.
- */
+// Represents multiple Wick-ordered (or normal-ordered) terms; for instance
+// :n_k n_l: + <n_k> :n_l: + <n_l> :n_k: + <n_k><n_l>
 struct WickOrderedCollector : public mrock::symbolic_operators::AbstractCollector<WickOrderedTerm> {
     MROCK_FORWARD_CONSTRUCTORS(WickOrderedCollector, mrock::symbolic_operators::AbstractCollector<WickOrderedTerm>)
 

@@ -14,12 +14,12 @@ const Operator c_p_sigma_prime  = Operator(Momentum('K'), Index::SigmaPrime, fal
 const Operator c_k_up           = Operator(Momentum('k'),  Index::SpinUp,   false);
 const Operator c_minus_k_down   = Operator(Momentum("-k"), Index::SpinDown, false);
 
-// It only matters if the indizes of the coefficients are identical or differ;
+// It only matters if the indices of the coefficients are identical or differ;
 // e.g. U_(sigma, sigma') = U_(simga', sigma), and U_(down, down) = U_(up up)
 const std::function<void(Coefficient&)> spin_symmetry = [](Coefficient& coeff) {
-    assert(coeff.indizes.size() == 2U);
-    if (coeff.indizes[0] > coeff.indizes[1]) {
-        std::swap(coeff.indizes[0], coeff.indizes[1]);
+    assert(coeff.indices.size() == 2U);
+    if (coeff.indices[0] > coeff.indices[1]) {
+        std::swap(coeff.indices[0], coeff.indices[1]);
     }
 };
 
@@ -93,17 +93,17 @@ TermCollector commutator_of_cut(std::ostringstream& oss) {
     cut_commutator.clean_up();
 
     // The last two terms are identical, but the computer needs special aid to see that
-    cut_commutator.back().rename_indizes(Index::Sigma, Index::PlaceHolderIndex);
-    cut_commutator.back().rename_indizes(Index::SigmaPrime, Index::Sigma);
-    cut_commutator.back().rename_indizes(Index::PlaceHolderIndex, Index::SigmaPrime);
+    cut_commutator.back().rename_indices(Index::Sigma, Index::PlaceHolderIndex);
+    cut_commutator.back().rename_indices(Index::SigmaPrime, Index::Sigma);
+    cut_commutator.back().rename_indices(Index::PlaceHolderIndex, Index::SigmaPrime);
     cut_commutator.back().structure();
     std::sort(cut_commutator.back().sums.spins.begin(), cut_commutator.back().sums.spins.end());
 
     // Use the spin symmetry of the coefficients
     for(auto& term : cut_commutator) {
         for(auto& coeff : term.coefficients) {
-            // The order of indizes does not matter
-            std::sort(coeff.indizes.begin(), coeff.indizes.end());
+            // The order of indices does not matter
+            std::sort(coeff.indices.begin(), coeff.indices.end());
         }
     }
     cut_commutator.combine_duplicates();

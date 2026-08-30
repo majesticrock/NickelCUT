@@ -16,7 +16,7 @@ void restructure_expectation_values(experimental::WickOrderedTerm& term,
         std::vector<MomentumSymbol::name_type> momentum_do_not_touch) 
 {
     for (auto& wick_operator : term.operators) {
-        wick_operator.indizes.front() = Index::SpinUp; // Use the spin symmetry
+        wick_operator.indices.front() = Index::SpinUp; // Use the spin symmetry
     }
 
     for (auto& wick_operator : term.operators) {
@@ -50,7 +50,7 @@ void restructure_coefficients(experimental::WickOrderedTerm& term,
     restructure_end_loop:
 
     for (auto& coeff : term.coefficients) {
-        std::sort(coeff.indizes.begin(), coeff.indizes.end());
+        std::sort(coeff.indices.begin(), coeff.indices.end());
     }
 
     term.sort();
@@ -62,8 +62,8 @@ void restructure_bilinear_term(experimental::WickOrderedTerm& term) {
         abort();
     }
 
-    // Rename indizes in the wick-ordered expression to one unified scheme
-    term.redistribute_indizes(term.wick_expression[0].indizes[0], Index::Sigma);
+    // Rename indices in the wick-ordered expression to one unified scheme
+    term.redistribute_indices(term.wick_expression[0].indices[0], Index::Sigma);
     // Rename momenta in the wick-ordered expression to one unified scheme
     term.redistribute_momenta(term.wick_expression[0].momentum, 'K');
 
@@ -76,11 +76,11 @@ void restructure_quartic_term(experimental::WickOrderedTerm& term) {
         abort();
     }
 
-    // Rename indizes in the wick-ordered expression to one unified scheme
-    term.redistribute_indizes(term.wick_expression[0].indizes[0], Index::Sigma);
-    term.redistribute_indizes(term.wick_expression[1].indizes[0], Index::SigmaPrime, {Index::Sigma});
+    // Rename indices in the wick-ordered expression to one unified scheme
+    term.redistribute_indices(term.wick_expression[0].indices[0], Index::Sigma);
+    term.redistribute_indices(term.wick_expression[1].indices[0], Index::SigmaPrime, {Index::Sigma});
     // Assert that quartic terms are (sigma) (sigma') (sigma') (sigma)
-    if (term.wick_expression[2].indizes[0] == Index::Sigma) {
+    if (term.wick_expression[2].indices[0] == Index::Sigma) {
         term.flip_sign();
         std::swap(term.wick_expression[2], term.wick_expression[3]);
     }
@@ -297,7 +297,7 @@ void improve_flow_coefficient_structure(WickTermCollector& terms)
 
         for (auto& op : term.operators) {
             // Fermi sea is independent of the spin orientation
-            op.indizes[0] = Index::SpinUp;
+            op.indices[0] = Index::SpinUp;
         }
 
         std::sort(term.sums.momenta.begin(), term.sums.momenta.end());
@@ -316,7 +316,7 @@ void improve_flow_coefficient_structure(WickTermCollector& terms)
             
             for (std::size_t c=0U; c<terms[i].coefficients.size(); ++c) {
                 Coefficient& coeff = terms[i].coefficients[c];
-                if(coeff.indizes.size() < 2U) continue;
+                if(coeff.indices.size() < 2U) continue;
 
                 terms[i].replace_each_index(terms[i].sums.spins[0], Index::SpinDown);
                 copy.replace_each_index(terms[i].sums.spins[0], Index::SpinUp);
@@ -328,14 +328,14 @@ void improve_flow_coefficient_structure(WickTermCollector& terms)
 
     for (auto & term : terms) {
         for (auto& coeff : term.coefficients) {
-            if (coeff.indizes.size() < 2U) continue;
-            if (coeff.indizes[0] == coeff.indizes[1]) {
-                coeff.indizes.clear();
-                coeff.indizes.push_back(Index::Parallel);
+            if (coeff.indices.size() < 2U) continue;
+            if (coeff.indices[0] == coeff.indices[1]) {
+                coeff.indices.clear();
+                coeff.indices.push_back(Index::Parallel);
             }
             else {
-                coeff.indizes.clear();
-                coeff.indizes.push_back(Index::AntiParallel);
+                coeff.indices.clear();
+                coeff.indices.push_back(Index::AntiParallel);
             }
         }
     }

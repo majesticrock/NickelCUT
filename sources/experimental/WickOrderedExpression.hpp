@@ -8,6 +8,7 @@
 
 namespace mrock::symbolic_operators::experimental {
 
+// Represents a string of Wick-ordered (or normal-ordered) operators, e.g., :c^dagger c^dagger c c:
 struct WickOrderedExpression {
     std::vector<Operator> operators;  ///< The operators in the Wick ordered expression.
 

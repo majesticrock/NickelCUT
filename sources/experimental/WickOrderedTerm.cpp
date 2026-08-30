@@ -23,7 +23,7 @@ void WickOrderedTerm::for_each_index_except_deltas(const std::function<void(Inde
 {
     AbstractTerm<WickOperator>::for_each_index_except_deltas(f);
     for (auto& op : wick_expression) {
-        f(op.indizes);
+        f(op.indices);
     }
 }
 
@@ -32,7 +32,7 @@ WickOrderedTerm::WickOrderedTerm(const Term& base)
                                  base.coefficients,
                                  base.sums,
                                  base.delta_momenta,
-                                 base.delta_indizes,
+                                 base.delta_indices,
                                  std::vector<WickOperator>()),
       wick_expression()
 { }
@@ -44,7 +44,7 @@ WickOrderedTerm WickOrderedTerm::from_wick_term_skip_wick_expression(const WickO
     result.coefficients = base.coefficients;
     result.sums = base.sums;
     result.delta_momenta = base.delta_momenta;
-    result.delta_indizes = base.delta_indizes;
+    result.delta_indices = base.delta_indices;
     result.operators = base.operators;
 
     return result;
@@ -52,7 +52,7 @@ WickOrderedTerm WickOrderedTerm::from_wick_term_skip_wick_expression(const WickO
 
 void WickOrderedTerm::include_template_result(const TemplateResult::SingleResult& result) 
 {
-    this->delta_indizes.insert(this->delta_indizes.begin(), result.index_deltas.begin(), result.index_deltas.end());
+    this->delta_indices.insert(this->delta_indices.begin(), result.index_deltas.begin(), result.index_deltas.end());
     this->operators.push_back(result.op);
     this->multiplicity *= result.factor;
 }
@@ -119,7 +119,7 @@ std::ostream& operator<<(std::ostream& os, const WickOrderedTerm& term)
     for (const auto& delta : term.delta_momenta) {
         os << "\\delta_{" << delta.first << ", " << delta.second << "} ";
     }
-    for (const auto& delta : term.delta_indizes) {
+    for (const auto& delta : term.delta_indices) {
         os << "\\delta_{" << delta.first << ", " << delta.second << "} ";
     }
     for (const auto& op : term.operators) {
@@ -135,7 +135,7 @@ bool operator==(const WickOrderedTerm& lhs, const WickOrderedTerm& rhs) {
         return false;
     if (lhs.sums != rhs.sums)
         return false;
-    if (lhs.delta_indizes != rhs.delta_indizes)
+    if (lhs.delta_indices != rhs.delta_indices)
         return false;
     if (lhs.delta_momenta != rhs.delta_momenta)
         return false;

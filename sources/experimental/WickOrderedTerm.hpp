@@ -12,6 +12,9 @@
 
 namespace mrock::symbolic_operators::experimental {
 
+// Represents a Wick-ordered (or normal-ordered) Term, including the appropriate expectation values if
+// the ordering procedure is not done with respect to the vacuum state, e.g.,
+// <n_k> :n_l:
 class WickOrderedTerm : public AbstractTerm<WickOperator> {
 public:
     void for_each_momentum_except_deltas(const std::function<void(Momentum&)>& f) override;
