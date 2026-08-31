@@ -3,6 +3,7 @@
 #include <mrock/symbolic_operators/Term.hpp>
 #include <mrock/symbolic_operators/WickOperator.hpp>
 #include <mrock/symbolic_operators/WickOperatorTemplate.hpp>
+#include <mrock/symbolic_operators/WickTerm.hpp>
 #include <mrock/symbolic_operators/detail/container_helper.hpp>
 
 #include <algorithm>
@@ -34,6 +35,16 @@ WickOrderedTerm::WickOrderedTerm(const Term& base)
                                  base.delta_momenta,
                                  base.delta_indices,
                                  std::vector<WickOperator>()),
+      wick_expression()
+{ }
+
+WickOrderedTerm::WickOrderedTerm(const WickTerm& base) 
+    : AbstractTerm<WickOperator>(base.multiplicity,
+                                 base.coefficients,
+                                 base.sums,
+                                 base.delta_momenta,
+                                 base.delta_indices,
+                                 base.operators),
       wick_expression()
 { }
 

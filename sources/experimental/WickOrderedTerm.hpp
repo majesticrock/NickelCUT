@@ -6,6 +6,7 @@
 #include <mrock/symbolic_operators/Term.hpp>
 #include <mrock/symbolic_operators/WickOperator.hpp>
 #include <mrock/symbolic_operators/WickOperatorTemplate.hpp>
+#include <mrock/symbolic_operators/WickTerm.hpp>
 
 #include <ostream>
 #include <vector>
@@ -36,7 +37,15 @@ public:
     WickOrderedTerm(const Term& base);
 
     /**
-     * @brief Constructs a WickOrderedTerm object using the coefficients, sums, etc provided from a base WickTerm, while ignoring the Wick expression of the base term.
+     * @brief Constructs a WickOrderedTerm object using the coefficients, sums, etc provided from a base WickTerm
+     * 
+     * @param base The base WickTerm object.
+     */
+    WickOrderedTerm(const WickTerm& base);
+
+    /**
+     * @brief Constructs a WickOrderedTerm object using the coefficients, sums, etc provided from a base WickOrderedTerm, 
+     * while ignoring the Wick expression of the base term.
      * 
      * @param base The base WickTerm object.
      */

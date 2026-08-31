@@ -108,10 +108,6 @@ TermCollector commutator_of_cut(std::ostringstream& oss) {
     }
     cut_commutator.combine_duplicates();
 
-    std::erase_if(cut_commutator.terms, [](const Term& term) {
-        return (term.operators.size() > 4U);
-    });
-
     // --------------------------------------------------------- //
 
     oss << "We work with the Hamiltonian \n\\begin{align}\nH =" << H 

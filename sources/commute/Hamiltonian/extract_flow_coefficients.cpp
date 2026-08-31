@@ -13,7 +13,7 @@ std::array<WickTermCollector, 3> extract_flow_coefficients(const experimental::W
     std::array<WickTermCollector, 3> flow_coefficients;
     flow_coefficients[0].reserve(std::count_if(terms.begin(), terms.end(), 
         [](const experimental::WickOrderedTerm& term){
-            return term.wick_expression.empty();
+            return term.is_bilinear();
     }));
     flow_coefficients[1].reserve(std::count_if(terms.begin(), terms.end(), 
         [](const experimental::WickOrderedTerm& term){
