@@ -1,6 +1,6 @@
 #include "export_as_flow_equation.hpp"
+#include "../../experimental/WickOrderedCollector.hpp"
 
-#include <mrock/symbolic_operators/WickTermCollector.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
 
 #include <cmath>
@@ -85,7 +85,7 @@ std::string access_coefficient(const Coefficient& coeff) {
     return code;
 }
 
-std::string generate_bilinear(const WickTermCollector& bilinears) 
+std::string generate_bilinear(const experimental::WickOrderedCollector& bilinears) 
 {
     const std::string accessor = "dHdl.dispersion[K]";
 
@@ -126,7 +126,7 @@ std::string generate_bilinear(const WickTermCollector& bilinears)
     return code;
 }
 
-std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
+std::string generate_quartic(const experimental::WickOrderedCollector& quartics, bool parallel) {
     const std::string accessor = std::string("dHdl.") 
         + (parallel ? std::string("interactions_same_spin") : std::string("interactions_differing_spin"))
         + std::string("(K, P, Q)");
@@ -206,7 +206,7 @@ std::string generate_quartic(const WickTermCollector& quartics, bool parallel) {
     return code;
 }
 
-void export_as_flow_equation(const std::array<WickTermCollector, 3> flow_coeffs) 
+void export_as_flow_equation(const std::array<experimental::WickOrderedCollector, 3> flow_coeffs) 
 {
     const std::string file_header = 
         "#include \"FlowEquation.hpp\"\n\n"

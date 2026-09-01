@@ -1,6 +1,7 @@
 #include "restructure_terms.hpp"
+#include "../../experimental/WickOrderedCollector.hpp"
 
-#include <mrock/symbolic_operators/WickTermCollector.hpp>
+#include <mrock/symbolic_operators/detail/OperatorOrder.hpp>
 
 #include <array>
 #include <vector>
@@ -50,7 +51,7 @@ void restructure_coefficients(experimental::WickOrderedTerm& term,
     restructure_end_loop:
 
     for (auto& coeff : term.coefficients) {
-        std::sort(coeff.indices.begin(), coeff.indices.end());
+        coeff.use_custom_symmetry();
     }
 
     term.sort();
@@ -64,8 +65,8 @@ void restructure_bilinear_term(experimental::WickOrderedTerm& term) {
 
     // Rename indices in the wick-ordered expression to one unified scheme
     term.redistribute_indices(term.wick_expression[0].indices[0], Index::Sigma);
-    // Rename momenta in the wick-ordered expression to one unified scheme
-    term.redistribute_momenta(term.wick_expression[0].momentum, 'K');
+
+    assert(term.wick_expression[0].indices[0] == Index::Sigma);
 
     restructure_expectation_values(term, 'P', {'K'});
 }
@@ -79,22 +80,11 @@ void restructure_quartic_term(experimental::WickOrderedTerm& term) {
     // Rename indices in the wick-ordered expression to one unified scheme
     term.redistribute_indices(term.wick_expression[0].indices[0], Index::Sigma);
     term.redistribute_indices(term.wick_expression[1].indices[0], Index::SigmaPrime, {Index::Sigma});
-    // Assert that quartic terms are (sigma) (sigma') (sigma') (sigma)
-    if (term.wick_expression[2].indices[0] == Index::Sigma) {
-        term.flip_sign();
-        std::swap(term.wick_expression[2], term.wick_expression[3]);
-    }
-
-    // Rename momenta in the wick-ordered expression to one unified scheme
-    term.redistribute_momenta(term.wick_expression[0].momentum, 'K');
-    term.redistribute_momenta(term.wick_expression[1].momentum, 'P', {'K'});
-    try {
-        term.redistribute_momenta(term.wick_expression[2].momentum, 'Q', {'K', 'P'});
-        term.transform_momentum_sum('Q', Momentum(std::string(1, PLACEHOLDER_SYMBOL._n) + "+P"), PLACEHOLDER_SYMBOL);
-        term.rename_momenta(PLACEHOLDER_SYMBOL, 'Q');
-        term.invert_momentum_sum('Q');
-    }
-    catch (redistribution_error& e) {};
+    
+    assert(term.wick_expression[0].indices[0] == Index::Sigma);
+    assert(term.wick_expression[1].indices[0] == Index::SigmaPrime);
+    assert(term.wick_expression[2].indices[0] == Index::SigmaPrime);
+    assert(term.wick_expression[3].indices[0] == Index::Sigma);
 
     restructure_expectation_values(term, 'R', {'K', 'P', 'Q'});
 }
@@ -148,7 +138,6 @@ void advanced_clean_up(experimental::WickOrderedCollector& terms)
             }
         }
     }
-
     terms.combine_duplicates();
 
     const std::array<std::vector<MomentumSymbol::name_type>, 3> base_do_not_touch{ std::vector<MomentumSymbol::name_type>{}, 
@@ -238,30 +227,44 @@ void advanced_clean_up(experimental::WickOrderedCollector& terms)
         
         term.sort();
     }
-
     terms.combine_duplicates();
 
-    std::sort(terms.begin(), terms.end(), 
-        [](const experimental::WickOrderedTerm& l, const experimental::WickOrderedTerm& r) {
-            if (l.wick_expression.size() < r.wick_expression.size()) return true;
-            if (l.wick_expression.size() > r.wick_expression.size()) return false;
+    // Bonus help for bilinear Hartree-like terms
+    for (auto& term : terms) {
+        if (!term.is_bilinear() || term.coefficients[0].momenta.size() != 3U) continue;
+        if (term.coefficients[0].momenta.back() != Momentum()) continue;
+        if (term.coefficients[1].momenta[1] == Momentum('P')) {
+            term.swap_momenta('P', 'Q');
+            term.coefficients[0].use_symmetric_interaction_exchange();
+            if (term.operators.size() == 2U) 
+                std::swap(term.operators[0], term.operators[1]);
+        }
+    }
+    // Bonus help for quartic Hartree-like terms 
+    for (auto& term : terms) {
+        if (!term.is_quartic() || term.coefficients[0].momenta.size() != 3U) continue;
+        if (term.coefficients[0].momenta.back() != Momentum()) continue;
+        if (term.coefficients[0].momenta[1] == Momentum("K+Q")) {
+            term.swap_momenta('K', 'P');
+            term.invert_momentum_sum('Q');
 
-            if (l.sums.momenta.size() < r.sums.momenta.size()) return true;
-            if (l.sums.momenta.size() > r.sums.momenta.size()) return false;
+            term.swap_indices(Index::Sigma, Index::SigmaPrime);
+            sort_operators_by_indices(term.wick_expression.operators);
+            for (auto& coeff : term.coefficients) {
+                coeff.use_custom_symmetry();
+            }
 
-            if (l.sums.spins.size() < r.sums.spins.size()) return true;
-            if (l.sums.spins.size() > r.sums.spins.size()) return false;
-            
-            if (l.operators.size() < r.operators.size()) return true;
-            if (l.operators.size() > r.operators.size()) return false;
+            term.coefficients[1].use_symmetric_interaction_exchange();
+        }
+    }
 
-            return false;
-        });
+    terms.sort();
+    terms.combine_duplicates();
 
     std::cout << "# Terms: " << terms.size() << std::endl;
 }
 
-void improve_flow_coefficient_structure(WickTermCollector& terms)
+void improve_flow_coefficient_structure(experimental::WickOrderedCollector& terms)
 {
     auto is_transformable = [](const WickOperator& op, const MomentumSum& sums) {
         for (const auto& symbol : op.momentum) {
@@ -299,61 +302,64 @@ void improve_flow_coefficient_structure(WickTermCollector& terms)
             // Fermi sea is independent of the spin orientation
             op.indices[0] = Index::SpinUp;
         }
-
-        std::sort(term.sums.momenta.begin(), term.sums.momenta.end());
+        term.sort();
     }
 
     terms.combine_duplicates();
 
     // Carry out the spin summations
     const std::size_t old_size = terms.size();
-    terms.reserve(old_size + std::count_if(terms.begin(), terms.end(), [](const WickTerm& term) { return !term.sums.spins.empty();}));
+    terms.reserve(old_size + std::count_if(terms.begin(), terms.end(), [](const experimental::WickOrderedTerm& term) { 
+        return !term.sums.spins.empty();
+    }));
 
+    // This runs the SigmaPrime sum for bilinears and the GeneralSpin_S sum for quartics
     for (std::size_t i=0U; i<old_size; ++i){
         if (!terms[i].sums.spins.empty()) {
             assert(terms[i].sums.spins.size() == 1U);
-            WickTerm copy = terms[i];
+            experimental::WickOrderedTerm copy = terms[i];
             
-            for (std::size_t c=0U; c<terms[i].coefficients.size(); ++c) {
-                Coefficient& coeff = terms[i].coefficients[c];
-                if(coeff.indices.size() < 2U) continue;
-
-                terms[i].replace_each_index(terms[i].sums.spins[0], Index::SpinDown);
-                copy.replace_each_index(terms[i].sums.spins[0], Index::SpinUp);
-            }
+            terms[i].replace_each_index(terms[i].sums.spins[0], Index::SpinDown);
+            copy.replace_each_index(copy.sums.spins[0], Index::SpinUp);
 
             terms[i].sums.spins.clear();
+            copy.sums.spins.clear();
+
+            terms.push_back(copy);
         }
     }
 
     for (auto & term : terms) {
-        for (auto& coeff : term.coefficients) {
-            if (coeff.indices.size() < 2U) continue;
-            if (coeff.indices[0] == coeff.indices[1]) {
-                coeff.indices.clear();
-                coeff.indices.push_back(Index::Parallel);
+        // For bilinears we simply set Sigma=SpinUp; the entire problem is invariant under SpinUp <-> SpinDown
+        // Hence, the spin down states will transform exactly the same as the spin up ones.
+        // Thus, replacing Sigma by either direction in the coefficients does not change anything
+        // It is important to remember though that the Sigma summation for :c_(k,sigma)^dagger c_(k,sigma):
+        // does remain! We only abuse that U_(sigma sigma) = U_(down down)
+        if (term.is_bilinear()) {
+            for (auto& coeff : term.coefficients) {
+                if (coeff.indices.size() < 2U) continue;
+                coeff.indices.replace_index(Index::Sigma, Index::SpinUp);
+
+                assert(coeff.indices[0] == Index::SpinDown || coeff.indices[0] == Index::SpinUp);
+                assert(coeff.indices[1] == Index::SpinDown || coeff.indices[1] == Index::SpinUp);
+
+                if (coeff.indices[0] == coeff.indices[1]) {
+                    coeff.indices.clear();
+                    coeff.indices.push_back(Index::Parallel);
+                }
+                else {
+                    coeff.indices.clear();
+                    coeff.indices.push_back(Index::AntiParallel);
+                }
             }
-            else {
-                coeff.indices.clear();
-                coeff.indices.push_back(Index::AntiParallel);
-            }
+        }
+        else if (term.is_quartic()) {
+            // hmmm....
         }
     }
 
     terms.combine_duplicates();
-
-    std::sort(terms.begin(), terms.end(), [](const WickTerm& l, const WickTerm& r) {
-        if (l.sums.momenta.size() < r.sums.momenta.size()) return true;
-        if (l.sums.momenta.size() > r.sums.momenta.size()) return false;
-        
-        if (l.operators.size() < r.operators.size()) return true;
-        if (l.operators.size() > r.operators.size()) return false;
-
-        if (l.sums.spins.size() < r.sums.spins.size()) return true;
-        if (l.sums.spins.size() > r.sums.spins.size()) return false;
-
-        return false;
-    });
+    terms.sort();
 }
 
 }

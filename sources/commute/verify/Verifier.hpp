@@ -125,8 +125,7 @@ Verifier::SparseMatrix Verifier::symbolic_to_matrix_impl(const CollectorType& te
                 }
             } )();
             for (const auto& op : symbolic_operator_string) {
-                const int spin = is_mutable(op.first_index()) ? indices[static_cast<unsigned char>(op.first_index())]
-                                                               : (op.first_index() == mrock::symbolic_operators::Index::SpinDown ? 1 : 0);
+                const int spin = indices[index_lookup(op.first_index())];
 
                 modes.push_back(2 * momentum_lookup(op.momentum).i + spin);
                 creation.push_back(op.is_daggered);

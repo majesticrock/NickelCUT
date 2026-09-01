@@ -1,7 +1,9 @@
 #include "WickOrderedCollector.hpp"
 
 #include <mrock/symbolic_operators/WickSymmetry.hpp>
+#include <mrock/symbolic_operators/detail/OperatorOrder.hpp>
 
+#include <algorithm>
 #include <memory>
 #include <ostream>
 #include <utility>
@@ -263,38 +265,17 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
         }
     }
 
-    terms.combine_duplicates();
+    for (auto& term :terms) {
+        sort_operators_by_indices(term.wick_expression.operators);
+        detail::structure_momentum_dependencies_impl(term, term.wick_expression.operators);
 
-    auto predicate = [](const WickOrderedTerm& left, const WickOrderedTerm& right) -> bool {
-        if (left.wick_expression.size() < right.wick_expression.size())
-            return true;
-        else 
-            return false;
-
-        if (left.coefficients.empty()) {
-            if (!right.coefficients.empty())
-                return true;
-        }
-        else {
-            if (left.coefficients.size() < right.coefficients.size()) {
-                return true;
-            }
-            else if (!right.coefficients.empty()){
-                if (left.coefficients.front().name < right.coefficients.front().name)
-                    return true;
-            }
-        }
-
-        return false;
-    };
-
-    // Sort terms
-    for (std::size_t i = 0; i < terms.size(); i++) {
-        for (std::size_t j = i + 1; j < terms.size(); j++) {
-            if (predicate(terms[i], terms[j]))
-                std::swap(terms[i], terms[j]);
+        for (auto& coeff : term.coefficients) {
+            coeff.use_custom_symmetry();
+            coeff.use_inversion_symmetry();
         }
     }
+
+    terms.sort();
 }
 
 std::ostream& operator<<(std::ostream& os, const WickOrderedCollector& terms) {
@@ -321,6 +302,29 @@ WickOrderedCollector WickOrderedCollector::hermitian_conjugate() const noexcept
     WickOrderedCollector copy(*this);
     copy.hermitian_conjugate_inplace();
     return copy;
+}
+
+void WickOrderedCollector::sort() {
+    for (auto& term : terms) {
+        term.sort();
+    }
+
+    std::sort(terms.begin(), terms.end(), 
+        [](const experimental::WickOrderedTerm& l, const experimental::WickOrderedTerm& r) {
+            if (l.wick_expression.size() < r.wick_expression.size()) return true;
+            if (l.wick_expression.size() > r.wick_expression.size()) return false;
+
+            if (l.sums.momenta.size() < r.sums.momenta.size()) return true;
+            if (l.sums.momenta.size() > r.sums.momenta.size()) return false;
+
+            if (l.sums.spins.size() < r.sums.spins.size()) return true;
+            if (l.sums.spins.size() > r.sums.spins.size()) return false;
+            
+            if (l.operators.size() < r.operators.size()) return true;
+            if (l.operators.size() > r.operators.size()) return false;
+
+            return false;
+        });
 }
 
 WickOrderedCollector& WickOrderedCollector::operator+=(const WickOrderedCollector& other)

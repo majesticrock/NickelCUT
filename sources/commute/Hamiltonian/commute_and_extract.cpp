@@ -14,7 +14,8 @@
 #include <vector>
 #include <list>
 
-//#define RUN_VERFICATION
+//#define RUN_FIRST_VERIFICATION
+#define RUN_SECOND_VERIFICATION
 
 namespace NickelCUT::commute::Hamiltonian
 {
@@ -31,7 +32,7 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
     experimental::WickOrderedCollector normal_ordered_result = experimental::wick_decompose(commutator, wick_templates);
     experimental::clean_wick_ordered_terms(normal_ordered_result, symmetries);
 
-#ifdef RUN_VERFICATION
+#ifdef RUN_FIRST_VERIFICATION
     const verify::Verifier verifier;
     verify::Verifier::SparseMatrix matrix_rep = verifier.symbolic_to_matrix(commutator);
 
@@ -56,12 +57,14 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
         return term.wick_expression.size() > 4U || term.wick_expression.empty();
     });
 
-#ifdef RUN_VERFICATION
+#ifdef RUN_FIRST_VERIFICATION
     // The matrix must change as we delete all sextic and higher terms.
     matrix_rep = verifier.symbolic_to_matrix(normal_ordered_result);
+#endif
 
     advanced_clean_up(normal_ordered_result);
 
+#ifdef RUN_FIRST_VERIFICATION
     if (!verifier(normal_ordered_result, "CUT commutator after advanced cleaning", matrix_rep)) {
         throw std::runtime_error("Matrix representations do not match!");
     }
@@ -71,8 +74,10 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
 #endif
 
     oss << "After normal ordering with respect to the Fermi sea, we omit any contribution with more than 4 operators. "
+        << "Moreover, we do not care about the renormalization of the groundstate energy, "
+        << "so we omit any contribution proportional to the identity. "
         << "The result reads\n\\begin{align*}\n\t"
-        << "\\text{3 pages of terms}"
+        << "\\text{2 pages of terms}"
         //<< normal_ordered_result 
         << "\\end{align*}" << std::endl;
     
@@ -91,9 +96,9 @@ void commute_and_extract(std::ostringstream& oss) {
     }
     oss << "\\end{align*}" << std::endl;
 
-    std::array<WickTermCollector, 3> flow_coefficients = extract_flow_coefficients(normal_ordered_result);
+    std::array<experimental::WickOrderedCollector, 3> flow_coefficients = extract_flow_coefficients(normal_ordered_result);
 
-//#ifdef RUN_VERIFICATION
+#ifdef RUN_SECOND_VERIFICATION
     const verify::Verifier verifier;
     verify::Verifier::SparseMatrix compare_matrix = verifier.symbolic_to_matrix(normal_ordered_result);
     std::cout << "Cached compare_matrix." << std::endl;
@@ -102,46 +107,18 @@ void commute_and_extract(std::ostringstream& oss) {
     // For comparing them to our matrix result, however, we need to readd those.
     experimental::WickOrderedCollector readded;
 
-    auto readd_wick_expressions = [&readded](const WickTerm& term, int n_coeff) {
+    auto readd_wick_expressions = [&readded](const experimental::WickOrderedTerm& term, int n_coeff) {
         readded.push_back(experimental::WickOrderedTerm(term));
   
         readded.back().sums.momenta.push_back('K');
-        if (n_coeff == 0 || n_coeff == 2) {
-            readded.back().sums.spins.push_back(Index::Sigma);
-        }
         if (n_coeff == 1 || n_coeff == 2) {
             readded.back().sums.momenta.push_back('P');
             readded.back().sums.momenta.push_back('Q');
         }
 
-        if (n_coeff == 0) {
-            readded.back().wick_expression.operators = {
-                Operator(Momentum('K'), Index::Sigma, true),
-                Operator(Momentum('K'), Index::Sigma, false),
-            };
-        }
-        else if (n_coeff == 1) {
-            readded.back().wick_expression.operators = {
-                Operator(Momentum('K'), Index::SpinUp, true),
-                Operator(Momentum('P'), Index::SpinDown, true),
-                Operator(Momentum("P-Q"), Index::SpinDown, false),
-                Operator(Momentum("K+Q"), Index::SpinUp, false)
-            };
-
-            readded.push_back(readded.back());
-
-            readded.back().wick_expression[0].indices[0] = Index::SpinDown;
-            readded.back().wick_expression[1].indices[0] = Index::SpinUp;
-            readded.back().wick_expression[2].indices[0] = Index::SpinUp;
-            readded.back().wick_expression[3].indices[0] = Index::SpinDown;
-        }
-        else if (n_coeff == 2) {
-            readded.back().wick_expression.operators = {
-                Operator(Momentum('K'), Index::Sigma, true),
-                Operator(Momentum('P'), Index::Sigma, true),
-                Operator(Momentum("P-Q"), Index::Sigma, false),
-                Operator(Momentum("K+Q"), Index::Sigma, false)
-            };
+        // Readded the sigma sum if necessary
+        if (term.wick_expression.front().indices.front() == Index::Sigma) {
+            readded.back().sums.spins.push_back(Index::Sigma);
         }
     };
 
@@ -150,32 +127,38 @@ void commute_and_extract(std::ostringstream& oss) {
             readd_wick_expressions(term, i);
         }
     }
+    readded.sort();
+
     if(!verifier(readded, "Extracted flow coefficients", compare_matrix)) {
+        std::cerr << "Expression should be \\begin{align*}\n" << normal_ordered_result << "\\end{align*}" << std::endl;
         throw std::runtime_error("Matrix representations do not match!");
     }
     else {
         std::cout << "Extracted flow coefficients are okay." << std::endl;
     }
-//#endif
+#endif
 
     for (auto& fc : flow_coefficients) {
         improve_flow_coefficient_structure(fc);
     }
 
-//#ifdef
+#ifdef RUN_SECOND_VERIFICATION
     readded.clear();
     for(int i=0; i<3; ++i) {
         for (const auto& term : flow_coefficients[i]) {
             readd_wick_expressions(term, i);
         }
     }
+    readded.sort();
+
     if(!verifier(readded, "Extracted flow coefficients after restructuring", compare_matrix)) {
+        std::cerr << "Expression should be \\begin{align*}\n" << normal_ordered_result << "\\end{align*}" << std::endl;
         throw std::runtime_error("Matrix representations do not match!");
     }
     else {
         std::cout << "Extracted flow coefficients after restructuring are okay." << std::endl;
     }
-//#endif
+#endif
 
     oss << "This leaves the flow of the coefficients as follows:\n\\begin{align*}\n\t"
         << "\\partial_\\ell \\varepsilon (\\mathbf{K}) ="

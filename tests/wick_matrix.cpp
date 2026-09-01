@@ -39,14 +39,19 @@ TermCollector get_symbolic_H() {
     const Operator c_K_sigma(Momentum('K'), Index::Sigma, false);
     const Operator c_K_sigma_prime(Momentum('K'), Index::SigmaPrime, false);
     return {
-        //Term(1, Coefficient::RealInversionSymmetric("\\tilde{\\varepsilon}", MomentumList(Momentum('K'))),
-        //     SumContainer{MomentumSum{'K'}, IndexSum{Index::Sigma}},
-        //     {c_K_sigma.hermitian_conjugate(), c_K_sigma}),
+        Term(1, Coefficient::RealInversionSymmetric("\\tilde{\\varepsilon}", MomentumList(Momentum('K'))),
+             SumContainer{MomentumSum{'K'}, IndexSum{Index::Sigma}},
+             {c_K_sigma.hermitian_conjugate(), c_K_sigma}),
         Term(1, Coefficient::RealInteraction("U", MomentumList({Momentum('K'), Momentum('P'), Momentum('Q')}),
-                                            IndexWrapper{Index::Sigma, Index::SigmaPrime}),
-             SumContainer{MomentumSum{'K', 'P', 'Q'}, IndexSum{Index::Sigma, Index::SigmaPrime}},
-             {c_K_sigma.hermitian_conjugate(), c_K_sigma_prime.with_momentum('P').hermitian_conjugate(),
-              c_K_sigma_prime.with_momentum(Momentum("P-Q")), c_K_sigma.with_momentum(Momentum("K+Q"))})
+                                            IndexWrapper{Index::Sigma, Index::SigmaPrime},
+                                            [](Coefficient& coeff) { 
+                                                if (coeff.indices[0] > coeff.indices[1]) {std::swap(coeff.indices[0], coeff.indices[1]); } 
+                                            }),
+            SumContainer{MomentumSum{'K', 'P', 'Q'}, IndexSum{Index::Sigma, Index::SigmaPrime}},
+            {
+                c_K_sigma.hermitian_conjugate(), c_K_sigma_prime.with_momentum('P').hermitian_conjugate(),
+                c_K_sigma_prime.with_momentum(Momentum("P-Q")), c_K_sigma.with_momentum(Momentum("K+Q"))
+            })
     };
 }
 
@@ -55,7 +60,10 @@ TermCollector get_symbolic_eta() {
     const Operator c_K_sigma_prime(Momentum('K'), Index::SigmaPrime, false);
     return {
         Term(2, Coefficient::RealInteraction("\\alpha", MomentumList({Momentum('K'), Momentum('P'), Momentum('Q')}),
-                                                IndexWrapper{Index::Sigma, Index::SigmaPrime}),
+                                            IndexWrapper{Index::Sigma, Index::SigmaPrime},
+                                            [](Coefficient& coeff) { 
+                                                if (coeff.indices[0] > coeff.indices[1]) {std::swap(coeff.indices[0], coeff.indices[1]); } 
+                                            }),
                 SumContainer{MomentumSum{'K', 'P', 'Q'}, IndexSum{Index::Sigma, Index::SigmaPrime}},
                 {
                     c_K_sigma.hermitian_conjugate(), c_K_sigma_prime.with_momentum('P').hermitian_conjugate(),

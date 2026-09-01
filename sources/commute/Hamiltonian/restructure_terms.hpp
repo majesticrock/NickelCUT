@@ -5,7 +5,6 @@
 
 #include <mrock/symbolic_operators/MomentumSymbol.hpp>
 #include <mrock/symbolic_operators/IndexWrapper.hpp>
-#include <mrock/symbolic_operators/WickTermCollector.hpp>
 
 #include <vector>
 
@@ -26,6 +25,6 @@ void restructure_quartic_term(experimental::WickOrderedTerm& term);
 
 void advanced_clean_up(experimental::WickOrderedCollector& terms);
 
-void improve_flow_coefficient_structure(WickTermCollector& terms);
+void improve_flow_coefficient_structure(experimental::WickOrderedCollector& terms);
 
 } // namespace NickelCUT::commute

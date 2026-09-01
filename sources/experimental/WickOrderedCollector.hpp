@@ -37,6 +37,9 @@ struct WickOrderedCollector : public mrock::symbolic_operators::AbstractCollecto
      */
     WickOrderedCollector hermitian_conjugate() const noexcept;
 
+    // Sorts the terms vector according to a predefined predicate
+    void sort();
+
     WickOrderedCollector& operator+=(const WickOrderedCollector& other);
 
     WickOrderedCollector& operator-=(const WickOrderedCollector& other);

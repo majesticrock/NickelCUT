@@ -24,6 +24,8 @@ Verifier::Verifier()
 {
     momenta.fill(IntMomentum<L>(0));
     indices.fill(0);
+    indices[static_cast<unsigned char>(Index::SpinUp)] = 0;
+    indices[static_cast<unsigned char>(Index::SpinDown)] = 1;
 }
 
 Verifier::Verifier(const std::array<double, L>& _occupations)
@@ -35,6 +37,8 @@ Verifier::Verifier(const std::array<double, L>& _occupations)
 {
     momenta.fill(IntMomentum<L>(0));
     indices.fill(0);
+    indices[static_cast<unsigned char>(Index::SpinUp)] = 0;
+    indices[static_cast<unsigned char>(Index::SpinDown)] = 1;
 }
 
 Verifier::SparseMatrix Verifier::symbolic_to_matrix(const TermCollector& terms) const
@@ -53,7 +57,7 @@ bool Verifier::operator()(const TermCollector& expression, const char* name, boo
     return operator()(expression, name, hermitian, before);
 }
 
-bool Verifier::operator()(const mrock::symbolic_operators::TermCollector& expression, const char* name, bool hermitian, SparseMatrix& save_matrix) const {
+bool Verifier::operator()(const TermCollector& expression, const char* name, bool hermitian, SparseMatrix& save_matrix) const {
     save_matrix = symbolic_to_matrix(expression);
     if (hermitian) {
         const SparseMatrix transp = save_matrix.transpose();
@@ -76,13 +80,11 @@ bool Verifier::operator()(const mrock::symbolic_operators::TermCollector& expres
     return true;
 }
 
-bool Verifier::operator()(const mrock::symbolic_operators::experimental::WickOrderedCollector& expression,
-                          const char* name,
-                          const SparseMatrix compare) const {
+bool Verifier::operator()(const WickOrderedCollector& expression, const char* name, const SparseMatrix compare) const {
     const SparseMatrix expression_matrix = symbolic_to_matrix(expression);
     if (!matrices_equal(compare, expression_matrix)) {
-        std::cerr << name << " changed under Wick decomposition. Diff = " << (compare - expression_matrix).norm() << "\n";
-        std::cerr << "\\begin{align*}\n" << expression << "\\end{align*}\n\\begin{align*}" << expression << "\\end{align*}" << std::endl;  
+        std::cerr << name << " changed. Diff = " << (compare - expression_matrix).norm() << "\n";
+        std::cerr << "\\begin{align*}\n" << expression << "\\end{align*}" << std::endl;  
         return false;
     }
     return true;
@@ -277,18 +279,27 @@ Verifier::SparseMatrix Verifier::normal_ordered_operator_string(const std::vecto
     throw std::invalid_argument("Number of operators not implemented. Expected only 0, 2, 4, or 6, but got " + std::to_string(modes.size()) + ".");
 }
 
-IntMomentum<L> Verifier::momentum_lookup(const mrock::symbolic_operators::Momentum& momentum) const noexcept {
+IntMomentum<L> Verifier::momentum_lookup(const Momentum& momentum) const noexcept {
     IntMomentum<L> value(momentum.add_PI ? 0 : L/2);
     for (const auto& symbol : momentum.momentum_list) {
         value += symbol.factor * momenta[static_cast<unsigned char>(symbol.name)];
     }
     return value;
 }
-int Verifier::index_lookup(const mrock::symbolic_operators::Index& index) const noexcept {
+
+int Verifier::index_lookup(const Index& index) const noexcept {
+    if (index == Index::AntiSigma) {
+        // AntiSigma is meant to be the anti-parallel spin state to Sigma
+        // So if Sigma is spin up (represented by 0), AntiSigma is spin down (represented by 1), and vice versa
+        return (int)(!indices[static_cast<unsigned char>(Index::Sigma)]);
+    }
+    if (index == Index::AntiSigmaPrime) {
+        return (int)(!indices[static_cast<unsigned char>(Index::SigmaPrime)]);
+    }
     return indices[static_cast<unsigned char>(index)];
 }
 
-double Verifier::coefficient_value(const mrock::symbolic_operators::Coefficient& coefficient) const
+double Verifier::coefficient_value(const Coefficient& coefficient) const
 {
     const IntMomentum<L> k = momentum_lookup(coefficient.momenta[0]);
     if (coefficient.name == "\\tilde{\\varepsilon}") {
@@ -297,13 +308,18 @@ double Verifier::coefficient_value(const mrock::symbolic_operators::Coefficient&
     const IntMomentum<L> p = momentum_lookup(coefficient.momenta[1]);
     const IntMomentum<L> q = momentum_lookup(coefficient.momenta[2]);
     
-    const double interaction = cosines[k] * cosines[p] + cosines[k+q] * cosines[p-q];
+    double interaction = cosines[k] * cosines[p] + cosines[k+q] * cosines[p-q];
+    if (coefficient.indices.size() == 2U) {
+        interaction *= (index_lookup(coefficient.indices[0]) == index_lookup(coefficient.indices[1]) ? 1. : cosines[q]);
+    }
+    else if (coefficient.indices.size() == 1U) {
+        interaction *= (coefficient.indices[0] == Index::Parallel ? 1. : cosines[q]);
+    }
     if (coefficient.name == "U") {
-        return interaction * (index_lookup(coefficient.indices[0]) == index_lookup(coefficient.indices[1]) ? cosines[q] : 1.);
+        return interaction;
     }
     if (coefficient.name == "\\alpha") {
-        return interaction * (cosines[k] + cosines[p] - cosines[k + q] - cosines[p - q])
-                * (index_lookup(coefficient.indices[0]) == index_lookup(coefficient.indices[1]) ? cosines[q] : 1.);
+        return interaction * (cosines[k] + cosines[p] - cosines[k + q] - cosines[p - q]);
     }
     throw std::runtime_error("unknown coefficient: " + coefficient.name);
 }

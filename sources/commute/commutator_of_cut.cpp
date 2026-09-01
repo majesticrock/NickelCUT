@@ -93,17 +93,14 @@ TermCollector commutator_of_cut(std::ostringstream& oss) {
     cut_commutator.clean_up();
 
     // The last two terms are identical, but the computer needs special aid to see that
-    cut_commutator.back().rename_indices(Index::Sigma, Index::PlaceHolderIndex);
-    cut_commutator.back().rename_indices(Index::SigmaPrime, Index::Sigma);
-    cut_commutator.back().rename_indices(Index::PlaceHolderIndex, Index::SigmaPrime);
+    cut_commutator.back().swap_indices(Index::Sigma, Index::SigmaPrime);
     cut_commutator.back().structure();
-    std::sort(cut_commutator.back().sums.spins.begin(), cut_commutator.back().sums.spins.end());
+    cut_commutator.back().sums.sort();
 
     // Use the spin symmetry of the coefficients
     for(auto& term : cut_commutator) {
         for(auto& coeff : term.coefficients) {
-            // The order of indices does not matter
-            std::sort(coeff.indices.begin(), coeff.indices.end());
+            coeff.use_custom_symmetry();
         }
     }
     cut_commutator.combine_duplicates();
