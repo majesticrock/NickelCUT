@@ -266,14 +266,17 @@ void clean_wick_ordered_terms(WickOrderedCollector& terms,
     }
 
     for (auto& term :terms) {
-        sort_operators_by_indices(term.wick_expression.operators);
+        if (sort_operators_by_indices(term.wick_expression.operators)) {
+            term.multiplicity *= -1;
+        }
         detail::structure_momentum_dependencies_impl(term, term.wick_expression.operators);
-
         for (auto& coeff : term.coefficients) {
             coeff.use_custom_symmetry();
             coeff.use_inversion_symmetry();
         }
     }
+
+    terms.combine_duplicates();
 
     terms.sort();
 }
