@@ -1,7 +1,5 @@
 #pragma once
 
-#include "FlowContainer.hpp"
-
 #include <cassert>
 #include <cstddef>
 #include <vector>
@@ -9,6 +7,8 @@
 
 namespace NickelCUT::flow
 {
+
+struct FlowContainer;
 
 class DecouplingChannel {  
     const int _N; // _L*_L

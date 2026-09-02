@@ -1,4 +1,5 @@
 #include "FlowContainer.hpp"
+#include "Model.hpp"
 #include "momentum_iterator.hpp"
 #include "occupation_numbers.hpp"
 #include "../helper_functions.hpp"
@@ -17,7 +18,9 @@ FlowContainer::FlowContainer()
 }
 
 FlowContainer::FlowContainer(const Model& model) 
-    : interactions_same_spin(), interactions_differing_spin(model.U_0 / N)
+    : interactions_same_spin(), 
+    // Factor 1/2 to account for the extra spin summation compared to the standard Hubbard model
+    interactions_differing_spin(0.5 * model.U_0 / N)
 {
     for (mom_it p = mom_it::begin(); p != mom_it::end(); ++p) {
         dispersion[p.get_position()] = model.epsilon_0(p.get_kx(), p.get_ky());

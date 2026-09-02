@@ -1,11 +1,8 @@
 #pragma once
 
-#include "../L.hpp"
-#include "FlowContainer.hpp"
-
-#include <array>
-
 namespace NickelCUT::flow {
+
+struct FlowContainer;
 
 struct FlowEquation {
 	void operator() (const FlowContainer& current, FlowContainer& dHdl, const double /*l*/);

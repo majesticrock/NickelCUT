@@ -45,7 +45,7 @@ target_include_directories(nickelcut_options INTERFACE EXTRA_INCLUDE_DIRS)
 # Tell the program where to place the data files
 #
 set(OUTPUT_DATA_DIR
-    "${PROJECT_SOURCE_DIR}/build/"#../../data
+    "${PROJECT_SOURCE_DIR}/../../data/nickel_cut/"
     CACHE PATH
     "Location where the result of the simulation should be saved. The subdir name is added automatically and does not need to be specified."
 )

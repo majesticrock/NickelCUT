@@ -19,7 +19,8 @@ struct Model : public flow::Model {
 
     flow::FlowContainer flow_state;
     ModelAttributes<double> deltas;
-    double initial_filling;
+
+    double chemical_potential;
 
     Model(const std::string& flow_state_dir);
 

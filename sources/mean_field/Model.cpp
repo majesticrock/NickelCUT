@@ -27,8 +27,7 @@ namespace NickelCUT::mean_field
     
 Model::Model(const std::string& flow_state_dir)
     : flow::Model{10., 0.0, 0.0, -1.0}, // TODO: Placeholder values!
-    deltas(5*N, 0.0),
-    initial_filling{0.0}
+    deltas(5*N, 0.0)
 {
     const std::string state_file = flow_state_dir + "lowest_ROD_state.bin";
     if(!std::filesystem::exists(state_file)) {
@@ -48,9 +47,9 @@ Model::Model(const std::string& flow_state_dir)
 
     // Compute the filling without any mean-field order
     for (auto p = flow::momentum_iterator<L>::begin(); p != flow::momentum_iterator<L>::end(); ++p) {
-        initial_filling += 2 * fermi_function_zero_temperature(flow_state.dispersion[p]); // factor 2 for spin degeneracy
+        filling += 2 * fermi_function_zero_temperature(flow_state.dispersion[p]); // factor 2 for spin degeneracy
     }
-    initial_filling /= N;
+    filling /= N;
 
     for (momentum_t p = momentum_t::begin(); p != momentum_t::end(); ++p) {
         epsilon_I_up(p) = flow_state.dispersion[p] - flow_state.epsilon_tilde[0];
@@ -220,7 +219,7 @@ void Model::compute_chemical_potential()
     // If the chemical potential is just right, the lambda returns 0
     auto filling_func = [this](double mu_) {
         this->chemical_potential = mu_;
-        return compute_filling() - initial_filling;
+        return compute_filling() - filling;
     };
     double low{ chemical_potential - MU_INITIAL_STEP }; 
     double up{ chemical_potential + MU_INITIAL_STEP };
@@ -301,8 +300,8 @@ void Model::compute_chemical_potential()
 
     this->chemical_potential = 0.5 * (mu_minus + mu_plus);
     const double reached_filling = compute_filling();
-    if (!is_zero(reached_filling - initial_filling)) {
-        throw std::runtime_error("Failed finding the chemical potential! Wanted a filling of " + std::to_string(initial_filling) + " but got " + std::to_string(reached_filling));
+    if (!is_zero(reached_filling - filling)) {
+        throw std::runtime_error("Failed finding the chemical potential! Wanted a filling of " + std::to_string(filling) + " but got " + std::to_string(reached_filling));
     }
 }
 

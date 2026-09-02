@@ -15,7 +15,7 @@
 #include <list>
 
 //#define RUN_FIRST_VERIFICATION
-#define RUN_SECOND_VERIFICATION
+//#define RUN_SECOND_VERIFICATION
 
 namespace NickelCUT::commute::Hamiltonian
 {
@@ -160,19 +160,34 @@ void commute_and_extract(std::ostringstream& oss) {
     }
 #endif
 
+    // Convenience for printing
+    auto drop_wick_ordered_operators = [&](const experimental::WickOrderedCollector& collector) {
+        WickTermCollector ret;
+        ret.reserve(collector.size());
+        for (const auto& term : collector) {
+            ret.push_back( WickTerm(term.multiplicity, 
+                                    term.coefficients, 
+                                    term.sums, 
+                                    term.delta_momenta, 
+                                    term.delta_indices, 
+                                    term.operators) );
+        }
+        return ret;
+    };
+
     oss << "This leaves the flow of the coefficients as follows:\n\\begin{align*}\n\t"
         << "\\partial_\\ell \\varepsilon (\\mathbf{K}) ="
-        << flow_coefficients[0] 
+        << drop_wick_ordered_operators(flow_coefficients[0])
         << "\\end{align*}" << std::endl;
     
     oss << "\\begin{align*}\n\t"
         << "\\partial_\\ell U_{\\uparrow \\downarrow} (\\mathbf{K}, \\mathbf{P}, \\mathbf{Q}) ="
-        << flow_coefficients[1] 
+        << drop_wick_ordered_operators(flow_coefficients[1])
         << "\\end{align*}" << std::endl;
 
     oss << "\\begin{align*}\n\t"
         << "\\partial_\\ell U_{\\parallel} (\\mathbf{K}, \\mathbf{P}, \\mathbf{Q}) ="
-        << flow_coefficients[2] 
+        << drop_wick_ordered_operators(flow_coefficients[2])
         << "\\end{align*}" << std::endl;
 
     //////////////////////////////////////////////////////////////

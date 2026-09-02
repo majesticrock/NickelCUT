@@ -330,31 +330,27 @@ void improve_flow_coefficient_structure(experimental::WickOrderedCollector& term
     }
 
     for (auto & term : terms) {
-        // For bilinears we simply set Sigma=SpinUp; the entire problem is invariant under SpinUp <-> SpinDown
+        // We simply set Sigma=SpinUp; the entire problem is invariant under SpinUp <-> SpinDown
         // Hence, the spin down states will transform exactly the same as the spin up ones.
         // Thus, replacing Sigma by either direction in the coefficients does not change anything
         // It is important to remember though that the Sigma summation for :c_(k,sigma)^dagger c_(k,sigma):
         // does remain! We only abuse that U_(sigma sigma) = U_(down down)
-        if (term.is_bilinear()) {
-            for (auto& coeff : term.coefficients) {
-                if (coeff.indices.size() < 2U) continue;
-                coeff.indices.replace_index(Index::Sigma, Index::SpinUp);
+        for (auto& coeff : term.coefficients) {
+            if (coeff.indices.size() < 2U) continue;
+            coeff.indices.replace_index(Index::Sigma, Index::SpinUp);
+            coeff.indices.replace_index(Index::AntiSigma, Index::SpinDown);
+            
+            assert(coeff.indices[0] == Index::SpinDown || coeff.indices[0] == Index::SpinUp);
+            assert(coeff.indices[1] == Index::SpinDown || coeff.indices[1] == Index::SpinUp);
 
-                assert(coeff.indices[0] == Index::SpinDown || coeff.indices[0] == Index::SpinUp);
-                assert(coeff.indices[1] == Index::SpinDown || coeff.indices[1] == Index::SpinUp);
-
-                if (coeff.indices[0] == coeff.indices[1]) {
-                    coeff.indices.clear();
-                    coeff.indices.push_back(Index::Parallel);
-                }
-                else {
-                    coeff.indices.clear();
-                    coeff.indices.push_back(Index::AntiParallel);
-                }
+            if (coeff.indices[0] == coeff.indices[1]) {
+                coeff.indices.clear();
+                coeff.indices.push_back(Index::Parallel);
             }
-        }
-        else if (term.is_quartic()) {
-            // hmmm....
+            else {
+                coeff.indices.clear();
+                coeff.indices.push_back(Index::AntiParallel);
+            }
         }
     }
 

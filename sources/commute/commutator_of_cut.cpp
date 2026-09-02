@@ -92,7 +92,8 @@ TermCollector commutator_of_cut(std::ostringstream& oss) {
     TermCollector cut_commutator = commutator(cut_generator, H);
     cut_commutator.clean_up();
 
-    // The last two terms are identical, but the computer needs special aid to see that
+    // The second and third to last terms are identical, but the computer needs special aid to see that
+    std::swap(cut_commutator[cut_commutator.size() - 2], cut_commutator[cut_commutator.size() - 1]);
     cut_commutator.back().swap_indices(Index::Sigma, Index::SigmaPrime);
     cut_commutator.back().structure();
     cut_commutator.back().sums.sort();

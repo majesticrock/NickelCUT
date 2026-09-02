@@ -56,14 +56,14 @@ public:
     }
 
     inline void symmetrize() noexcept {
-        for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
-        for (momentum_iterator<L> q = momentum_iterator<L>::begin(); q != momentum_iterator<L>::end(); ++q) {
-        for (momentum_iterator<L> r = momentum_iterator<L>::begin(); r != momentum_iterator<L>::end(); ++r) {
-            (*this)(p.get_position(), q.get_position(), r.get_position()) = 0.5 * (
-                (*this)(p.get_position(), q.get_position(), r.get_position()) 
-                + (*this)(q.get_position(), p.get_position(), (-r).get_position())
+        for (momentum_iterator<L> K = momentum_iterator<L>::begin(); K != momentum_iterator<L>::end(); ++K) {
+        for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
+        for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
+            operator()(K.get_position(), P.get_position(), Q.get_position()) = 0.5 * (
+                operator()(K.get_position(), P.get_position(), Q.get_position()) 
+                + operator()(P.get_position(), K.get_position(), (-Q).get_position())
             );
-            (*this)(q.get_position(), p.get_position(), (-r).get_position()) = (*this)(p.get_position(), q.get_position(), r.get_position());
+            operator()(P.get_position(), K.get_position(), (-Q).get_position()) = operator()(K.get_position(), P.get_position(), Q.get_position());
         }}}
     }
 

@@ -3,14 +3,14 @@
 #include "../L.hpp"
 #include "InteractionDataFrame.hpp"
 #include "momentum_iterator.hpp"
-#include "Model.hpp"
 
-#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 
 #include <array>
-#include <iostream>
 
 namespace NickelCUT::flow {
+
+struct Model;
 
 struct FlowContainer {
     using coeff_array = std::array<double, N>;
@@ -30,6 +30,11 @@ struct FlowContainer {
     }
 
     FlowContainer();
+    // Note that the way we write down our model (sum_(sigma) U c_(sigma)^dagger c_(-sigma)^dagger c_(-sigma) c_(sigma))
+    // Introduces an additional factor of 2 compared to the standard Hubbard model, in which there is no spin summation
+    // in the interaction term. This additional factor of 2 is explicitly removed when invoking this constructor.
+    // That is, if model.U_0 = 1, this function will fill the InteractionDataFrame with 0.5
+    // Thereby, we can use the same notation as in the standard Hubbard model without introducing unnecessary confusion.
     FlowContainer(const Model& model);
 
     void fill_epsilon_tilde();

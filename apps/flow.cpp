@@ -19,20 +19,20 @@
 #include <filesystem>
 
 #ifndef OUTPUT_DATA_DIR
-#define OUTPUT_DATA_DIR "build/" //"../../data/nickel_cut/"
+#define OUTPUT_DATA_DIR "../../data/nickel_cut/"
 #endif
 
 using namespace NickelCUT;
 using namespace NickelCUT::flow;
 using namespace boost::numeric::odeint;
 
-constexpr double U = -0.5;
+constexpr double U = -1.;
 constexpr double _ROD_0 = (U < 0. ? -1. : 1.) * U * L;
 
 constexpr double abs_error = 1e-6;
 constexpr double rel_error = 1e-6;
 
-constexpr double l_final   = (12. / _ROD_0);
+constexpr double l_final   = (36. / _ROD_0);
 constexpr double target_dl = (1. / (5. * L * _ROD_0));
 constexpr double dl = target_dl / 50.;
 
@@ -62,10 +62,16 @@ void serialize_flow_state(const FlowContainer& state, const std::string& output_
 }
 
 int main(int /*argc*/, char** /*argv*/) {
-    const Model model{ U, 0.0, 0.0, -1.0 };
+    Model model(U, 0.0, 0.01, 0.0);
     FlowContainer flow_state(model);
-    const double filling = compute_occupation_numbers(model, flow_state);
-    std::cout << "\nConstructed initial states. The filling of the system is " << filling << std::endl;
+    model.filling = compute_occupation_numbers(model, flow_state);
+    std::cout << "\nConstructed initial states. The filling of the system is " << model.filling << std::endl;
+
+    const std::string output_folder = std::string(OUTPUT_DATA_DIR) 
+        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
+        + model.data_dir_name();
+    std::cout << "Creating directories " << output_folder << std::endl;
+    std::filesystem::create_directories(output_folder);
 
     FlowEquation flow_equation;
     BookKeeper book_keeper(flow_state, target_dl);
@@ -119,22 +125,10 @@ int main(int /*argc*/, char** /*argv*/) {
         }
     }
 
-    const std::string output_folder = std::string(OUTPUT_DATA_DIR) + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/");
-    std::filesystem::create_directories(output_folder);
-
-    nlohmann::json j_meta_data = {
-        { "time", mrock::utility::time_stamp() },
-        { "L", L },
-        { "filling", filling },
-        { "U_0", model.U_0 },
-        { "tprime", model.tprime },
-        { "chemical_potential", model.chemical_potential },
-        { "beta", model.beta }
-    };
     nlohmann::json j_flow_data = book_keeper;
-    j_flow_data.merge_patch(j_meta_data);
+    j_flow_data.merge_patch(model.generate_meta_data_json());
 
-    mrock::utility::save_string(j_flow_data.dump(4), output_folder + "test.json.gz");
+    mrock::utility::save_string(j_flow_data.dump(4), output_folder + "flow.json.gz");
     serialize_flow_state(book_keeper.lowest_ROD_state, output_folder);
 
     book_keeper.print_final();

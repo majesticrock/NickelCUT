@@ -1,4 +1,5 @@
 #include "DecouplingChannel.hpp"
+#include "FlowContainer.hpp"
 
 #include "../L.hpp"
 
