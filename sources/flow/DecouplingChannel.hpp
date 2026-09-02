@@ -2,8 +2,8 @@
 
 #include <cassert>
 #include <cstddef>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace NickelCUT::flow
 {
@@ -23,8 +23,25 @@ public:
         ar & _data;
     }
 
-    DecouplingChannel() = default;
+    DecouplingChannel() : _N(0), total_size(0) {}
     DecouplingChannel(int N);
+
+    DecouplingChannel(const DecouplingChannel&) = default;
+    DecouplingChannel(DecouplingChannel&& other) noexcept
+        : _N(other._N), total_size(other.total_size), _data(std::move(other._data)) {}
+
+    DecouplingChannel& operator=(const DecouplingChannel& other) {
+        assert(_N == other._N);
+        assert(total_size == other.total_size);
+        _data = other._data;
+        return *this;
+    }
+    DecouplingChannel& operator=(DecouplingChannel&& other) noexcept {
+        assert(_N == other._N);
+        assert(total_size == other.total_size);
+        _data = std::move(other._data);
+        return *this;
+    }
 
     // The first element is for differing spins, the second for parallel spins
     static std::pair<DecouplingChannel, DecouplingChannel> SingleParticleEnergy(const FlowContainer& base);

@@ -7,7 +7,7 @@ namespace NickelCUT::flow
 {
 
 DecouplingChannel::DecouplingChannel(int N) 
-    : _N(N), total_size(_N*_N), _data(total_size*total_size)
+    : _N(N), total_size(_N*_N), _data(total_size)
 {}
 
 std::pair<DecouplingChannel, DecouplingChannel> DecouplingChannel::SingleParticleEnergy(const FlowContainer& base)

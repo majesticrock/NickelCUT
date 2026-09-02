@@ -27,12 +27,12 @@ using namespace NickelCUT::flow;
 using namespace boost::numeric::odeint;
 
 constexpr double U = -1.;
-constexpr double _ROD_0 = (U < 0. ? -1. : 1.) * U * L;
+constexpr double _ROD_0 = 0.5 * (U < 0. ? -1. : 1.) * U * L;
 
 constexpr double abs_error = 1e-6;
 constexpr double rel_error = 1e-6;
 
-constexpr double l_final   = (36. / _ROD_0);
+constexpr double l_final   = (50. / _ROD_0);
 constexpr double target_dl = (1. / (5. * L * _ROD_0));
 constexpr double dl = target_dl / 50.;
 
@@ -49,8 +49,8 @@ struct vector_space_norm_inf< NickelCUT::flow::FlowContainer >
 } } }
 typedef runge_kutta_fehlberg78<FlowContainer, double, FlowContainer, double, vector_space_algebra> boost_stepper;
 
-void serialize_flow_state(const FlowContainer& state, const std::string& output_dir) {
-    const std::string file = output_dir + "lowest_ROD_state.bin";
+void serialize_flow_state(const FlowContainer& state, const std::string& output_dir, const std::string& output_filename) {
+    const std::string file = output_dir + output_filename;
     std::ofstream ofs(file, std::ios::binary);
     if (ofs.good()) {
         boost::archive::binary_oarchive oa(ofs);
@@ -129,7 +129,8 @@ int main(int /*argc*/, char** /*argv*/) {
     j_flow_data.merge_patch(model.generate_meta_data_json());
 
     mrock::utility::save_string(j_flow_data.dump(4), output_folder + "flow.json.gz");
-    serialize_flow_state(book_keeper.lowest_ROD_state, output_folder);
+    serialize_flow_state(book_keeper.lowest_ROD_state, output_folder, "lowest_ROD_state.bin");
+    serialize_flow_state(flow_state, output_folder, "final_flow_state.bin");
 
     book_keeper.print_final();
     return 0;

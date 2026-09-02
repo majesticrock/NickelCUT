@@ -5,7 +5,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include <list>
+#include <deque>
 #include <cstddef>
 #include <chrono>
 #include <stdexcept>
@@ -19,13 +19,13 @@ LargeRODException() : std::runtime_error("The ROD grew very large...") {};
 
 struct ExtractionContainer {
     // The first element is for differing spins, the second for parallel spins
-    const std::pair<DecouplingChannel, DecouplingChannel> single_particle_energy;
+    std::pair<DecouplingChannel, DecouplingChannel> single_particle_energy;
     // The first element is for differing spins, the second for parallel spins
-    const std::pair<DecouplingChannel, DecouplingChannel> density_wave;
+    std::pair<DecouplingChannel, DecouplingChannel> density_wave;
     // Only differing spins contribute
-    const DecouplingChannel superconductivity;
+    DecouplingChannel superconductivity;
 
-    const FlowContainer::coeff_array dispersion;
+    FlowContainer::coeff_array dispersion;
 
     ExtractionContainer(const FlowContainer& x);
 };
@@ -35,10 +35,10 @@ struct BookKeeper {
     double l_of_lowest_ROD;
     std::size_t index_of_lowest_ROD;
     
-    std::list<double> l_times;
-    std::list<double> residual_offdiagonalities;
+    std::deque<double> l_times;
+    std::deque<double> residual_offdiagonalities;
 
-    std::list<ExtractionContainer> extracted_channels;
+    std::deque<ExtractionContainer> extracted_channels;
 
     FlowContainer lowest_ROD_state;
 
@@ -57,6 +57,7 @@ private:
     using clock = std::chrono::high_resolution_clock;
 
     const double dl;
+    const double min_ROD_difference;
 
     const clock::time_point begin;
     clock::time_point last;

@@ -5,7 +5,7 @@
 #include <mrock/utility/OutputConvenience.hpp>
 
 #include <utility>
-#include <list>
+#include <deque>
 #include <iostream>
 
 namespace NickelCUT::flow
@@ -27,6 +27,7 @@ BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _dl)
     extracted_channels{ ExtractionContainer(initial_flow_state) },
     lowest_ROD_state{ initial_flow_state },
     dl{ _dl },
+    min_ROD_difference{ 0.02 * lowest_ROD },
     begin(clock::now()), 
     last(begin),
     current_idx{ 0U }
@@ -71,13 +72,23 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
 {
     if (l - l_times.back() < dl) return;
 
-    l_times.push_back(l);
-    residual_offdiagonalities.push_back(x.residual_offdiagonality());
-    extracted_channels.push_back(ExtractionContainer(x));
+    const double current_ROD = x.residual_offdiagonality();
 
     if (process_step(l, residual_offdiagonalities.back())) {
         lowest_ROD_state = x;
+
+        if (std::abs(current_ROD - residual_offdiagonalities.back()) < min_ROD_difference) {
+            l_times.back() = l;
+            residual_offdiagonalities.back() = current_ROD;
+            extracted_channels.back() = ExtractionContainer(x);
+        }
     }
+    else if (std::abs(current_ROD - residual_offdiagonalities.back()) > min_ROD_difference) {
+        l_times.push_back(l);
+        residual_offdiagonalities.push_back(current_ROD);
+        extracted_channels.push_back(ExtractionContainer(x));
+    }
+
     if (residual_offdiagonalities.back() > 5 * residual_offdiagonalities.front()) {
         throw LargeRODException();
     }
