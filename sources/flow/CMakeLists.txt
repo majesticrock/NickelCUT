@@ -19,6 +19,7 @@ add_library(flow_lib STATIC
     Model.cpp
     FlowContainer.cpp
     occupation_numbers.cpp
+    flow_state_serialization.cpp
     "${FLOW_EQUATION_SOURCE}"
 )
 

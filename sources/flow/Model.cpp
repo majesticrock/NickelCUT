@@ -1,4 +1,5 @@
 #include "Model.hpp"
+#include "occupation_numbers.hpp"
 #include "../helper_functions.hpp"
 #include "../L.hpp"
 
@@ -19,7 +20,9 @@ Model::Model(double U_0_, double tprime_, double E_F_, double temperature_)
     temperature{temperature_},
     beta{temperature > 0.0 ? 1. / temperature : -1.}
     //chemical_potential{E_F_}
-{}
+{
+    filling = compute_occupation_numbers(*this);
+}
 
 double Model::epsilon_0(double kx, double ky) const noexcept
 {

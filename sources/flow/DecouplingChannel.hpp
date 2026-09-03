@@ -11,8 +11,8 @@ namespace NickelCUT::flow
 struct FlowContainer;
 
 class DecouplingChannel {  
-    const int _N; // _L*_L
-    const int total_size; // _N*_N
+    int _N; // _L*_L
+    int total_size; // _N*_N
     
     // Storage order: q is contiguous because q is the sum variable in the mean-field equations
     std::vector<double> _data;
@@ -25,23 +25,6 @@ public:
 
     DecouplingChannel() : _N(0), total_size(0) {}
     DecouplingChannel(int N);
-
-    DecouplingChannel(const DecouplingChannel&) = default;
-    DecouplingChannel(DecouplingChannel&& other) noexcept
-        : _N(other._N), total_size(other.total_size), _data(std::move(other._data)) {}
-
-    DecouplingChannel& operator=(const DecouplingChannel& other) {
-        assert(_N == other._N);
-        assert(total_size == other.total_size);
-        _data = other._data;
-        return *this;
-    }
-    DecouplingChannel& operator=(DecouplingChannel&& other) noexcept {
-        assert(_N == other._N);
-        assert(total_size == other.total_size);
-        _data = std::move(other._data);
-        return *this;
-    }
 
     // The first element is for differing spins, the second for parallel spins
     static std::pair<DecouplingChannel, DecouplingChannel> SingleParticleEnergy(const FlowContainer& base);

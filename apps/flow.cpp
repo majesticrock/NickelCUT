@@ -1,16 +1,14 @@
 #include "../sources/L.hpp"
-#include "../sources/flow/occupation_numbers.hpp"
 #include "../sources/flow/momentum_iterator.hpp"
 #include "../sources/flow/FlowContainer.hpp"
 #include "../sources/flow/Model.hpp"
 #include "../sources/flow/FlowEquation.hpp"
 #include "../sources/helper_functions.hpp"
 #include "../sources/flow/BookKeeper.hpp"
+#include "../sources/flow/numerical_setup.hpp"
+#include "../sources/flow/data_file_names.hpp"
+#include "../sources/flow/flow_state_serialization.hpp"
 
-#include <boost/numeric/odeint.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/array.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
 #include <nlohmann/json.hpp>
 
@@ -24,60 +22,23 @@
 
 using namespace NickelCUT;
 using namespace NickelCUT::flow;
-using namespace boost::numeric::odeint;
-
-constexpr double U = -1.;
-constexpr double _ROD_0 = 0.5 * (U < 0. ? -1. : 1.) * U * L;
-
-constexpr double abs_error = 1e-6;
-constexpr double rel_error = 1e-6;
-
-constexpr double l_final   = (50. / _ROD_0);
-constexpr double target_dl = (1. / (5. * L * _ROD_0));
-constexpr double dl = target_dl / 50.;
-
-namespace boost { namespace numeric { namespace odeint {
-template<>
-struct vector_space_norm_inf< NickelCUT::flow::FlowContainer >
-{
-    typedef double result_type;
-    double operator()( const NickelCUT::flow::FlowContainer &p ) const
-    {
-        return p.norm_inf();
-    }
-};
-} } }
-typedef runge_kutta_fehlberg78<FlowContainer, double, FlowContainer, double, vector_space_algebra> boost_stepper;
-
-void serialize_flow_state(const FlowContainer& state, const std::string& output_dir, const std::string& output_filename) {
-    const std::string file = output_dir + output_filename;
-    std::ofstream ofs(file, std::ios::binary);
-    if (ofs.good()) {
-        boost::archive::binary_oarchive oa(ofs);
-        oa << state;
-    }
-    else {
-        throw std::runtime_error("Outputstream for " + file + " is bad!");
-    }
-}
 
 int main(int /*argc*/, char** /*argv*/) {
-    Model model(U, 0.0, 0.01, 0.0);
+    Model model(U_0, tprime, mu_0, T);
     FlowContainer flow_state(model);
-    model.filling = compute_occupation_numbers(model, flow_state);
     std::cout << "\nConstructed initial states. The filling of the system is " << model.filling << std::endl;
 
     const std::string output_folder = std::string(OUTPUT_DATA_DIR) 
         + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
         + model.data_dir_name();
-    std::cout << "Creating directories " << output_folder << std::endl;
     std::filesystem::create_directories(output_folder);
 
     FlowEquation flow_equation;
     BookKeeper book_keeper(flow_state, target_dl);
 
     try {
-        integrate_adaptive(make_controlled<boost_stepper>( abs_error, rel_error ),
+        boost::numeric::odeint::integrate_adaptive(
+                    boost::numeric::odeint::make_controlled<boost_stepper>( abs_error, rel_error ),
                     flow_equation, flow_state, 0.0, l_final, dl, boost::ref(book_keeper));
     }
     catch (LargeRODException& e) {
@@ -128,9 +89,9 @@ int main(int /*argc*/, char** /*argv*/) {
     nlohmann::json j_flow_data = book_keeper;
     j_flow_data.merge_patch(model.generate_meta_data_json());
 
-    mrock::utility::save_string(j_flow_data.dump(4), output_folder + "flow.json.gz");
-    serialize_flow_state(book_keeper.lowest_ROD_state, output_folder, "lowest_ROD_state.bin");
-    serialize_flow_state(flow_state, output_folder, "final_flow_state.bin");
+    mrock::utility::save_string(j_flow_data.dump(4), output_folder + data_file_names::FLOW_STEPS);
+    serialize_flow_state(book_keeper.lowest_ROD_state, output_folder, data_file_names::LOWEST_ROD_STATE);
+    serialize_flow_state(flow_state, output_folder, data_file_names::FINAL_FLOW_STATE);
 
     book_keeper.print_final();
     return 0;
