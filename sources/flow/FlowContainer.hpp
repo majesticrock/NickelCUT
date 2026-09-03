@@ -4,7 +4,7 @@
 #include "InteractionDataFrame.hpp"
 #include "momentum_iterator.hpp"
 
-#include <nlohmann/json_fwd.hpp>
+#include <nlohmann/json.hpp>
 
 #include <array>
 

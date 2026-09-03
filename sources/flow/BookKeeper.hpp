@@ -57,6 +57,7 @@ private:
     using clock = std::chrono::high_resolution_clock;
 
     const double dl;
+    const double max_dl;
     const double min_ROD_difference;
 
     const clock::time_point begin;

@@ -27,13 +27,15 @@ BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _dl)
     extracted_channels{ ExtractionContainer(initial_flow_state) },
     lowest_ROD_state{ initial_flow_state },
     dl{ _dl },
+    max_dl{ 50 * dl },
     min_ROD_difference{ 0.02 * lowest_ROD },
     begin(clock::now()), 
     last(begin),
     current_idx{ 0U }
 {
     std::cout << mrock::utility::time_stamp() << "   -   " << "Starting calculations...\n"
-        << "Initial ROD = " << lowest_ROD << "        spacing saves at at least dl = " << dl << std::endl;
+        << "Initial ROD = " << lowest_ROD << "\n"
+        << "Saving data with a spacing of at least dl=" << dl << " and a maximum of dl=" << max_dl << " if the ROD difference is at least " << min_ROD_difference << std::endl;
 };
 
 bool BookKeeper::process_step(double current_l, double ROD) {
@@ -42,7 +44,7 @@ bool BookKeeper::process_step(double current_l, double ROD) {
     if (ROD < lowest_ROD) {
         lowest_ROD = ROD;
         l_of_lowest_ROD = current_l;
-        index_of_lowest_ROD = current_idx;
+        index_of_lowest_ROD = extracted_channels.size();
         updated = true;
     }
     clock::time_point now = clock::now();
@@ -61,10 +63,10 @@ void BookKeeper::print_final() const {
     std::cout << "//------------------------------------------------------//\n"
         << "\t Flow program finished at "
         << mrock::utility::time_stamp() << "\n"
-        << "lowest ROD achieved after " << index_of_lowest_ROD << " steps at l=" << l_of_lowest_ROD << "."
+        << "lowest ROD achieved at l=" << l_of_lowest_ROD << "."
         << "\t\tlowest ROD = " << lowest_ROD << "\n"
         << "Total executation took " << std::chrono::duration_cast<std::chrono::seconds>(now - begin).count() << "s.\n"
-        << "Goodbye."
+        << "\tGoodbye."
         << std::endl;
 }
 
@@ -73,17 +75,25 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
     if (l - l_times.back() < dl) return;
 
     const double current_ROD = x.residual_offdiagonality();
+    bool append = std::abs(current_ROD - residual_offdiagonalities.back()) > min_ROD_difference 
+                        || std::abs(l - l_times.back()) > max_dl;
 
-    if (process_step(l, residual_offdiagonalities.back())) {
+    if (process_step(l, current_ROD)) {
         lowest_ROD_state = x;
 
-        if (std::abs(current_ROD - residual_offdiagonalities.back()) < min_ROD_difference) {
+        if (l_times.size() > 1U && 
+                    (std::abs(current_ROD - *(residual_offdiagonalities.end() - 2)) < min_ROD_difference 
+                        && std::abs(l - *(l_times.end() - 2)) < max_dl) ) {
             l_times.back() = l;
             residual_offdiagonalities.back() = current_ROD;
             extracted_channels.back() = ExtractionContainer(x);
+            --index_of_lowest_ROD;
+        }
+        else {
+            append = true;
         }
     }
-    else if (std::abs(current_ROD - residual_offdiagonalities.back()) > min_ROD_difference) {
+    if (append) {
         l_times.push_back(l);
         residual_offdiagonalities.push_back(current_ROD);
         extracted_channels.push_back(ExtractionContainer(x));

@@ -84,7 +84,7 @@ int main(int /*argc*/, char** /*argv*/) {
         std::cout << e.what() << std::endl;
     }
 
-    // Checks whether inversion symmetry is preserved (it should be!)
+    // Checks whether symmetries are preserved
     {
         const auto& state = book_keeper.lowest_ROD_state;
         for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
