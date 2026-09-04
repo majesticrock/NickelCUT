@@ -51,12 +51,59 @@ int main(int argc, char** argv) {
         std::cout << e.what() << std::endl;
     }
 
-    nlohmann::json j_flow_data = book_keeper;
-    j_flow_data.merge_patch(model.generate_meta_data_json());
+    // Checks whether symmetries are preserved
+    {
+        const auto& state = book_keeper.lowest_ROD_state;
+        for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
+            if (!NickelCUT::float_equal(state.dispersion[p], state.dispersion[-p])) {
+                std::cerr << "Dispersion is not inversion symmetric: " << state.dispersion[p] << "  " << state.dispersion[-p] << std::endl;
+                break;
+            }
+        }
+    
+        bool error_found = false;
+        for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end() && !error_found; ++p) {
+            for (momentum_iterator<L> q = momentum_iterator<L>::begin(); q != momentum_iterator<L>::end() && !error_found; ++q) {
+                for (momentum_iterator<L> r = momentum_iterator<L>::begin(); r != momentum_iterator<L>::end() && !error_found; ++r) {
+                    if(!NickelCUT::float_equal(state.interactions_differing_spin(p, q, r), state.interactions_differing_spin(-p, -q, -r))) {
+                        std::cerr << "Interaction is not inversion symmetric " 
+                            << state.interactions_differing_spin(p, q, r) 
+                            << "  " << state.interactions_differing_spin(-p, -q, -r)
+                            << std::endl;
+                        error_found = true;
+                    }
+                }
+            }
+        }
 
-    mrock::utility::save_string(j_flow_data.dump(4), output_folder + data_file_names::FLOW_STEPS + std::to_string(resume_step + 1));
-    serialize_flow_state(book_keeper.lowest_ROD_state, output_folder, data_file_names::LOWEST_ROD_STATE + std::to_string(resume_step + 1));
-    serialize_flow_state(flow_state, output_folder, data_file_names::FINAL_FLOW_STATE + std::to_string(resume_step + 1));
+        error_found = false;
+        for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end() && !error_found; ++p) {
+            for (momentum_iterator<L> q = momentum_iterator<L>::begin(); q != momentum_iterator<L>::end() && !error_found; ++q) {
+                for (momentum_iterator<L> r = momentum_iterator<L>::begin(); r != momentum_iterator<L>::end() && !error_found; ++r) {
+                    if(!NickelCUT::float_equal(state.interactions_differing_spin(p, q, r), state.interactions_differing_spin(p+r, q-r, -r))) {
+                        std::cerr << "Interaction is not Hermitian " 
+                            << state.interactions_differing_spin(p, q, r) 
+                            << "  " << state.interactions_differing_spin(p+r, q-r, -r)
+                            << std::endl;
+                        error_found = true;
+                    }
+                }
+            }
+        }
+    }
+
+    const nlohmann::json j_metadata = model.generate_meta_data_json();
+    nlohmann::json j_flow_data = book_keeper;
+    j_flow_data.merge_patch(j_metadata);
+    nlohmann::json j_full_flow_state = book_keeper.lowest_ROD_state;
+    j_full_flow_state.merge_patch(j_metadata);
+
+    const std::string name_append = std::to_string(resume_step + 1);
+    mrock::utility::save_string(j_flow_data.dump(4), output_folder + data_file_names::FLOW_STEPS + name_append);
+    mrock::utility::save_string(j_full_flow_state.dump(4), output_folder + data_file_names::FULL_FLOW_STATE + name_append);
+    serialize_flow_state(book_keeper.lowest_ROD_state, output_folder, data_file_names::LOWEST_ROD_STATE + name_append);
+    serialize_flow_state(flow_state, output_folder, data_file_names::FINAL_FLOW_STATE + name_append);
+
 
     book_keeper.print_final();
     return 0;

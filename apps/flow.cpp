@@ -86,10 +86,14 @@ int main(int /*argc*/, char** /*argv*/) {
         }
     }
 
+    const nlohmann::json j_metadata = model.generate_meta_data_json();
     nlohmann::json j_flow_data = book_keeper;
-    j_flow_data.merge_patch(model.generate_meta_data_json());
+    j_flow_data.merge_patch(j_metadata);
+    nlohmann::json j_full_flow_state = book_keeper.lowest_ROD_state;
+    j_full_flow_state.merge_patch(j_metadata);
 
     mrock::utility::save_string(j_flow_data.dump(4), output_folder + data_file_names::FLOW_STEPS);
+    mrock::utility::save_string(j_full_flow_state.dump(4), output_folder + data_file_names::FULL_FLOW_STATE);
     serialize_flow_state(book_keeper.lowest_ROD_state, output_folder, data_file_names::LOWEST_ROD_STATE);
     serialize_flow_state(flow_state, output_folder, data_file_names::FINAL_FLOW_STATE);
 

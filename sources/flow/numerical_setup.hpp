@@ -6,15 +6,15 @@
 
 namespace NickelCUT::flow
 {
-constexpr double U_0 = -1.;
+constexpr double U_0 = 2.;
 constexpr double T = 0.;
 constexpr double tprime = 0.;
-constexpr double mu_0 = 0.01;
+constexpr double mu_0 = 0.;
 
 constexpr double _ROD_0 = 0.5 * (U_0 < 0. ? -1. : 1.) * U_0 * L;
 
-constexpr double l_final   = (50. / _ROD_0);
-constexpr double target_dl = (1. / (5. * L * _ROD_0));
+constexpr double l_final   = (U_0 < 0. ? -1. : 1.) * (5. / U_0);
+constexpr double target_dl = (1. / (5. * _ROD_0));
 constexpr double dl = target_dl / 50.;
 
 constexpr double abs_error = 1e-6;

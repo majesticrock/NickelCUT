@@ -93,22 +93,18 @@ struct momentum_iterator {
     constexpr bool operator!=(const momentum_iterator& other) const noexcept { return !(*this == other); }
 
     constexpr momentum_iterator& operator+=(momentum_iterator other) noexcept {
-        _x += other._x + 3 * _L / 2;
-        _y += other._y + 3 * _L / 2;
+        _x = (_x + other._x + 3 * _L / 2) % _L;
+        _y = (_y + other._y + 3 * _L / 2) % _L; 
         assert(_x >= 0);
         assert(_y >= 0);
-        _x %= _L;
-        _y %= _L;
         _pos = _x + _L*_y;
         return *this;
     }
     constexpr momentum_iterator& operator-=(momentum_iterator other) noexcept {
-        _x -= other._x - 3 * _L / 2;
-        _y -= other._y - 3 * _L / 2; 
+        _x = (_x - other._x + 3 * _L / 2) % _L;
+        _y = (_y - other._y + 3 * _L / 2) % _L; 
         assert(_x >= 0);
         assert(_y >= 0);
-        _x %= _L;
-        _y %= _L;
         _pos = _x + _L*_y;
         return *this;
     }
