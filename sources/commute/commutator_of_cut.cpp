@@ -105,6 +105,9 @@ TermCollector commutator_of_cut(std::ostringstream& oss) {
         }
     }
     cut_commutator.combine_duplicates();
+    //std::erase_if(cut_commutator.terms, [](const Term& term) {
+    //    return term.operators.size() > 4U;
+    //});
 
     // --------------------------------------------------------- //
 
@@ -117,7 +120,7 @@ TermCollector commutator_of_cut(std::ostringstream& oss) {
         << "The generator of the CUT reads\n\\begin{align}\n\\eta =" << cut_generator
         << ".\\end{align}\nHere, we introduced the abbreviation\n\\begin{equation}\n\t"
         << "\\alpha_{\\sigma\\sigma'}(\\mathbf{K}, \\mathbf{P}, \\mathbf{Q}) = \\mathrm{sgn} \\left[ "
-        << "\\varepsilon(\\mathbf{K}) + \\varepsilon(\\mathbf{P}) - \\varepsilon(\\mathbf{P} - \\mathbf{Q}) - \\varepsilon(\\mathbf{K} + \\mathbf{P}) \\right]"
+        << "\\varepsilon(\\mathbf{K}) + \\varepsilon(\\mathbf{P}) - \\varepsilon(\\mathbf{P} - \\mathbf{Q}) - \\varepsilon(\\mathbf{K} + \\mathbf{Q}) \\right]"
         << " U_{\\sigma \\sigma'} (\\mathbf{K}, \\mathbf{P}, \\mathbf{Q})."
         << "\\end{equation}\nThe $\\ell$-dependence of the coefficients is implied. "
         << "Note that, at $\\ell=0$, the interaction is independent of the momenta. " << std::endl;

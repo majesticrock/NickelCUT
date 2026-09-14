@@ -46,17 +46,17 @@ std::string access_coefficient(const Coefficient& coeff) {
     if (coeff.name == "\\alpha") {
         code += "sign(";
         
-        code += "current.epsilon_tilde[";
+        code += "current.dispersion[";
         code += momentum_to_code(coeff.momenta[0]);
         code += "] + ";
-        code += "current.epsilon_tilde[";
+        code += "current.dispersion[";
         code += momentum_to_code(coeff.momenta[1]);
         code += "] - ";
 
-        code += "current.epsilon_tilde[";
+        code += "current.dispersion[";
         code += momentum_to_code(coeff.momenta[0] + coeff.momenta[2]);
         code += "] - ";
-        code += "current.epsilon_tilde[";
+        code += "current.dispersion[";
         code += momentum_to_code(coeff.momenta[1] - coeff.momenta[2]);
         code += "]";
 
@@ -119,10 +119,10 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
     }
 
     code += "nQ_value *= occupation_numbers[Q];\n";
-    code += "} // r-loop\n";
+    code += "} // Q-loop\n";
     code += accessor + " += (nQ_value + one_value) * occupation_numbers[P];\n";
-    code += "} // q-loop\n";
-    code += "} // p-loop\n";
+    code += "} // P-loop\n";
+    code += "} // K-loop\n";
     return code;
 }
 
@@ -197,11 +197,11 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
 
     code += accessor + " += one_value + occupation_numbers[R] * nR_value;\n";
 
-    code += "} // s-loop\n";
+    code += "} // R-loop\n";
 
-    code += "} // r-loop\n";
-    code += "} // q-loop\n";
-    code += "} // p-loop\n";
+    code += "} // Q-loop\n";
+    code += "} // P-loop\n";
+    code += "} // K-loop\n";
 
     return code;
 }

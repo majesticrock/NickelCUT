@@ -62,18 +62,17 @@ double FlowContainer::residual_offdiagonality() const noexcept {
 }
 
 void FlowContainer::fill_epsilon_tilde() {
-    for (mom_it p = mom_it::begin(); p != mom_it::end(); ++p) {
-        epsilon_tilde[p.get_position()] = 0;
+    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+        epsilon_tilde[K] = 0;
 
-        for (mom_it q = mom_it::begin(); q != mom_it::end(); ++q) {
-            epsilon_tilde[p.get_position()] += (interactions_differing_spin(p.get_position(), q.get_position(), Gamma<L>.get_position())
-                                                   + interactions_same_spin(p.get_position(), q.get_position(), Gamma<L>.get_position())
-                                                   - interactions_same_spin(p.get_position(), q.get_position(), (p-q).get_position())
-                    
-                                                ) * occupation_numbers[q.get_position()];
+        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
+            epsilon_tilde[K] -= (interactions_differing_spin(K, P, Gamma<L>)
+                                    + interactions_same_spin(K, P, Gamma<L>)
+                                    - interactions_same_spin(K, P, P-K)
+                                 ) * occupation_numbers[P];
         }
-        epsilon_tilde[p.get_position()] *= -2.0;
-        epsilon_tilde[p.get_position()] += dispersion[p.get_position()];
+        epsilon_tilde[K] *= 2.0;
+        epsilon_tilde[K] += dispersion[K];
     }
 };
 
