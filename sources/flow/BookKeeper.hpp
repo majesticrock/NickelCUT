@@ -27,6 +27,8 @@ struct ExtractionContainer {
 
     FlowContainer::coeff_array dispersion;
 
+    FlowContainer::coeff_array epsilon_tilde;
+
     ExtractionContainer(const FlowContainer& x);
 };
 

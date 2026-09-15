@@ -26,7 +26,7 @@ template <int _L>
 static constexpr momentum_iterator<_L> Gamma = momentum_iterator<_L>(_L / 2, _L / 2);
 
 template <int _L>
-static constexpr momentum_iterator<_L> Q = momentum_iterator<_L>(0, 0);
+static constexpr momentum_iterator<_L> PI = momentum_iterator<_L>(0, 0);
 
 template<int _L>
 struct momentum_iterator {

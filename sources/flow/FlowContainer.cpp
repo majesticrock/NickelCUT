@@ -23,7 +23,7 @@ FlowContainer::FlowContainer(const Model& model)
     interactions_differing_spin(0.5 * model.U_0 / N)
 {
     for (mom_it p = mom_it::begin(); p != mom_it::end(); ++p) {
-        dispersion[p.get_position()] = model.epsilon_0(p.get_kx(), p.get_ky());
+        dispersion[p] = model.epsilon_0(p.get_kx(), p.get_ky());// + 0.25 * model.U_0;
     }
     fill_epsilon_tilde();
 }
@@ -63,16 +63,14 @@ double FlowContainer::residual_offdiagonality() const noexcept {
 
 void FlowContainer::fill_epsilon_tilde() {
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-        epsilon_tilde[K] = 0;
+        epsilon_tilde[K] = dispersion[K];
 
         for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
-            epsilon_tilde[K] -= (interactions_differing_spin(K, P, Gamma<L>)
+            epsilon_tilde[K] -= 2. * (interactions_differing_spin(K, P, Gamma<L>)
                                     + interactions_same_spin(K, P, Gamma<L>)
                                     - interactions_same_spin(K, P, P-K)
                                  ) * occupation_numbers[P];
         }
-        epsilon_tilde[K] *= 2.0;
-        epsilon_tilde[K] += dispersion[K];
     }
 };
 
@@ -199,7 +197,7 @@ void to_json(nlohmann::json& j, const FlowContainer& container) noexcept
 {
     j = nlohmann::json{
         { "dispersion",                  container.dispersion                                },
-        //{ "epsilon_tilde",               container.epsilon_tilde                             },
+        { "epsilon_tilde",               container.epsilon_tilde                             },
         { "interactions_same_spin",      container.interactions_same_spin.as_3D_array()      },
         { "interactions_differing_spin", container.interactions_differing_spin.as_3D_array() }
     };

@@ -35,9 +35,9 @@ std::pair<DecouplingChannel, DecouplingChannel> DecouplingChannel::DensityWave(c
 
     for (mom_it p = mom_it::begin(); p != mom_it::end(); ++p) {
         for (mom_it q = mom_it::begin(); q != mom_it::end(); ++q) {
-            ret.first(p, q)  = 2. * base.interactions_differing_spin(p, q, Q<L>);
+            ret.first(p, q)  = 2. * base.interactions_differing_spin(p, q, PI<L>);
             ret.second(p, q) = 2. * (
-                base.interactions_same_spin(p, q, Q<L>) - base.interactions_same_spin(p, q, q - p + Q<L>)
+                base.interactions_same_spin(p, q, PI<L>) - base.interactions_same_spin(p, q, q - p + PI<L>)
             );
         }
     }

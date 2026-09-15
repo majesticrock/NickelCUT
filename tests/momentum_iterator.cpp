@@ -42,7 +42,7 @@ int main(int /*argc*/, char** /*argv*/) {
         }
     }
 
-    if(Q<L>.get_position() != 0 || Q<L>.get_momentum() != it_type::begin().get_momentum()) {
+    if(PI<L>.get_position() != 0 || PI<L>.get_momentum() != it_type::begin().get_momentum()) {
         std::cerr << "Q is not the first momentum point!" << std::endl;
         return 1;
     }

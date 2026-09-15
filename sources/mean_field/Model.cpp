@@ -82,48 +82,48 @@ void Model::iteration_step(const ParameterVector& initial_values, ParameterVecto
 
             // Delta_SC
             result(p.get_position()) -= flow_state.interactions_differing_spin(p, -p, q - p) * rho(0, 2)
-                + flow_state.interactions_differing_spin(p, -p, q - p + flow::Q<L>) * rho(1, 3);
+                + flow_state.interactions_differing_spin(p, -p, q - p + flow::PI<L>) * rho(1, 3);
             
             // Delta_DW_up
-            result(p.get_position() + N) += flow_state.interactions_differing_spin(p, -q, flow::Q<L>) * rho(2, 3)
-                + flow_state.interactions_differing_spin(p, flow::Q<L> - q, flow::Q<L>) * rho(3, 2);
+            result(p.get_position() + N) += flow_state.interactions_differing_spin(p, -q, flow::PI<L>) * rho(2, 3)
+                + flow_state.interactions_differing_spin(p, flow::PI<L> - q, flow::PI<L>) * rho(3, 2);
             result(p.get_position() + N) -= (
-                    flow_state.interactions_same_spin(p, q, flow::Q<L>) - flow_state.interactions_same_spin(p, q, q - p + flow::Q<L>)
+                    flow_state.interactions_same_spin(p, q, flow::PI<L>) - flow_state.interactions_same_spin(p, q, q - p + flow::PI<L>)
                 ) * rho(1, 0) + (
-                    flow_state.interactions_same_spin(p, q + flow::Q<L>, flow::Q<L>) - flow_state.interactions_same_spin(p, q + flow::Q<L>, q - p)
+                    flow_state.interactions_same_spin(p, q + flow::PI<L>, flow::PI<L>) - flow_state.interactions_same_spin(p, q + flow::PI<L>, q - p)
                 ) * rho(0, 1);
 
             // Delta_DW_down
-            result(p.get_position() + 2*N) -= flow_state.interactions_differing_spin(p, q, flow::Q<L>) * rho(1, 0)
-                + flow_state.interactions_differing_spin(p, q + flow::Q<L>, flow::Q<L>) * rho(0, 1);
+            result(p.get_position() + 2*N) -= flow_state.interactions_differing_spin(p, q, flow::PI<L>) * rho(1, 0)
+                + flow_state.interactions_differing_spin(p, q + flow::PI<L>, flow::PI<L>) * rho(0, 1);
             result(p.get_position() + 2*N) += (
-                    flow_state.interactions_same_spin(p, -q, flow::Q<L>) - flow_state.interactions_same_spin(p, -q, -q - p + flow::Q<L>)
+                    flow_state.interactions_same_spin(p, -q, flow::PI<L>) - flow_state.interactions_same_spin(p, -q, -q - p + flow::PI<L>)
                 ) * rho(2, 3) + (
-                    flow_state.interactions_same_spin(p, -q + flow::Q<L>, flow::Q<L>) - flow_state.interactions_same_spin(p, -q + flow::Q<L>, -q - p)
+                    flow_state.interactions_same_spin(p, -q + flow::PI<L>, flow::PI<L>) - flow_state.interactions_same_spin(p, -q + flow::PI<L>, -q - p)
                 ) * rho(3, 2);
 
             //if (p.get_position() == L/2 && i == 1) {
-            //    std::cout << flow_state.interactions_differing_spin(p, -q, flow::Q<L>) << " * " << rho(2, 3)
-            //        << " | " << flow_state.interactions_differing_spin(p, flow::Q<L> - q, flow::Q<L>) << " * " << rho(3, 2)
+            //    std::cout << flow_state.interactions_differing_spin(p, -q, flow::PI<L>) << " * " << rho(2, 3)
+            //        << " | " << flow_state.interactions_differing_spin(p, flow::PI<L> - q, flow::PI<L>) << " * " << rho(3, 2)
             //        << std::endl;
             //}
 
             // epsilon_I_up
             result(p.get_position() + 3*N) += flow_state.interactions_differing_spin(p, -q, flow::Gamma<L>) * rho(2, 2)
-                + flow_state.interactions_differing_spin(p, flow::Q<L> - q, flow::Gamma<L>) * rho(3, 3);
+                + flow_state.interactions_differing_spin(p, flow::PI<L> - q, flow::Gamma<L>) * rho(3, 3);
             result(p.get_position() + 3*N) -= (
                     flow_state.interactions_same_spin(p, q, flow::Gamma<L>) - flow_state.interactions_same_spin(p, q, q - p)
                 ) * (1. - rho(0, 0)) + (
-                    flow_state.interactions_same_spin(p, q + flow::Q<L>, flow::Gamma<L>) - flow_state.interactions_same_spin(p, q + flow::Q<L>, q - p + flow::Q<L>)
+                    flow_state.interactions_same_spin(p, q + flow::PI<L>, flow::Gamma<L>) - flow_state.interactions_same_spin(p, q + flow::PI<L>, q - p + flow::PI<L>)
                 ) * (1. - rho(1, 1));
 
             // epsilon_I_down
             result(p.get_position() + 4*N) += flow_state.interactions_differing_spin(p, q, flow::Gamma<L>) * (1. - rho(0, 0))
-                + flow_state.interactions_differing_spin(p, flow::Q<L> + q, flow::Gamma<L>) * (1. - rho(1, 1));
+                + flow_state.interactions_differing_spin(p, flow::PI<L> + q, flow::Gamma<L>) * (1. - rho(1, 1));
             result(p.get_position() + 4*N) -= (
                     flow_state.interactions_same_spin(p, -q, flow::Gamma<L>) - flow_state.interactions_same_spin(p, -q, -q - p)
                 ) * rho(2, 2) + (
-                    flow_state.interactions_same_spin(p, -q + flow::Q<L>, flow::Gamma<L>) - flow_state.interactions_same_spin(p, -q + flow::Q<L>, -q - p + flow::Q<L>)
+                    flow_state.interactions_same_spin(p, -q + flow::PI<L>, flow::Gamma<L>) - flow_state.interactions_same_spin(p, -q + flow::PI<L>, -q - p + flow::PI<L>)
                 ) * rho(3, 3);
         }
     }
@@ -183,10 +183,10 @@ void Model::fill_hamiltonian(const momentum_t& p)
     hamiltonian(0, 2) = __conj(Delta_SC(p));
     hamiltonian(0, 3) = 0.0;
 
-    hamiltonian(1, 0) = Delta_DW_up(p + flow::Q<L>);
-    hamiltonian(1, 1) = dispersion_up(p + flow::Q<L>);
+    hamiltonian(1, 0) = Delta_DW_up(p + flow::PI<L>);
+    hamiltonian(1, 1) = dispersion_up(p + flow::PI<L>);
     hamiltonian(1, 2) = 0.0;
-    hamiltonian(1, 3) = __conj(Delta_SC(p + flow::Q<L>));
+    hamiltonian(1, 3) = __conj(Delta_SC(p + flow::PI<L>));
 
     hamiltonian(2, 0) = Delta_SC(p);
     hamiltonian(2, 1) = 0.0;
@@ -194,9 +194,9 @@ void Model::fill_hamiltonian(const momentum_t& p)
     hamiltonian(2, 3) = -Delta_DW_down(-p);
 
     hamiltonian(3, 0) = 0.0;
-    hamiltonian(3, 1) = Delta_SC(p + flow::Q<L>);
-    hamiltonian(3, 2) = -Delta_DW_down(flow::Q<L> - p);
-    hamiltonian(3, 3) = -dispersion_down(flow::Q<L> - p);
+    hamiltonian(3, 1) = Delta_SC(p + flow::PI<L>);
+    hamiltonian(3, 2) = -Delta_DW_down(flow::PI<L> - p);
+    hamiltonian(3, 3) = -dispersion_down(flow::PI<L> - p);
 }
 
 void Model::compute_rho(const momentum_t& p) 
