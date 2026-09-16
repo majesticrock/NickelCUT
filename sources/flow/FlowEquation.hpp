@@ -1,5 +1,4 @@
 #pragma once
-
 namespace NickelCUT::flow {
 
 struct FlowContainer;

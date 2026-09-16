@@ -22,8 +22,8 @@ FlowContainer::FlowContainer(const Model& model)
     // Factor 1/2 to account for the extra spin summation compared to the standard Hubbard model
     interactions_differing_spin(0.5 * model.U_0 / N)
 {
-    for (mom_it p = mom_it::begin(); p != mom_it::end(); ++p) {
-        dispersion[p] = model.epsilon_0(p.get_kx(), p.get_ky());// + 0.25 * model.U_0;
+    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+        dispersion[K] = model.epsilon_0(K.get_kx(), K.get_ky());// + 0.25 * model.U_0;
     }
     fill_epsilon_tilde();
 }
@@ -59,6 +59,107 @@ bool FlowContainer::contains_nan_or_inf() const noexcept {
 
 double FlowContainer::residual_offdiagonality() const noexcept {
     return std::sqrt(interactions_same_spin.abs_squared_total() + interactions_differing_spin.abs_squared_total());
+}
+
+bool FlowContainer::is_inversion_symmetric() const noexcept
+{
+    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+        if (!float_equal(dispersion[K], dispersion[-K])) {
+            std::cerr << "Dispersion is not inversion symmetric!" << std::endl;
+            return false;
+        }
+    }
+
+    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
+            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+                if(!float_equal(interactions_differing_spin(K, P, Q), interactions_differing_spin(-K, -P, -Q))) {
+                    std::cerr << "Interaction antiparallel is not inversion symmetric!" << std::endl;
+                    return false;
+                }
+            }
+        }
+    }
+
+    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
+            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+                if(!float_equal(interactions_same_spin(K, P, Q), interactions_same_spin(-K, -P, -Q))) {
+                    std::cerr << "Interaction parallel is not inversion symmetric!" << std::endl;
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool FlowContainer::is_hermitian() const noexcept
+{
+    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
+            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+                if(!float_equal(interactions_differing_spin(K, P, Q), interactions_differing_spin(K+Q, P-Q, -Q))) {
+                    std::cerr << "Interaction antiparallel is not Hermitian!" << std::endl;
+                    return false;
+                }
+            }
+        }
+    }
+
+    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
+            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+                if(!float_equal(interactions_same_spin(K, P, Q), interactions_same_spin(K+Q, P-Q, -Q))) {
+                    std::cerr << "Interaction parallel is not Hermitian!" << std::endl;
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool FlowContainer::is_particle_hole_invariant() const noexcept
+{
+    //const double mu = 2*epsilon_tilde[mom_it(0, L/2).get_position()];
+    //for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+    //    if (!float_equal(epsilon_tilde[K] + epsilon_tilde[PI<L>-K], mu)) {
+    //        std::cerr << "Dispersion is not particle-hole invariant!       "  << K << ":  "
+    //            << epsilon_tilde[K] << "    " << epsilon_tilde[PI<L>-K] << std::endl;
+    //        return false;
+    //    }
+    //}
+
+    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
+            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+                if(!float_equal(interactions_differing_spin(K, P, Q), interactions_differing_spin(PI<L>-K-Q, PI<L>-P+Q, Q))) {
+                    std::cerr << "Interaction antiparallel is not particle-hole invariant!   " 
+                        << K << " " << P << " " << Q << ":    "
+                        << interactions_differing_spin(K, P, Q) << "   " 
+                        << interactions_differing_spin(PI<L>-K-Q, PI<L>-P+Q, Q) << std::endl;
+
+                    return false;
+                }
+            }
+        }
+    }
+
+    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
+            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+                if(!float_equal(interactions_same_spin(K, P, Q), interactions_same_spin(PI<L>-K-Q, PI<L>-P+Q, Q))) {
+                    std::cerr << "Interaction parallel is not particle-hole invariant!   " 
+                        << K << " " << P << " " << Q << ":    "
+                        << interactions_same_spin(K, P, Q) << "   " 
+                        << interactions_same_spin(PI<L>-K-Q, PI<L>-P+Q, Q) << std::endl;
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
 }
 
 void FlowContainer::fill_epsilon_tilde() {

@@ -44,6 +44,10 @@ struct FlowContainer {
     bool contains_nan_or_inf() const noexcept;
     double residual_offdiagonality() const noexcept;
 
+    bool is_inversion_symmetric() const noexcept;
+    bool is_hermitian() const noexcept;
+    bool is_particle_hole_invariant() const noexcept;
+
     double abs_total() const; ///< the L2 norm
     double norm_inf() const; ///< the L_infinity norm
 
