@@ -6,7 +6,7 @@
 
 namespace NickelCUT::flow
 {
-constexpr double U_0 = 2.;
+constexpr double U_0 = 8.;
 constexpr double T = 0.;
 constexpr double tprime = 0.;
 constexpr double mu_0 = 0.;

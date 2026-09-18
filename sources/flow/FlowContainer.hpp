@@ -29,15 +29,21 @@ struct FlowContainer {
         ar & epsilon_tilde;
     }
 
-    FlowContainer();
+    FlowContainer() noexcept;
     // Note that the way we write down our model (sum_(sigma) U c_(sigma)^dagger c_(-sigma)^dagger c_(-sigma) c_(sigma))
     // Introduces an additional factor of 2 compared to the standard Hubbard model, in which there is no spin summation
     // in the interaction term. This additional factor of 2 is explicitly removed when invoking this constructor.
     // That is, if model.U_0 = 1, this function will fill the InteractionDataFrame with 0.5
     // Thereby, we can use the same notation as in the standard Hubbard model without introducing unnecessary confusion.
-    FlowContainer(const Model& model);
+    FlowContainer(const Model& model) noexcept;
 
-    void fill_epsilon_tilde();
+    FlowContainer(const FlowContainer&) = default;
+    FlowContainer& operator=(const FlowContainer&) = default;
+
+    FlowContainer(FlowContainer&&) noexcept = default;
+    FlowContainer& operator=(FlowContainer&&) noexcept = default;
+
+    void fill_epsilon_tilde() noexcept;
 
     void fill(double value) noexcept;
     void reset() noexcept;
@@ -48,32 +54,35 @@ struct FlowContainer {
     bool is_hermitian() const noexcept;
     bool is_particle_hole_invariant() const noexcept;
 
-    double abs_total() const; ///< the L2 norm
-    double norm_inf() const; ///< the L_infinity norm
+    double abs_total() const noexcept; ///< the L2 norm
+    double norm_inf() const noexcept; ///< the L_infinity norm
 
     // Required for boost odeint
-    FlowContainer& operator+=(const FlowContainer& other);
-    FlowContainer& operator-=(const FlowContainer& other);
-    FlowContainer& operator*=(const FlowContainer& other);
-    FlowContainer& operator/=(const FlowContainer& other);
+    FlowContainer& operator+=(const FlowContainer& other) noexcept;
+    FlowContainer& operator-=(const FlowContainer& other) noexcept;
+    FlowContainer& operator*=(const FlowContainer& other) noexcept;
+    FlowContainer& operator/=(const FlowContainer& other) noexcept;
 
-    FlowContainer& operator*=(const double other);
-    FlowContainer& operator/=(const double other);
-    FlowContainer& operator+=(const double other);
+    FlowContainer& operator*=(const double other) noexcept;
+    FlowContainer& operator/=(const double other) noexcept;
+    FlowContainer& operator+=(const double other) noexcept;
+
+private:
+    void print_memory_allocation() const;
 };
 
-inline FlowContainer operator+(FlowContainer lhs, const FlowContainer& rhs) { return (lhs += rhs); }
-inline FlowContainer operator-(FlowContainer lhs, const FlowContainer& rhs) { return (lhs -= rhs); }
-inline FlowContainer operator*(FlowContainer lhs, const FlowContainer& rhs) { return (lhs *= rhs); }
-inline FlowContainer operator/(FlowContainer lhs, const FlowContainer& rhs) { return (lhs /= rhs); }
+inline FlowContainer operator+(FlowContainer lhs, const FlowContainer& rhs) noexcept { return (lhs += rhs); }
+inline FlowContainer operator-(FlowContainer lhs, const FlowContainer& rhs) noexcept { return (lhs -= rhs); }
+inline FlowContainer operator*(FlowContainer lhs, const FlowContainer& rhs) noexcept { return (lhs *= rhs); }
+inline FlowContainer operator/(FlowContainer lhs, const FlowContainer& rhs) noexcept { return (lhs /= rhs); }
 
-inline FlowContainer operator*(FlowContainer lhs, const double rhs) { return (lhs *= rhs); }
-inline FlowContainer operator*(const double lhs, FlowContainer rhs) { return (rhs *= lhs); }
-inline FlowContainer operator/(FlowContainer lhs, const double rhs) { return (lhs /= rhs); }
-inline FlowContainer operator+(FlowContainer lhs, const double rhs) { return (lhs += rhs); }
-inline FlowContainer operator+(const double lhs, FlowContainer rhs) { return (rhs += lhs); }
+inline FlowContainer operator*(FlowContainer lhs, const double rhs) noexcept { return (lhs *= rhs); }
+inline FlowContainer operator*(const double lhs, FlowContainer rhs) noexcept { return (rhs *= lhs); }
+inline FlowContainer operator/(FlowContainer lhs, const double rhs) noexcept { return (lhs /= rhs); }
+inline FlowContainer operator+(FlowContainer lhs, const double rhs) noexcept { return (lhs += rhs); }
+inline FlowContainer operator+(const double lhs, FlowContainer rhs) noexcept { return (rhs += lhs); }
 
-FlowContainer abs(FlowContainer input); ///< elementwise L2 norm
+FlowContainer abs(FlowContainer input) noexcept; ///< elementwise L2 norm
 
 void to_json(nlohmann::json& j, const FlowContainer& container) noexcept;
 

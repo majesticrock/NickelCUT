@@ -37,6 +37,12 @@ public:
     InteractionDataFrame(std::vector<double>&& data)
         : _data(std::move(data)) { assert(data.size() == total_size); };
 
+    InteractionDataFrame(const InteractionDataFrame&) = default;
+    InteractionDataFrame& operator=(const InteractionDataFrame&) = default;
+    
+    InteractionDataFrame(InteractionDataFrame&&) noexcept = default;
+    InteractionDataFrame& operator=(InteractionDataFrame&&) noexcept = default;
+
     inline double& operator()(std::size_t x,
                                  std::size_t y,
                                  std::size_t z) noexcept {
@@ -59,11 +65,21 @@ public:
         for (momentum_iterator<L> K = momentum_iterator<L>::begin(); K != momentum_iterator<L>::end(); ++K) {
         for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
         for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
-            operator()(K.get_position(), P.get_position(), Q.get_position()) = 0.5 * (
-                operator()(K.get_position(), P.get_position(), Q.get_position()) 
-                + operator()(P.get_position(), K.get_position(), (-Q).get_position())
+            operator()(K, P, Q) = 0.5 * (
+                operator()(K, P, Q) + operator()(P, K, -Q)
             );
-            operator()(P.get_position(), K.get_position(), (-Q).get_position()) = operator()(K.get_position(), P.get_position(), Q.get_position());
+            operator()(P, K, -Q) = operator()(K, P, Q);
+        }}}
+    }
+
+    inline void antisymmetrize() noexcept {
+        for (momentum_iterator<L> K = momentum_iterator<L>::begin(); K != momentum_iterator<L>::end(); ++K) {
+        for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
+        for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
+            operator()(K, P, Q) = 0.5 * (
+                operator()(K, P, Q) - operator()(K, P, P-K-Q)
+            );
+            operator()(K, P, P-K-Q) = -operator()(K, P, Q);
         }}}
     }
 

@@ -46,17 +46,17 @@ std::string access_coefficient(const Coefficient& coeff) {
     if (coeff.name == "\\alpha") {
         code += "sign(";
         
-        code += "current.dispersion[";
+        code += "current.epsilon_tilde[";
         code += momentum_to_code(coeff.momenta[0]);
         code += "] + ";
-        code += "current.dispersion[";
+        code += "current.epsilon_tilde[";
         code += momentum_to_code(coeff.momenta[1]);
         code += "] - ";
 
-        code += "current.dispersion[";
+        code += "current.epsilon_tilde[";
         code += momentum_to_code(coeff.momenta[0] + coeff.momenta[2]);
         code += "] - ";
-        code += "current.dispersion[";
+        code += "current.epsilon_tilde[";
         code += momentum_to_code(coeff.momenta[1] - coeff.momenta[2]);
         code += "]";
 

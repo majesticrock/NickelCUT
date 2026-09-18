@@ -1,6 +1,7 @@
 #include "commutator_of_cut.hpp"
 
 #include "../experimental/WickOrderedCollector.hpp"
+#include "verify/Verifier.hpp"
 
 #include <mrock/symbolic_operators/Commutation>
 #include <mrock/symbolic_operators/ExpectationValues>
@@ -105,9 +106,30 @@ TermCollector commutator_of_cut(std::ostringstream& oss) {
         }
     }
     cut_commutator.combine_duplicates();
-    std::erase_if(cut_commutator.terms, [](const Term& term) {
-        return term.operators.size() > 4U;
-    });
+
+    verify::Verifier verifier;
+    const verify::Verifier::SparseMatrix H_mat = verifier.symbolic_to_matrix(H);
+    const verify::Verifier::SparseMatrix eta_mat = verifier.symbolic_to_matrix(cut_generator);
+    const verify::Verifier::SparseMatrix commutator_symbolic_mat = verifier.symbolic_to_matrix(cut_commutator);
+    const verify::Verifier::SparseMatrix commutator_raw_mat = eta_mat * H_mat - H_mat * eta_mat;
+    if (!verifier.matrices_equal(commutator_symbolic_mat, commutator_raw_mat)) {
+        std::cout << "Commutator evaluation failed!  " 
+            << commutator_symbolic_mat.norm() << "   " << commutator_raw_mat.norm() << std::endl;
+        throw;
+    }
+    else {
+        std::cout << "Commutator evaluation succesful." << std::endl;
+    }
+
+    if(verifier.is_particle_hole_invariant(H, "H")) {
+        std::cout << "H is particle-hole invariant." << std::endl;
+    }
+    if(verifier.is_particle_hole_invariant(cut_generator, "eta")) {
+        std::cout << "eta is particle-hole invariant." << std::endl;
+    }
+    if(verifier.is_particle_hole_invariant(cut_commutator, "[eta, H]")) {
+        std::cout << "[eta, H] is particle-hole invariant." << std::endl;
+    }
 
     // --------------------------------------------------------- //
 

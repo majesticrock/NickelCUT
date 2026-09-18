@@ -7,17 +7,18 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <iostream>
 
 namespace NickelCUT::flow {
 
-FlowContainer::FlowContainer() 
+FlowContainer::FlowContainer() noexcept
     : interactions_same_spin(), interactions_differing_spin()
 {
     dispersion.fill(double{});
     epsilon_tilde.fill(double{});
 }
 
-FlowContainer::FlowContainer(const Model& model) 
+FlowContainer::FlowContainer(const Model& model) noexcept 
     : interactions_same_spin(), 
     // Factor 1/2 to account for the extra spin summation compared to the standard Hubbard model
     interactions_differing_spin(0.5 * model.U_0 / N)
@@ -26,6 +27,16 @@ FlowContainer::FlowContainer(const Model& model)
         dispersion[K] = model.epsilon_0(K.get_kx(), K.get_ky());// + 0.25 * model.U_0;
     }
     fill_epsilon_tilde();
+}
+
+void FlowContainer::print_memory_allocation() const
+{
+    const std::size_t allocated_bytes = sizeof(FlowContainer)
+        + interactions_same_spin.get_data().capacity() * sizeof(double)
+        + interactions_differing_spin.get_data().capacity() * sizeof(double);
+
+    std::cout << "FlowContainer constructed, allocated memory: "
+              << allocated_bytes / (1024) << " kb" << std::endl;
 }
 
 void FlowContainer::fill(double value) noexcept
@@ -122,14 +133,22 @@ bool FlowContainer::is_hermitian() const noexcept
 
 bool FlowContainer::is_particle_hole_invariant() const noexcept
 {
-    //const double mu = 2*epsilon_tilde[mom_it(0, L/2).get_position()];
-    //for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-    //    if (!float_equal(epsilon_tilde[K] + epsilon_tilde[PI<L>-K], mu)) {
-    //        std::cerr << "Dispersion is not particle-hole invariant!       "  << K << ":  "
-    //            << epsilon_tilde[K] << "    " << epsilon_tilde[PI<L>-K] << std::endl;
-    //        return false;
-    //    }
-    //}
+    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+        double interaction_contribution = 0.;
+        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
+            interaction_contribution += interactions_same_spin(PI<L>-K, PI<L>-K+P, P);
+            interaction_contribution -= interactions_same_spin(PI<L>-K, P, 0);
+            interaction_contribution -= interactions_differing_spin(PI<L>-K, P, 0);
+        }
+        interaction_contribution *= 2.;
+        if (!float_equal(epsilon_tilde[K] + epsilon_tilde[PI<L>-K], interaction_contribution)) {
+            std::cerr << "Dispersion is not particle-hole invariant!       "  << K << ":\t"
+                << epsilon_tilde[K] << "    " << epsilon_tilde[PI<L>-K]
+                << "    " << interaction_contribution
+                << "    " << interaction_contribution-epsilon_tilde[PI<L>-K]-epsilon_tilde[K] << std::endl;
+            //return false;
+        }
+    }
 
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
         for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
@@ -162,7 +181,7 @@ bool FlowContainer::is_particle_hole_invariant() const noexcept
     return true;
 }
 
-void FlowContainer::fill_epsilon_tilde() {
+void FlowContainer::fill_epsilon_tilde() noexcept {
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
         epsilon_tilde[K] = dispersion[K];
 
@@ -175,7 +194,7 @@ void FlowContainer::fill_epsilon_tilde() {
     }
 };
 
-double FlowContainer::abs_total() const
+double FlowContainer::abs_total() const noexcept
 {
     double val = interactions_same_spin.abs_squared_total() + interactions_differing_spin.abs_squared_total();
     for (const auto& element : dispersion) {
@@ -184,7 +203,7 @@ double FlowContainer::abs_total() const
     return std::sqrt(val);
 }
 
-double FlowContainer::norm_inf() const
+double FlowContainer::norm_inf() const noexcept
 {
     double val = interactions_same_spin.norm_inf();
 
@@ -197,7 +216,7 @@ double FlowContainer::norm_inf() const
     return val;
 }
 
-FlowContainer abs(FlowContainer input)
+FlowContainer abs(FlowContainer input) noexcept
 {
     input.interactions_differing_spin.abs_in_place();
     input.interactions_same_spin.abs_in_place();
@@ -207,7 +226,7 @@ FlowContainer abs(FlowContainer input)
     return input;
 }
 
-FlowContainer& FlowContainer::operator+=(const FlowContainer& other)
+FlowContainer& FlowContainer::operator+=(const FlowContainer& other) noexcept
 {
     interactions_same_spin += other.interactions_same_spin;
     interactions_differing_spin += other.interactions_differing_spin;
@@ -219,7 +238,7 @@ FlowContainer& FlowContainer::operator+=(const FlowContainer& other)
 
     return *this;
 }
-FlowContainer& FlowContainer::operator-=(const FlowContainer& other)
+FlowContainer& FlowContainer::operator-=(const FlowContainer& other) noexcept
 {
     interactions_same_spin -= other.interactions_same_spin;
     interactions_differing_spin -= other.interactions_differing_spin;
@@ -232,7 +251,7 @@ FlowContainer& FlowContainer::operator-=(const FlowContainer& other)
     return *this;
 }
 
-FlowContainer& FlowContainer::operator*=(const FlowContainer& other)
+FlowContainer& FlowContainer::operator*=(const FlowContainer& other) noexcept
 {
     interactions_same_spin *= other.interactions_same_spin;
     interactions_differing_spin *= other.interactions_differing_spin;
@@ -244,7 +263,7 @@ FlowContainer& FlowContainer::operator*=(const FlowContainer& other)
 
     return *this;
 }
-FlowContainer& FlowContainer::operator/=(const FlowContainer& other)
+FlowContainer& FlowContainer::operator/=(const FlowContainer& other) noexcept
 {
     interactions_same_spin /= other.interactions_same_spin;
     interactions_differing_spin /= other.interactions_differing_spin;
@@ -257,7 +276,7 @@ FlowContainer& FlowContainer::operator/=(const FlowContainer& other)
     return *this;
 }
 
-FlowContainer& FlowContainer::operator*=(const double other)
+FlowContainer& FlowContainer::operator*=(const double other) noexcept
 {
     interactions_same_spin *= other;
     interactions_differing_spin *= other;
@@ -269,7 +288,7 @@ FlowContainer& FlowContainer::operator*=(const double other)
 
     return *this;
 }
-FlowContainer& FlowContainer::operator/=(const double other)
+FlowContainer& FlowContainer::operator/=(const double other) noexcept
 {
     interactions_same_spin /= other;
     interactions_differing_spin /= other;
@@ -282,7 +301,8 @@ FlowContainer& FlowContainer::operator/=(const double other)
     return *this;
 }
 
-FlowContainer& FlowContainer::operator+=(const double other) {
+FlowContainer& FlowContainer::operator+=(const double other) noexcept
+{
     interactions_same_spin += other;
     interactions_differing_spin += other;
     for (int i=0; i<N; ++i) {

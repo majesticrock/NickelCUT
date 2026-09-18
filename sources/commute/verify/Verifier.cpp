@@ -1,6 +1,7 @@
 #include "Verifier.hpp"
 
 #include "../commutator_of_cut.hpp"
+#include "../../helper_functions.hpp"
 
 #include <array>
 #include <cmath>
@@ -49,6 +50,29 @@ Verifier::SparseMatrix Verifier::symbolic_to_matrix(const TermCollector& terms) 
 Verifier::SparseMatrix Verifier::symbolic_to_matrix(const WickOrderedCollector& terms) const
 {
     return symbolic_to_matrix_impl(terms);
+}
+
+bool Verifier::is_particle_hole_invariant(const mrock::symbolic_operators::TermCollector& terms, const char* name) const {
+    TermCollector ph_copy = terms;
+    for (auto& term : ph_copy) {
+        for(auto& op : term.operators) {
+            op.momentum *= -1;
+            op.momentum.add_PI = true;
+            op.is_daggered = !op.is_daggered;
+        }
+    }
+    ph_copy.normal_order();
+    ph_copy.clean_up();
+
+    const SparseMatrix save_matrix = symbolic_to_matrix(terms);
+    const SparseMatrix after_matrix = symbolic_to_matrix(ph_copy);
+    
+    if (!matrices_equal(save_matrix, after_matrix)) {
+        std::cerr << name << " is not particle-hole invariant. Diff = " << (save_matrix - after_matrix).norm() << "\n";
+        std::cerr << "\\begin{align*}\n" << terms << "\\end{align*}\n\\begin{align*}" << ph_copy << "\\end{align*}" << std::endl;  
+        return false;
+    }
+    return true;
 }
 
 bool Verifier::operator()(const TermCollector& expression, const char* name, bool hermitian) const 
@@ -303,23 +327,23 @@ double Verifier::coefficient_value(const Coefficient& coefficient) const
 {
     const IntMomentum<L> k = momentum_lookup(coefficient.momenta[0]);
     if (coefficient.name == "\\tilde{\\varepsilon}") {
-        return cosines[k];
+        return cosines[k] - 0.5;
     }
     const IntMomentum<L> p = momentum_lookup(coefficient.momenta[1]);
     const IntMomentum<L> q = momentum_lookup(coefficient.momenta[2]);
     
-    double interaction = cosines[k] * cosines[p] + cosines[k+q] * cosines[p-q];
+    double interaction = 0.5 / L;//cosines[k] * cosines[p] + cosines[k+q] * cosines[p-q];
     if (coefficient.indices.size() == 2U) {
-        interaction *= (index_lookup(coefficient.indices[0]) == index_lookup(coefficient.indices[1]) ? 1. : cosines[q]);
+        interaction *= (index_lookup(coefficient.indices[0]) == index_lookup(coefficient.indices[1]) ? 0. : 1.);//cosines[q]);
     }
-    else if (coefficient.indices.size() == 1U) {
-        interaction *= (coefficient.indices[0] == Index::Parallel ? 1. : cosines[q]);
-    }
+    //else if (coefficient.indices.size() == 1U) {
+    //    interaction *= (coefficient.indices[0] == Index::Parallel ? 1. : cosines[q]);
+    //}
     if (coefficient.name == "U") {
         return interaction;
     }
     if (coefficient.name == "\\alpha") {
-        return interaction * (cosines[k] + cosines[p] - cosines[k + q] - cosines[p - q]);
+        return interaction * sign(cosines[k] + cosines[p] - cosines[k + q] - cosines[p - q]);
     }
     throw std::runtime_error("unknown coefficient: " + coefficient.name);
 }
