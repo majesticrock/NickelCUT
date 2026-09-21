@@ -55,13 +55,6 @@ struct unique_momenta {
 
         return momentum_iterator<_L>(momentum._x, momentum._y);
     }
-
-    template<class UnaryContainerAccess>
-    constexpr static void promote(UnaryContainerAccess&& container) noexcept(UnaryContainerAccess()) {
-        for (momentum_iterator<_L> k = momentum_iterator<_L>::begin(); k != momentum_iterator<_L>::end(); ++k) {
-            container(k) = container(reduce(k));
-        }
-    }
 };
 
 } // namespace NickelCUT::flow
