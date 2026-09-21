@@ -75,6 +75,43 @@ bool Verifier::is_particle_hole_invariant(const mrock::symbolic_operators::TermC
     return true;
 }
 
+bool Verifier::is_particle_hole_invariant(const mrock::symbolic_operators::experimental::WickOrderedCollector& terms,
+                                          const char* name) const {
+    WickOrderedCollector ph_copy = terms;
+    for (auto& term : ph_copy) {
+        for(auto& op : term.wick_expression.operators) {
+            op.momentum *= -1;
+            op.momentum.add_PI = true;
+            op.is_daggered = !op.is_daggered;
+        }
+
+        std::size_t new_n;
+        std::size_t n = term.wick_expression.operators.size();
+        while (n > 1U) {
+            new_n = 0U;
+            for (std::size_t i = 1U; i < n; ++i) {
+                if (term.wick_expression.operators[i].is_daggered && !term.wick_expression.operators[i - 1].is_daggered) {
+                    std::swap(term.wick_expression.operators[i], term.wick_expression.operators[i - 1]);
+                    term.multiplicity *= -1;
+                    new_n = i;
+                }
+                
+            }
+            n = new_n;
+        }
+    }
+
+    const SparseMatrix save_matrix = symbolic_to_matrix(terms);
+    const SparseMatrix after_matrix = symbolic_to_matrix(ph_copy);
+    
+    if (!matrices_equal(save_matrix, after_matrix)) {
+        std::cerr << name << " is not particle-hole invariant. Diff = " << (save_matrix - after_matrix).norm() << "\n";
+        std::cerr << "\\begin{align*}\n" << terms << "\\end{align*}\n\\begin{align*}" << ph_copy << "\\end{align*}" << std::endl;  
+        return false;
+    }
+    return true;
+}
+
 bool Verifier::operator()(const TermCollector& expression, const char* name, bool hermitian) const 
 {
     SparseMatrix before;

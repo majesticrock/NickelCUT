@@ -51,6 +51,7 @@ public:
     SparseMatrix symbolic_to_matrix(const mrock::symbolic_operators::experimental::WickOrderedCollector& terms) const;
 
     bool is_particle_hole_invariant(const mrock::symbolic_operators::TermCollector& terms, const char* name) const;
+    bool is_particle_hole_invariant(const mrock::symbolic_operators::experimental::WickOrderedCollector& terms, const char* name) const;
 
     // Computes (lhs - rhs).norm() and checks whether it is smaller than 1e-12
     bool matrices_equal(const SparseMatrix& lhs, const SparseMatrix& rhs) const;

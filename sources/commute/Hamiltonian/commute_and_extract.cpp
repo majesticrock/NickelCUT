@@ -57,6 +57,13 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
         return term.wick_expression.size() > 4U || term.wick_expression.empty();
     });
 
+    {
+        const verify::Verifier ver;
+        if(ver.is_particle_hole_invariant(normal_ordered_result, ":[eta, H]:")) {
+            std::cout << "Normal-ordered commutator is particle-hole invariant." << std::endl;
+        }
+    }
+    
 #ifdef RUN_FIRST_VERIFICATION
     // The matrix must change as we delete all sextic and higher terms.
     matrix_rep = verifier.symbolic_to_matrix(normal_ordered_result);
