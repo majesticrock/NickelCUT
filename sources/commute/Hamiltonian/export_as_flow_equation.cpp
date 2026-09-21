@@ -3,6 +3,7 @@
 
 #include <mrock/utility/OutputConvenience.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <cassert>
 #include <string>
@@ -22,11 +23,14 @@ std::string sign_to_string(int factor) {
     return (factor < 0 ? "-" : "+");
 }
 
-std::string momentum_to_code(const Momentum& momentum) {
+std::string momentum_to_code(Momentum momentum, bool make_positive=false) {
     if (momentum.is_zero()) {
         return "Gamma<L>";
     }
 
+    if (make_positive && momentum.first_momentum_is_negative()) {
+        momentum.flip_momentum();
+    }
     std::string code = "";
     for (const auto& symbol : momentum) {
         assert(symbol.factor == 1 || symbol.factor == -1);
@@ -44,22 +48,26 @@ std::string momentum_to_code(const Momentum& momentum) {
 std::string access_coefficient(const Coefficient& coeff) {
     std::string code = "";
     if (coeff.name == "\\alpha") {
-        code += "sign(";
-        
-        code += "current.epsilon_tilde[";
-        code += momentum_to_code(coeff.momenta[0]);
-        code += "] + ";
-        code += "current.epsilon_tilde[";
-        code += momentum_to_code(coeff.momenta[1]);
-        code += "] - ";
+        //code += "sign(";
+        //
+        //code += "current.epsilon_tilde[";
+        //code += momentum_to_code(coeff.momenta[0], true);
+        //code += "] + ";
+        //code += "current.epsilon_tilde[";
+        //code += momentum_to_code(coeff.momenta[1], true);
+        //code += "] - ";
+//
+        //code += "current.epsilon_tilde[";
+        //code += momentum_to_code(coeff.momenta[0] + coeff.momenta[2], true);
+        //code += "] - ";
+        //code += "current.epsilon_tilde[";
+        //code += momentum_to_code(coeff.momenta[1] - coeff.momenta[2], true);
+        //code += "]";
+//
+        //code += ") \n\t* ";
 
-        code += "current.epsilon_tilde[";
-        code += momentum_to_code(coeff.momenta[0] + coeff.momenta[2]);
-        code += "] - ";
-        code += "current.epsilon_tilde[";
-        code += momentum_to_code(coeff.momenta[1] - coeff.momenta[2]);
-        code += "]";
-
+        code += "alpha_sign_cache(";
+        code += momentum_to_code(coeff.momenta[0]) + ", " + momentum_to_code(coeff.momenta[1]) + ", " + momentum_to_code(coeff.momenta[2]);
         code += ") \n\t* ";
     }
     if (coeff.name == "U" || coeff.name == "\\alpha") {
@@ -85,6 +93,14 @@ std::string access_coefficient(const Coefficient& coeff) {
     return code;
 }
 
+IntFractional get_smallest_factor(const experimental::WickOrderedCollector& terms) {
+    IntFractional smallest_factor = std::min_element(terms.begin(), terms.end(), [](const auto& l, const auto& r) {
+        return std::abs((double)l.multiplicity) < std::abs((double)r.multiplicity);
+    })->multiplicity;
+    if (smallest_factor.numerator < 0) smallest_factor.numerator *= -1;
+    return smallest_factor;
+}
+
 std::string generate_bilinear(const experimental::WickOrderedCollector& bilinears) 
 {
     const std::string accessor = "dHdl.dispersion[K]";
@@ -93,6 +109,8 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
     code += momentum_for_loop("P");
     code += "double nQ_value{};\ndouble one_value{};\n";
     code += momentum_for_loop("Q");
+
+    const IntFractional smallest_factor = get_smallest_factor(bilinears);
 
     for (const auto& term : bilinears) {
         assert(term.operators[0].momentum == Momentum('P'));
@@ -106,9 +124,11 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
             assert(term.operators[1].momentum == Momentum('Q'));
             code += "nQ_value ";
         }
-        code += term.multiplicity > 0 ? "+= " : "-= ";
-        if (term.multiplicity != 1 && term.multiplicity != -1) {
-            code += std::to_string(std::abs(static_cast<double>(term.multiplicity)));
+
+        const auto mult = term.multiplicity / smallest_factor;
+        code += mult > 0 ? "+= " : "-= ";
+        if (mult != 1 && mult != -1) {
+            code += std::to_string(std::abs(static_cast<double>(mult)));
             code += " * ";
         }
         
@@ -120,7 +140,8 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
 
     code += "nQ_value *= occupation_numbers[Q];\n";
     code += "} // Q-loop\n";
-    code += accessor + " += (nQ_value + one_value) * occupation_numbers[P];\n";
+    code += accessor + " += " + std::to_string(static_cast<double>(smallest_factor)) 
+        + " * (nQ_value + one_value) * occupation_numbers[P];\n";
     code += "} // P-loop\n";
     code += "} // K-loop\n";
     return code;
@@ -163,14 +184,18 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
 
     code += momentum_for_loop("R");
     code += "double nR_value{};\ndouble one_value{};\n";
-    
+
+    const IntFractional smallest_factor = get_smallest_factor(quartics);
+
     for (auto& term : quartics) {
         if (term.sums.momenta.empty()) continue;
 
         code += term.operators.empty() ? "one_value " : "nR_value ";
-        code += term.multiplicity > 0 ? "+= " : "-= ";
-        if (term.multiplicity != 1 && term.multiplicity != -1) {
-            code += std::to_string(std::abs(static_cast<double>(term.multiplicity)));
+
+        const auto mult = term.multiplicity / smallest_factor;
+        code += mult > 0 ? "+= " : "-= ";
+        if (mult != 1 && mult != -1) {
+            code += std::to_string(std::abs(static_cast<double>(mult)));
             code += " * ";
         }
 
@@ -195,7 +220,8 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
         code += ";\n";
     }
 
-    code += accessor + " += one_value + occupation_numbers[R] * nR_value;\n";
+    code += accessor + " += " + std::to_string(static_cast<double>(smallest_factor)) 
+        + " * (one_value + occupation_numbers[R] * nR_value);\n";
 
     code += "} // R-loop\n";
 
@@ -219,9 +245,21 @@ void export_as_flow_equation(const std::array<experimental::WickOrderedCollector
         "\n"
         "namespace NickelCUT::flow {\n\n"
         "void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/) {\n"
-        "dHdl.reset();\n";
+        "dHdl.reset();\n"
+        "static InteractionDataFrame alpha_sign_cache;\n"
+        "#pragma omp parallel for\n"
+        "for (int K_pos=0; K_pos < N; ++K_pos) {\n"
+        "momentum_iterator<L> K(K_pos);\n"
+        "for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {\n"
+        "for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {\n"
+        "alpha_sign_cache(K,P,Q) = sign(current.epsilon_tilde[K] + current.epsilon_tilde[P] - current.epsilon_tilde[P-Q] - current.epsilon_tilde[K+Q]);\n"
+        "} // Q-loop\n"
+        "} // P-loop\n"
+        "} // K-loop\n\n";
 
-    const std::string file_footer = "dHdl.interactions_same_spin.symmetrize();\n"
+    const std::string file_footer = 
+        "dHdl.interactions_same_spin.antisymmetrize();\n"
+        "dHdl.interactions_same_spin.symmetrize();\n"
         "dHdl.interactions_differing_spin.symmetrize();\n"
         "}\n} // namespace NickelCUT::flow";
 

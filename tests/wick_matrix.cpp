@@ -92,7 +92,7 @@ int main() {
         for (int momentum = 0; momentum < L; ++momentum) {
             for (int spin = 0; spin < 2; ++spin) {
                 const int mode = 2 * momentum + spin;
-                result += cosine(momentum) * verifier.operator_string({mode, mode}, {true, false});
+                result += (cosine(momentum) - 0.5) * verifier.operator_string({mode, mode}, {true, false});
             }
         }
         return result;

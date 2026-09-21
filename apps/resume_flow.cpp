@@ -52,44 +52,8 @@ int main(int argc, char** argv) {
     }
 
     // Checks whether symmetries are preserved
-    {
-        const auto& state = book_keeper.lowest_ROD_state;
-        for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
-            if (!NickelCUT::float_equal(state.dispersion[p], state.dispersion[-p])) {
-                std::cerr << "Dispersion is not inversion symmetric: " << state.dispersion[p] << "  " << state.dispersion[-p] << std::endl;
-                break;
-            }
-        }
-    
-        bool error_found = false;
-        for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end() && !error_found; ++p) {
-            for (momentum_iterator<L> q = momentum_iterator<L>::begin(); q != momentum_iterator<L>::end() && !error_found; ++q) {
-                for (momentum_iterator<L> r = momentum_iterator<L>::begin(); r != momentum_iterator<L>::end() && !error_found; ++r) {
-                    if(!NickelCUT::float_equal(state.interactions_differing_spin(p, q, r), state.interactions_differing_spin(-p, -q, -r))) {
-                        std::cerr << "Interaction is not inversion symmetric " 
-                            << state.interactions_differing_spin(p, q, r) 
-                            << "  " << state.interactions_differing_spin(-p, -q, -r)
-                            << std::endl;
-                        error_found = true;
-                    }
-                }
-            }
-        }
-
-        error_found = false;
-        for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end() && !error_found; ++p) {
-            for (momentum_iterator<L> q = momentum_iterator<L>::begin(); q != momentum_iterator<L>::end() && !error_found; ++q) {
-                for (momentum_iterator<L> r = momentum_iterator<L>::begin(); r != momentum_iterator<L>::end() && !error_found; ++r) {
-                    if(!NickelCUT::float_equal(state.interactions_differing_spin(p, q, r), state.interactions_differing_spin(p+r, q-r, -r))) {
-                        std::cerr << "Interaction is not Hermitian " 
-                            << state.interactions_differing_spin(p, q, r) 
-                            << "  " << state.interactions_differing_spin(p+r, q-r, -r)
-                            << std::endl;
-                        error_found = true;
-                    }
-                }
-            }
-        }
+    if (!(book_keeper.lowest_ROD_state.is_inversion_symmetric() && book_keeper.lowest_ROD_state.is_hermitian())) {
+        std::cerr << "State is no longer reliable!" << std::endl;
     }
 
     const nlohmann::json j_metadata = model.generate_meta_data_json();

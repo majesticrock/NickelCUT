@@ -147,7 +147,6 @@ struct momentum_iterator {
         return Gamma<_L> - (*this);
     }
     
-private:
     int _x{};
     int _y{};
     int _pos{};

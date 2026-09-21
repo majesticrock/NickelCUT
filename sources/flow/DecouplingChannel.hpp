@@ -26,6 +26,12 @@ public:
     DecouplingChannel() : _N(0), total_size(0) {}
     DecouplingChannel(int N);
 
+    DecouplingChannel(const DecouplingChannel&) = default;
+    DecouplingChannel& operator=(const DecouplingChannel&) = default;
+
+    DecouplingChannel(DecouplingChannel&&) noexcept = default;
+    DecouplingChannel& operator=(DecouplingChannel&&) noexcept = default;
+
     // The first element is for differing spins, the second for parallel spins
     static std::pair<DecouplingChannel, DecouplingChannel> SingleParticleEnergy(const FlowContainer& base);
     // The first element is for differing spins, the second for parallel spins
