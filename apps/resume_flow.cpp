@@ -31,12 +31,19 @@ int main(int argc, char** argv) {
     const int resume_step = std::stoi(argv[1]);
     Model model(U_0, tprime, mu_0, T);
 
-    const std::string output_folder = std::string(OUTPUT_DATA_DIR) 
+    const std::string output_dir = std::string(OUTPUT_DATA_DIR) 
         + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
         + model.data_dir_name();
-    std::filesystem::create_directories(output_folder);
+    const std::string binary_ouput_dir = std::string(OUTPUT_DATA_DIR) 
+        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
+        + "binaries/"
+        + model.data_dir_name();
 
-    FlowContainer flow_state = deserialize_flow_state(output_folder, data_file_names::FINAL_FLOW_STATE + (resume_step > 0 ? argv[1] : ""));
+    if (!(std::filesystem::exists(output_dir) && std::filesystem::exists(binary_ouput_dir))) {
+        std::cerr << "Output dir does not exist. Cannot resume flow." << std::endl;
+    }
+
+    FlowContainer flow_state = deserialize_flow_state(binary_ouput_dir, data_file_names::FINAL_FLOW_STATE + (resume_step > 0 ? argv[1] : ""));
     FlowEquation flow_equation;
     BookKeeper book_keeper(flow_state, target_dl);
 
@@ -63,11 +70,11 @@ int main(int argc, char** argv) {
     j_full_flow_state.merge_patch(j_metadata);
 
     const std::string name_append = std::to_string(resume_step + 1);
-    mrock::utility::save_string(j_flow_data.dump(4), output_folder + data_file_names::FLOW_STEPS + name_append);
-    mrock::utility::save_string(j_full_flow_state.dump(4), output_folder + data_file_names::FULL_FLOW_STATE + name_append);
-    serialize_flow_state(book_keeper.lowest_ROD_state, output_folder, data_file_names::LOWEST_ROD_STATE + name_append);
-    serialize_flow_state(flow_state, output_folder, data_file_names::FINAL_FLOW_STATE + name_append);
-
+    mrock::utility::save_string(j_flow_data.dump(4), output_dir + data_file_names::FLOW_STEPS + name_append);
+    mrock::utility::save_string(j_full_flow_state.dump(4), output_dir + data_file_names::FULL_FLOW_STATE + name_append);
+    serialize_flow_state(book_keeper.lowest_ROD_state, binary_ouput_dir, data_file_names::LOWEST_ROD_STATE + name_append);
+    serialize_flow_state(flow_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE + name_append);
+    serialize_extracted_channels(book_keeper.extracted_channels[book_keeper.index_of_lowest_ROD], binary_ouput_dir, data_file_names::LOWEST_ROD_EXTRACTED_CHANNELS + name_append);
 
     book_keeper.print_final();
     return 0;

@@ -88,11 +88,14 @@ int main() {
     };
 
     auto explicit_total_energy = [&verifier]() {
+        constexpr double U = 1.;
+        constexpr double V = 0.5;
+
         SparseMatrix result(matrix_size, matrix_size);
         for (int momentum = 0; momentum < L; ++momentum) {
             for (int spin = 0; spin < 2; ++spin) {
                 const int mode = 2 * momentum + spin;
-                result += (cosine(momentum) - 0.5) * verifier.operator_string({mode, mode}, {true, false});
+                result += (cosine(momentum) - 0.5 * U - 2. * V) * verifier.operator_string({mode, mode}, {true, false});
             }
         }
         return result;

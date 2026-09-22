@@ -107,8 +107,9 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
 
     std::string code = outer_K_loop;
     code += momentum_for_loop("P");
-    code += "double nQ_value{};\ndouble one_value{};\n";
+    code += "double one_value{};\n";
     code += momentum_for_loop("Q");
+    code += "double nQ_value{};\n";
 
     const IntFractional smallest_factor = get_smallest_factor(bilinears);
 
@@ -138,10 +139,10 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
         code += ";\n";
     }
 
-    code += "nQ_value *= occupation_numbers[Q];\n";
+    code += "one_value += nQ_value * occupation_numbers[Q];\n";
     code += "} // Q-loop\n";
     code += accessor + " += " + std::to_string(static_cast<double>(smallest_factor)) 
-        + " * (nQ_value + one_value) * occupation_numbers[P];\n";
+        + " * one_value * occupation_numbers[P];\n";
     code += "} // P-loop\n";
     code += "} // K-loop\n";
     return code;
@@ -162,8 +163,9 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
         code += "if (K+Q==P-Q) continue; // Pauli principle\n";
     }
 
-    for (auto it = quartics.begin(); it != quartics.end() && it->sums.momenta.empty(); ++it) {
-        code += accessor + (it->multiplicity > 0 ? "+= " : "-= ");
+    for (auto it = quartics.begin(); it != quartics.end(); ++it) {
+        if (!(it->sums.momenta.empty())) continue;
+        code += accessor + (it->multiplicity > 0 ? " += " : " -= ");
         if (it->multiplicity != 1 && it->multiplicity != -1) {
             code += std::to_string(std::abs(static_cast<double>(it->multiplicity)));
             code += " * ";
@@ -252,7 +254,7 @@ void export_as_flow_equation(const std::array<experimental::WickOrderedCollector
         "momentum_iterator<L> K(K_pos);\n"
         "for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {\n"
         "for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {\n"
-        "alpha_sign_cache(K,P,Q) = sign(current.epsilon_tilde[K] + current.epsilon_tilde[P] - current.epsilon_tilde[P-Q] - current.epsilon_tilde[K+Q]);\n"
+        "alpha_sign_cache(K,P,Q) = sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q]);\n"
         "} // Q-loop\n"
         "} // P-loop\n"
         "} // K-loop\n\n";

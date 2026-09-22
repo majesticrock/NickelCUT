@@ -17,6 +17,7 @@ add_library(flow_lib STATIC
     BookKeeper.cpp
     DecouplingChannel.cpp
     Model.cpp
+    ExtractionContainer.cpp
     FlowContainer.cpp
     occupation_numbers.cpp
     flow_state_serialization.cpp
@@ -32,6 +33,8 @@ target_link_libraries(flow_lib
     PRIVATE 
         nickelcut_options
         mrock::utility
+        Boost::serialization
+        Boost::iostreams 
     PUBLIC
         OpenMP::OpenMP_CXX 
 )

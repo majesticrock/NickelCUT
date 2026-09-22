@@ -27,9 +27,6 @@ constexpr double exponent_to_double(std::uint16_t exponent) noexcept {
 }
 constexpr double PRECISION = exponent_to_double(EXPONENT_OF_THRESHOLD);
 
-constexpr auto threshold =
-    exponent_to_double(0b01111010011);
-
 constexpr double sign(double x) noexcept {
     if (is_zero(x)) return 0.0;
     return (x < 0.0 ? -1. : 1.);

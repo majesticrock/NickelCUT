@@ -20,6 +20,8 @@ class DecouplingChannel {
 public:
     template<class Archive>
     void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
+        ar & _N;
+        ar & total_size;
         ar & _data;
     }
 

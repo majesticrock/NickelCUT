@@ -56,17 +56,16 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
     std::erase_if(normal_ordered_result.terms, [](const experimental::WickOrderedTerm& term){
         return term.wick_expression.size() > 4U || term.wick_expression.empty();
     });
-
-    {
-        const verify::Verifier ver;
-        if(ver.is_particle_hole_invariant(normal_ordered_result, ":[eta, H]:")) {
-            std::cout << "Normal-ordered commutator is particle-hole invariant." << std::endl;
-        }
-    }
     
 #ifdef RUN_FIRST_VERIFICATION
     // The matrix must change as we delete all sextic and higher terms.
     matrix_rep = verifier.symbolic_to_matrix(normal_ordered_result);
+    if(verifier.is_particle_hole_invariant(normal_ordered_result, ":[eta, H]:")) {
+        std::cout << "Normal-ordered commutator is particle-hole invariant before advanced_clean_up." << std::endl;
+    }
+    else {
+        throw std::runtime_error("Broken particle-hole invariance!");
+    }
 #endif
 
     advanced_clean_up(normal_ordered_result);
@@ -78,14 +77,21 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
     else {
         std::cout << "Advanced clean up is okay." << std::endl;
     }
+
+    if (verifier.is_particle_hole_invariant(normal_ordered_result, ":[eta, H]:")) {
+        std::cout << "Normal-ordered commutator is particle-hole invariant after advanced_clean_up." << std::endl;
+    }
+    else {
+        throw std::runtime_error("Broken particle-hole invariance!");
+    }
 #endif
 
     oss << "After normal ordering with respect to the Fermi sea, we omit any contribution with more than 4 operators. "
         << "Moreover, we do not care about the renormalization of the groundstate energy, "
         << "so we omit any contribution proportional to the identity. "
         << "The result reads\n\\begin{align*}\n\t"
-        << "\\text{2 pages of terms}"
-        //<< normal_ordered_result 
+        //<< "\\text{2 pages of terms}"
+        << normal_ordered_result 
         << "\\end{align*}" << std::endl;
     
     return normal_ordered_result;
@@ -143,6 +149,13 @@ void commute_and_extract(std::ostringstream& oss) {
     else {
         std::cout << "Extracted flow coefficients are okay." << std::endl;
     }
+
+    if (verifier.is_particle_hole_invariant(readded, "Extracted flow coefficients")) {
+        std::cout << "Extracted flow coefficients are particle-hole invariant." << std::endl;
+    }
+    else {
+        throw std::runtime_error("Broken particle-hole invariance!");
+    }
 #endif
 
     for (auto& fc : flow_coefficients) {
@@ -164,6 +177,13 @@ void commute_and_extract(std::ostringstream& oss) {
     }
     else {
         std::cout << "Extracted flow coefficients after restructuring are okay." << std::endl;
+    }
+
+    if (verifier.is_particle_hole_invariant(readded, "Extracted flow coefficients after restructuring")) {
+        std::cout << "Extracted flow coefficients after restructuring are particle-hole invariant." << std::endl;
+    }
+    else {
+        throw std::runtime_error("Broken particle-hole invariance!");
     }
 #endif
 

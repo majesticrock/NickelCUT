@@ -7,8 +7,6 @@ target_link_libraries(mean_field_lib
     PRIVATE 
         nickelcut_options
         mrock::utility
-        Boost::serialization
-        Boost::iostreams
     PUBLIC
         flow_lib
 )

@@ -1,11 +1,10 @@
 #include "Model.hpp"
 
 #include "../flow/momentum_iterator.hpp"
+#include "../flow/Model.hpp"
 #include "../L.hpp"
-
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/array.hpp>
+#include "../flow/flow_state_serialization.hpp"
+#include "../flow/data_file_names.hpp"
 
 #include <iostream>
 #include <filesystem>
@@ -25,43 +24,31 @@ constexpr double MU_INITIAL_STEP = 0.1;
 namespace NickelCUT::mean_field
 {
     
-Model::Model(const std::string& flow_state_dir)
-    : flow::Model{10., 0.0, 0.0, -1.0}, // TODO: Placeholder values!
-    deltas(5*N, 0.0)
+Model::Model(const std::string& binary_data_dir, double U_0_, double tprime_, double E_F_, double temperature_)
+    : flow::Model(U_0_, tprime_, E_F_, temperature_),
+    extracted_channels(flow::deserialize_extracted_channels(binary_data_dir + flow::Model::data_dir_name(), flow::data_file_names::LOWEST_ROD_EXTRACTED_CHANNELS)),
+    deltas(5*N, 0.0),
+    chemical_potential{0.0}
 {
-    const std::string state_file = flow_state_dir + "lowest_ROD_state.bin";
-    if(!std::filesystem::exists(state_file)) {
-        throw std::runtime_error("FileNotFound: " + state_file);
-    }
-    std::cout << "Loading flow state from " << state_file << std::endl;
-
-    {
-        std::ifstream ifs(state_file, std::ios::binary);
-        if (ifs.good()) {
-            boost::archive::binary_iarchive ia(ifs);
-            ia >> this->flow_state;
-        } else {
-            throw std::runtime_error("Inputstream for " + state_file + " is bad!");
-        }
-    }
-
+    filling = 0.0;
     // Compute the filling without any mean-field order
-    for (auto p = flow::momentum_iterator<L>::begin(); p != flow::momentum_iterator<L>::end(); ++p) {
-        filling += 2 * fermi_function_zero_temperature(flow_state.dispersion[p]); // factor 2 for spin degeneracy
+    for (std::size_t p=0U; p < extracted_channels.dispersion.size(); ++p) {
+        filling += 2 * fermi_function_zero_temperature(extracted_channels.dispersion[p]); // factor 2 for spin degeneracy
     }
     filling /= N;
+    std::cout << "Filling = " << filling << std::endl;
 
     for (momentum_t p = momentum_t::begin(); p != momentum_t::end(); ++p) {
-        epsilon_I_up(p) = flow_state.dispersion[p] - flow_state.epsilon_tilde[0];
-        epsilon_I_down(p) = epsilon_I_up(p);
+        Sigma_up(p) = extracted_channels.dispersion[p] - extracted_channels.epsilon_tilde[p];
+        Sigma_down(p) = Sigma_up(p);
     }
-    compute_chemical_potential();
+    //compute_chemical_potential();
 
-    for (momentum_t p = momentum_t::begin(); p != momentum_t::end(); ++p) {
+    for (int p = 0; p < N; ++p) {
         // Some mindlessly picked initial values
-        //Delta_SC(p) = 0.18;
-        Delta_DW_up(p) = 0.1;
-        Delta_DW_down(p) = -0.1;
+        Delta_SC(p) = 1. - (N/2 - p) / 100.;
+        Delta_DW_up(p) = 1. - (N/2 - p) / 100.;
+        Delta_DW_down(p) = -1. + (N/2 - p) / 100.;
     }
 }
 
@@ -71,67 +58,47 @@ void Model::iteration_step(const ParameterVector& initial_values, ParameterVecto
     result.setZero();
     this->deltas.fill_with(initial_values);
     
-    compute_chemical_potential();
+    //compute_chemical_potential();
     // Maybe add the chemical potential to the self-consistency values
 
     for (momentum_t q = momentum_t::begin(); q != momentum_t::half_end(); ++q) {
         compute_rho(q); // rho(row, col)
-        for (momentum_t p = momentum_t::begin(); p != momentum_t::end(); ++p) {
-            // Here get_position() is explicitly required
-            // My guess is, because p would implicitly cast to std::size_t but Eigen wants a signed type
-
+        for (int k = 0; k < N; ++k) {
             // Delta_SC
-            result(p.get_position()) -= flow_state.interactions_differing_spin(p, -p, q - p) * rho(0, 2)
-                + flow_state.interactions_differing_spin(p, -p, q - p + flow::PI<L>) * rho(1, 3);
+            result(k) -= extracted_channels.superconductivity(k, q) * rho(0, 2)
+                + extracted_channels.superconductivity(k, flow::PI<L> + q) * rho(1, 3);
             
             // Delta_DW_up
-            result(p.get_position() + N) += flow_state.interactions_differing_spin(p, -q, flow::PI<L>) * rho(2, 3)
-                + flow_state.interactions_differing_spin(p, flow::PI<L> - q, flow::PI<L>) * rho(3, 2);
-            result(p.get_position() + N) -= (
-                    flow_state.interactions_same_spin(p, q, flow::PI<L>) - flow_state.interactions_same_spin(p, q, q - p + flow::PI<L>)
-                ) * rho(1, 0) + (
-                    flow_state.interactions_same_spin(p, q + flow::PI<L>, flow::PI<L>) - flow_state.interactions_same_spin(p, q + flow::PI<L>, q - p)
-                ) * rho(0, 1);
+            result(k + N) += extracted_channels.density_wave.first(k, -q) * rho(2, 3)
+                + extracted_channels.density_wave.first(k, flow::PI<L> - q) * rho(3, 2);
+            result(k + N) -= extracted_channels.density_wave.second(k, q) * rho(1, 0) 
+                + extracted_channels.density_wave.second(k, flow::PI<L> + q) * rho(0, 1);
 
             // Delta_DW_down
-            result(p.get_position() + 2*N) -= flow_state.interactions_differing_spin(p, q, flow::PI<L>) * rho(1, 0)
-                + flow_state.interactions_differing_spin(p, q + flow::PI<L>, flow::PI<L>) * rho(0, 1);
-            result(p.get_position() + 2*N) += (
-                    flow_state.interactions_same_spin(p, -q, flow::PI<L>) - flow_state.interactions_same_spin(p, -q, -q - p + flow::PI<L>)
-                ) * rho(2, 3) + (
-                    flow_state.interactions_same_spin(p, -q + flow::PI<L>, flow::PI<L>) - flow_state.interactions_same_spin(p, -q + flow::PI<L>, -q - p)
-                ) * rho(3, 2);
+            result(k + 2*N) -= extracted_channels.density_wave.first(k, q) * rho(1, 0)
+                + extracted_channels.density_wave.first(k, flow::PI<L> + q) * rho(0, 1);
+            result(k + 2*N) += extracted_channels.density_wave.second(k, -q) * rho(2, 3) 
+                + extracted_channels.density_wave.second(k, flow::PI<L> - q) * rho(3, 2);
 
-            //if (p.get_position() == L/2 && i == 1) {
-            //    std::cout << flow_state.interactions_differing_spin(p, -q, flow::PI<L>) << " * " << rho(2, 3)
-            //        << " | " << flow_state.interactions_differing_spin(p, flow::PI<L> - q, flow::PI<L>) << " * " << rho(3, 2)
-            //        << std::endl;
-            //}
+            // Sigma_up
+            result(k + 3*N) += extracted_channels.single_particle_energy.first(k, -q) * rho(2, 2)
+                + extracted_channels.single_particle_energy.first(k, flow::PI<L> - q) * rho(3, 3);
+            result(k + 3*N) += extracted_channels.single_particle_energy.second(k, q) * (1. - rho(0, 0)) 
+                + extracted_channels.single_particle_energy.second(k, flow::PI<L> + q) * (1. - rho(1, 1));
 
-            // epsilon_I_up
-            result(p.get_position() + 3*N) += flow_state.interactions_differing_spin(p, -q, flow::Gamma<L>) * rho(2, 2)
-                + flow_state.interactions_differing_spin(p, flow::PI<L> - q, flow::Gamma<L>) * rho(3, 3);
-            result(p.get_position() + 3*N) -= (
-                    flow_state.interactions_same_spin(p, q, flow::Gamma<L>) - flow_state.interactions_same_spin(p, q, q - p)
-                ) * (1. - rho(0, 0)) + (
-                    flow_state.interactions_same_spin(p, q + flow::PI<L>, flow::Gamma<L>) - flow_state.interactions_same_spin(p, q + flow::PI<L>, q - p + flow::PI<L>)
-                ) * (1. - rho(1, 1));
-
-            // epsilon_I_down
-            result(p.get_position() + 4*N) += flow_state.interactions_differing_spin(p, q, flow::Gamma<L>) * (1. - rho(0, 0))
-                + flow_state.interactions_differing_spin(p, flow::PI<L> + q, flow::Gamma<L>) * (1. - rho(1, 1));
-            result(p.get_position() + 4*N) -= (
-                    flow_state.interactions_same_spin(p, -q, flow::Gamma<L>) - flow_state.interactions_same_spin(p, -q, -q - p)
-                ) * rho(2, 2) + (
-                    flow_state.interactions_same_spin(p, -q + flow::PI<L>, flow::Gamma<L>) - flow_state.interactions_same_spin(p, -q + flow::PI<L>, -q - p + flow::PI<L>)
-                ) * rho(3, 3);
+            // Sigma_down
+            result(k + 4*N) += extracted_channels.single_particle_energy.first(k, q) * (1. - rho(0, 0))
+                + extracted_channels.single_particle_energy.first(k, flow::PI<L> + q) * (1. - rho(1, 1));
+            result(k + 4*N) += extracted_channels.single_particle_energy.second(k, -q) * rho(2, 2) 
+                + extracted_channels.single_particle_energy.second(k, flow::PI<L> - q) * rho(3, 3);
         }
     }
 
     this->deltas.fill_with(result, 0.5);
     this->deltas.clear_noise(PRECISION);
 
-    std::cout << i << ": " << max_Delta_SC() << "\t" << max_Delta_AFM() << "\t" << max_Delta_CDW() << "\t" << chemical_potential << std::endl;
+    std::cout << i << ": " << max_Delta_SC() << "\t" << max_Delta_AFM() << "\t" << max_Delta_CDW() 
+        << "\t" << chemical_potential << "\t" << compute_filling() << std::endl;
 
     result -= initial_values;
 }
@@ -163,7 +130,7 @@ double Model::max_Delta_AFM() const noexcept {
         if (std::abs(Delta_DW_up(i) - Delta_DW_down(i)) > current) 
             current = std::abs(Delta_DW_up(i) - Delta_DW_down(i));
     }
-    return current;
+    return 0.5 * current;
 }
 
 double Model::max_Delta_CDW() const noexcept {
@@ -172,7 +139,7 @@ double Model::max_Delta_CDW() const noexcept {
         if (std::abs(Delta_DW_up(i) + Delta_DW_down(i)) > current) 
             current = std::abs(Delta_DW_up(i) + Delta_DW_down(i));
     }
-    return current;
+    return 0.5 * current;
 }
 
 void Model::fill_hamiltonian(const momentum_t& p)

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "FlowContainer.hpp"
-#include "DecouplingChannel.hpp"
+#include "ExtractionContainer.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -15,21 +15,6 @@ namespace NickelCUT::flow {
 class LargeRODException : public std::runtime_error {
 public:
 LargeRODException() : std::runtime_error("The ROD grew very large...") {};
-};
-
-struct ExtractionContainer {
-    // The first element is for differing spins, the second for parallel spins
-    std::pair<DecouplingChannel, DecouplingChannel> single_particle_energy;
-    // The first element is for differing spins, the second for parallel spins
-    std::pair<DecouplingChannel, DecouplingChannel> density_wave;
-    // Only differing spins contribute
-    DecouplingChannel superconductivity;
-
-    FlowContainer::coeff_array dispersion;
-
-    FlowContainer::coeff_array epsilon_tilde;
-
-    ExtractionContainer(const FlowContainer& x);
 };
 
 struct BookKeeper {
@@ -67,8 +52,6 @@ private:
 
     std::size_t current_idx;
 };
-
-void to_json(nlohmann::json& j, const ExtractionContainer& extracted_channels) noexcept;
 
 void to_json(nlohmann::json& j, const BookKeeper& book_keeper) noexcept;
 

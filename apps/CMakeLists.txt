@@ -23,8 +23,6 @@ target_link_libraries(flow
         nickelcut_options
         flow_lib
         mrock::utility
-        Boost::serialization
-        Boost::iostreams
 )
 
 add_executable(resume_flow resume_flow.cpp)
@@ -33,8 +31,6 @@ target_link_libraries(resume_flow
         nickelcut_options
         flow_lib
         mrock::utility
-        Boost::serialization
-        Boost::iostreams 
 )
 
 add_executable(mean_field mean_field.cpp)

@@ -17,7 +17,7 @@ for (int K_pos=0; K_pos < N; ++K_pos) {
 momentum_iterator<L> K(K_pos);
 for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
 for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
-alpha_sign_cache(K,P,Q) = sign(current.epsilon_tilde[K] + current.epsilon_tilde[P] - current.epsilon_tilde[P-Q] - current.epsilon_tilde[K+Q]);
+alpha_sign_cache(K,P,Q) = sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q]);
 } // Q-loop
 } // P-loop
 } // K-loop
@@ -26,9 +26,9 @@ alpha_sign_cache(K,P,Q) = sign(current.epsilon_tilde[K] + current.epsilon_tilde[
 for (int K_pos=0; K_pos < N; ++K_pos) {
 momentum_iterator<L> K(K_pos);
 for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
-double nQ_value{};
 double one_value{};
 for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
+double nQ_value{};
 one_value += current.interactions_same_spin(K, P, Q)
 	* alpha_sign_cache(-K-Q, -P+Q, K-P+Q) 
 	* current.interactions_same_spin(-K-Q, -P+Q, K-P+Q);
@@ -101,9 +101,9 @@ nQ_value -= current.interactions_same_spin(P, Q, K-P)
 nQ_value -= current.interactions_same_spin(K, P, P-Q)
 	* alpha_sign_cache(Q, K+P-Q, K-Q) 
 	* current.interactions_same_spin(Q, K+P-Q, K-Q);
-nQ_value *= occupation_numbers[Q];
+one_value += nQ_value * occupation_numbers[Q];
 } // Q-loop
-dHdl.dispersion[K] += 8.000000 * (nQ_value + one_value) * occupation_numbers[P];
+dHdl.dispersion[K] += 8.000000 * one_value * occupation_numbers[P];
 } // P-loop
 } // K-loop
 
@@ -113,10 +113,10 @@ for (int K_pos=0; K_pos < N; ++K_pos) {
 momentum_iterator<L> K(K_pos);
 for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
 for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
-dHdl.interactions_differing_spin(K, P, Q)-= 4.000000 * alpha_sign_cache(K, P, Q) 
+dHdl.interactions_differing_spin(K, P, Q) -= 4.000000 * alpha_sign_cache(K, P, Q) 
 	* current.interactions_differing_spin(K, P, Q)
 	* current.epsilon_tilde[K];
-dHdl.interactions_differing_spin(K, P, Q)+= 4.000000 * alpha_sign_cache(K, P, Q) 
+dHdl.interactions_differing_spin(K, P, Q) += 4.000000 * alpha_sign_cache(K, P, Q) 
 	* current.interactions_differing_spin(K, P, Q)
 	* current.epsilon_tilde[P-Q];
 for (momentum_iterator<L> R = momentum_iterator<L>::begin(); R != momentum_iterator<L>::end(); ++R) {
@@ -214,10 +214,10 @@ for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_itera
 if (K==P) continue; // Pauli principle
 for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
 if (K+Q==P-Q) continue; // Pauli principle
-dHdl.interactions_same_spin(K, P, Q)-= 4.000000 * alpha_sign_cache(K, P, Q) 
+dHdl.interactions_same_spin(K, P, Q) -= 4.000000 * alpha_sign_cache(K, P, Q) 
 	* current.interactions_same_spin(K, P, Q)
 	* current.epsilon_tilde[K];
-dHdl.interactions_same_spin(K, P, Q)+= 4.000000 * alpha_sign_cache(K, P, Q) 
+dHdl.interactions_same_spin(K, P, Q) += 4.000000 * alpha_sign_cache(K, P, Q) 
 	* current.interactions_same_spin(K, P, Q)
 	* current.epsilon_tilde[P-Q];
 for (momentum_iterator<L> R = momentum_iterator<L>::begin(); R != momentum_iterator<L>::end(); ++R) {

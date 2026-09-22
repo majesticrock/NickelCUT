@@ -134,19 +134,10 @@ bool FlowContainer::is_hermitian() const noexcept
 bool FlowContainer::is_particle_hole_invariant() const noexcept
 {
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-        double interaction_contribution = 0.;
-        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
-            interaction_contribution += interactions_same_spin(PI<L>-K, PI<L>-K+P, P);
-            interaction_contribution -= interactions_same_spin(PI<L>-K, P, 0);
-            interaction_contribution -= interactions_differing_spin(PI<L>-K, P, 0);
-        }
-        interaction_contribution *= 2.;
-        if (!float_equal(epsilon_tilde[K] + epsilon_tilde[PI<L>-K], interaction_contribution)) {
+        if (!is_zero(dispersion[K] + dispersion[PI<L>-K])) {
             std::cerr << "Dispersion is not particle-hole invariant!       "  << K << ":\t"
-                << epsilon_tilde[K] << "    " << epsilon_tilde[PI<L>-K]
-                << "    " << interaction_contribution
-                << "    " << interaction_contribution-epsilon_tilde[PI<L>-K]-epsilon_tilde[K] << std::endl;
-            //return false;
+                << dispersion[K] << "    " << dispersion[PI<L>-K] << std::endl;
+            return false;
         }
     }
 

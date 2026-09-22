@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../flow/Model.hpp"
-#include "../flow/FlowContainer.hpp"
+#include "../flow/ExtractionContainer.hpp"
 #include "../flow/momentum_iterator.hpp"
 #include "ModelAttributes.hpp"
 #include "../L.hpp"
@@ -17,12 +17,12 @@ struct Model : public flow::Model {
     typedef Eigen::VectorXd ParameterVector;
     typedef flow::momentum_iterator<L> momentum_t;
 
-    flow::FlowContainer flow_state;
+    flow::ExtractionContainer extracted_channels;
     ModelAttributes<double> deltas;
 
     double chemical_potential;
 
-    Model(const std::string& flow_state_dir);
+    Model(const std::string& binary_data_dir, double U_0_, double tprime_, double E_F_, double temperature_);
 
     // Functionality for the self-consistency procedure
     void iteration_step(const ParameterVector& initial_values, ParameterVector& result);
@@ -42,10 +42,10 @@ struct Model : public flow::Model {
     inline double Delta_DW_down(std::size_t i) const noexcept {
         assert(i < N); return deltas[i + 2*N];
     }
-    inline double epsilon_I_up(std::size_t i) const noexcept {
+    inline double Sigma_up(std::size_t i) const noexcept {
         assert(i < N); return deltas[i + 3*N];
     }
-    inline double epsilon_I_down(std::size_t i) const noexcept {
+    inline double Sigma_down(std::size_t i) const noexcept {
         assert(i < N); return deltas[i + 4*N];
     }
     // return reference
@@ -58,19 +58,18 @@ struct Model : public flow::Model {
     inline double& Delta_DW_down(std::size_t i) noexcept {
         assert(i < N); return deltas[i + 2*N];
     }
-    inline double& epsilon_I_up(std::size_t i) noexcept {
+    inline double& Sigma_up(std::size_t i) noexcept {
         assert(i < N); return deltas[i + 3*N];
     }
-    inline double& epsilon_I_down(std::size_t i) noexcept {
+    inline double& Sigma_down(std::size_t i) noexcept {
         assert(i < N); return deltas[i + 4*N];
     }
     
-
     inline double dispersion_up(std::size_t p) const noexcept {
-        return flow_state.epsilon_tilde[p] - chemical_potential + epsilon_I_up(p);
+        return extracted_channels.epsilon_tilde[p] + Sigma_up(p) - chemical_potential;
     }
     inline double dispersion_down(std::size_t p) const noexcept {
-        return flow_state.epsilon_tilde[p] - chemical_potential + epsilon_I_down(p);
+        return extracted_channels.epsilon_tilde[p] + Sigma_down(p) - chemical_potential;
     }
 private:  
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> eigensolver;

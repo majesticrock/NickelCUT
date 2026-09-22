@@ -1,5 +1,4 @@
 #include "../sources/L.hpp"
-#include "../sources/flow/momentum_iterator.hpp"
 #include "../sources/flow/FlowContainer.hpp"
 #include "../sources/flow/Model.hpp"
 #include "../sources/flow/FlowEquation.hpp"
@@ -28,11 +27,16 @@ int main(int /*argc*/, char** /*argv*/) {
     FlowContainer flow_state(model);
     std::cout << "\nConstructed initial states. The filling of the system is " << model.filling << std::endl;
 
-    const std::string output_folder = std::string(OUTPUT_DATA_DIR) 
+    const std::string output_dir = std::string(OUTPUT_DATA_DIR) 
         + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
-        + "test/" + model.data_dir_name();
+        + model.data_dir_name();
+    const std::string binary_ouput_dir = std::string(OUTPUT_DATA_DIR) 
+        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
+        + "binaries/"
+        + model.data_dir_name();
     
-    std::filesystem::create_directories(output_folder);
+    std::filesystem::create_directories(output_dir);
+    std::filesystem::create_directories(binary_ouput_dir);
 
     FlowEquation flow_equation;
     BookKeeper book_keeper(flow_state, target_dl);
@@ -57,10 +61,11 @@ int main(int /*argc*/, char** /*argv*/) {
     nlohmann::json j_full_flow_state = book_keeper.lowest_ROD_state;
     j_full_flow_state.merge_patch(j_metadata);
 
-    mrock::utility::save_string(j_flow_data.dump(4), output_folder + data_file_names::FLOW_STEPS);
-    mrock::utility::save_string(j_full_flow_state.dump(4), output_folder + data_file_names::FULL_FLOW_STATE);
-    serialize_flow_state(book_keeper.lowest_ROD_state, output_folder, data_file_names::LOWEST_ROD_STATE);
-    serialize_flow_state(flow_state, output_folder, data_file_names::FINAL_FLOW_STATE);
+    mrock::utility::save_string(j_flow_data.dump(4), output_dir + data_file_names::FLOW_STEPS);
+    mrock::utility::save_string(j_full_flow_state.dump(4), output_dir + data_file_names::FULL_FLOW_STATE);
+    serialize_flow_state(book_keeper.lowest_ROD_state, binary_ouput_dir, data_file_names::LOWEST_ROD_STATE);
+    serialize_flow_state(flow_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE);
+    serialize_extracted_channels(book_keeper.extracted_channels[book_keeper.index_of_lowest_ROD], binary_ouput_dir, data_file_names::LOWEST_ROD_EXTRACTED_CHANNELS);
 
     book_keeper.print_final();
     return 0;

@@ -362,20 +362,22 @@ int Verifier::index_lookup(const Index& index) const noexcept {
 
 double Verifier::coefficient_value(const Coefficient& coefficient) const
 {
+    constexpr double U = 1.;
+    constexpr double V = 0.5;
     const IntMomentum<L> k = momentum_lookup(coefficient.momenta[0]);
     if (coefficient.name == "\\tilde{\\varepsilon}") {
-        return cosines[k] - 0.5;
+        return cosines[k] - 0.5 * U - 2 * V;
     }
     const IntMomentum<L> p = momentum_lookup(coefficient.momenta[1]);
     const IntMomentum<L> q = momentum_lookup(coefficient.momenta[2]);
     
-    double interaction = 0.5 / L;//cosines[k] * cosines[p] + cosines[k+q] * cosines[p-q];
+    double interaction = V * cosines[q] / L;//cosines[k] * cosines[p] + cosines[k+q] * cosines[p-q];
     if (coefficient.indices.size() == 2U) {
-        interaction *= (index_lookup(coefficient.indices[0]) == index_lookup(coefficient.indices[1]) ? 0. : 1.);//cosines[q]);
+        interaction += (index_lookup(coefficient.indices[0]) == index_lookup(coefficient.indices[1]) ? 0. : 0.5 * U / L);//cosines[q]);
     }
-    //else if (coefficient.indices.size() == 1U) {
-    //    interaction *= (coefficient.indices[0] == Index::Parallel ? 1. : cosines[q]);
-    //}
+    else if (coefficient.indices.size() == 1U) {
+        interaction += (coefficient.indices[0] == Index::Parallel ? 0. : 0.5 * U / L);
+    }
     if (coefficient.name == "U") {
         return interaction;
     }
