@@ -20,6 +20,9 @@ constexpr bool is_zero(double number) noexcept {
     const uint64_t bits = std::bit_cast<uint64_t>(number);
     return static_cast<uint16_t>((bits >> 52) & 0x7FF) < EXPONENT_OF_THRESHOLD;
 }
+constexpr bool is_finite(double number) noexcept {
+    return !is_zero(number);
+}
 constexpr double exponent_to_double(std::uint16_t exponent) noexcept {
     return std::bit_cast<double>(
         static_cast<std::uint64_t>(exponent) << 52

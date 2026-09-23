@@ -36,9 +36,9 @@ struct BookKeeper {
     // Returns true if the current ROD is the new lowest ROD
     bool process_step(double current_l, double ROD);
 
-    void print_final() const;
+    void print_final(const FlowContainer& x, double l);
 
-    void operator()(const FlowContainer &x, double l);
+    void operator()(const FlowContainer& x, double l);
 
 private:
     using clock = std::chrono::high_resolution_clock;

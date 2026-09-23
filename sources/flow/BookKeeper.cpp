@@ -19,7 +19,7 @@ BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _dl)
     extracted_channels{ ExtractionContainer(initial_flow_state) },
     lowest_ROD_state{ initial_flow_state },
     dl{ _dl },
-    max_dl{ 50 * dl },
+    max_dl{ 10 * dl },
     min_ROD_difference{ 0.02 * lowest_ROD },
     begin(clock::now()), 
     last(begin),
@@ -50,7 +50,13 @@ bool BookKeeper::process_step(double current_l, double ROD) {
     return updated;
 }
 
-void BookKeeper::print_final() const {
+void BookKeeper::print_final(const FlowContainer& x, double l) {
+    if (!float_equal(l_times.back(), l)) {
+        l_times.push_back(l);
+        residual_offdiagonalities.push_back(x.residual_offdiagonality());
+        extracted_channels.push_back(ExtractionContainer(x));
+    }
+
     clock::time_point now = clock::now();
     std::cout << "//------------------------------------------------------//\n"
         << "\t Flow program finished at "

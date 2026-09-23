@@ -69,7 +69,10 @@ bool FlowContainer::contains_nan_or_inf() const noexcept {
 }
 
 double FlowContainer::residual_offdiagonality() const noexcept {
-    return std::sqrt(interactions_same_spin.abs_squared_total() + interactions_differing_spin.abs_squared_total());
+    // A factor of 1/N is contained in the values of the interactions
+    // so -> abs_squared is 1/N^2, there a 3 sums of N elements -> scales as N
+    // sqrt(N) = L -> dividing by L makes ROD independent of the system size
+    return std::sqrt(interactions_same_spin.abs_squared_total() + interactions_differing_spin.abs_squared_total()) / L;
 }
 
 bool FlowContainer::is_inversion_symmetric() const noexcept

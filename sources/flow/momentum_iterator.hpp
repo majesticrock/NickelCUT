@@ -74,6 +74,10 @@ struct momentum_iterator {
 
     constexpr momentum_iterator(int pos) noexcept : _x(pos % _L), _y(pos / _L), _pos(pos) {}
 
+    constexpr momentum_iterator rotate_90() noexcept {
+        return momentum_iterator(_L - _y, _x);
+    }
+
     constexpr operator std::size_t() const noexcept {
         return static_cast<std::size_t>(_pos);
     }

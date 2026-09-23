@@ -8,6 +8,7 @@
 #include "../sources/flow/data_file_names.hpp"
 #include "../sources/flow/flow_state_serialization.hpp"
 
+#include <mrock/utility/InputFileReader.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
 #include <nlohmann/json.hpp>
 
@@ -23,13 +24,14 @@ using namespace NickelCUT;
 using namespace NickelCUT::flow;
 
 int main(int argc, char** argv) {
-    if (argc < 2) {
+    if (argc < 3) {
         std::cerr << "Not enough arguments provided to " << argv[0]
-                << "\nUsage: " << argv[0] << " <int: resume_step>" << std::endl;
+                << "\nUsage: " << argv[0] << "<configfile> <int: resume_step>" << std::endl;
         return 1;
     }
-    const int resume_step = std::stoi(argv[1]);
-    Model model(U_0, tprime, mu_0, T);
+    mrock::utility::InputFileReader input(argv[1]);
+    const int resume_step = std::stoi(argv[2]);
+    Model model(input);
 
     const std::string output_dir = std::string(OUTPUT_DATA_DIR) 
         + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
@@ -45,14 +47,14 @@ int main(int argc, char** argv) {
 
     FlowContainer flow_state = deserialize_flow_state(binary_ouput_dir, data_file_names::FINAL_FLOW_STATE + (resume_step > 0 ? argv[1] : ""));
     FlowEquation flow_equation;
-    BookKeeper book_keeper(flow_state, target_dl);
+    BookKeeper book_keeper(flow_state, target_dl(model.U_0));
 
     try {
         // Since the flow equation does not explicitl depend on l, we can just tell it to start again at l=0 and go to l_final
         // while keeping in mind that l=0 now corresponds to the l at which the last computation ended.
         boost::numeric::odeint::integrate_adaptive(
                     boost::numeric::odeint::make_controlled<boost_stepper>( abs_error, rel_error ),
-                    flow_equation, flow_state, 0.0, l_final, dl, boost::ref(book_keeper));
+                    flow_equation, flow_state, 0.0, l_final(model.U_0), dl(model.U_0), boost::ref(book_keeper));
     }
     catch (LargeRODException& e) {
         std::cout << e.what() << std::endl;
@@ -62,6 +64,8 @@ int main(int argc, char** argv) {
     if (!(book_keeper.lowest_ROD_state.is_inversion_symmetric() && book_keeper.lowest_ROD_state.is_hermitian())) {
         std::cerr << "State is no longer reliable!" << std::endl;
     }
+
+    book_keeper.print_final(flow_state, l_final(model.U_0));
 
     const nlohmann::json j_metadata = model.generate_meta_data_json();
     nlohmann::json j_flow_data = book_keeper;
@@ -76,6 +80,5 @@ int main(int argc, char** argv) {
     serialize_flow_state(flow_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE + name_append);
     serialize_extracted_channels(book_keeper.extracted_channels[book_keeper.index_of_lowest_ROD], binary_ouput_dir, data_file_names::LOWEST_ROD_EXTRACTED_CHANNELS + name_append);
 
-    book_keeper.print_final();
     return 0;
 }

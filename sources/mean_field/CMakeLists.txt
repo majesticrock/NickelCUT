@@ -1,4 +1,6 @@
 add_library(mean_field_lib STATIC 
+    TCFinder.cpp
+    OrderType.cpp
     Model.cpp
 )
 

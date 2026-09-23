@@ -8,6 +8,7 @@
 #include "../sources/flow/data_file_names.hpp"
 #include "../sources/flow/flow_state_serialization.hpp"
 
+#include <mrock/utility/InputFileReader.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
 #include <nlohmann/json.hpp>
 
@@ -22,8 +23,14 @@
 using namespace NickelCUT;
 using namespace NickelCUT::flow;
 
-int main(int /*argc*/, char** /*argv*/) {
-    Model model(U_0, tprime, mu_0, T);
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        std::cerr << "Invalid number of arguments: Use <path_to_executable> <configfile>" << std::endl;
+        return -1;
+    }
+    mrock::utility::InputFileReader input(argv[1]);
+
+    Model model(input);
     FlowContainer flow_state(model);
     std::cout << "\nConstructed initial states. The filling of the system is " << model.filling << std::endl;
 
@@ -39,12 +46,12 @@ int main(int /*argc*/, char** /*argv*/) {
     std::filesystem::create_directories(binary_ouput_dir);
 
     FlowEquation flow_equation;
-    BookKeeper book_keeper(flow_state, target_dl);
+    BookKeeper book_keeper(flow_state, target_dl(model.U_0));
 
     try {
         boost::numeric::odeint::integrate_adaptive(
                     boost::numeric::odeint::make_controlled<boost_stepper>( abs_error, rel_error ),
-                    flow_equation, flow_state, 0.0, l_final, dl, boost::ref(book_keeper));
+                    flow_equation, flow_state, 0.0, l_final(model.U_0), dl(model.U_0), boost::ref(book_keeper));
     }
     catch (LargeRODException& e) {
         std::cout << e.what() << std::endl;
@@ -55,6 +62,8 @@ int main(int /*argc*/, char** /*argv*/) {
         std::cerr << "State is no longer reliable!" << std::endl;
     }
     
+    book_keeper.print_final(flow_state, l_final(model.U_0));
+
     const nlohmann::json j_metadata = model.generate_meta_data_json();
     nlohmann::json j_flow_data = book_keeper;
     j_flow_data.merge_patch(j_metadata);
@@ -67,6 +76,5 @@ int main(int /*argc*/, char** /*argv*/) {
     serialize_flow_state(flow_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE);
     serialize_extracted_channels(book_keeper.extracted_channels[book_keeper.index_of_lowest_ROD], binary_ouput_dir, data_file_names::LOWEST_ROD_EXTRACTED_CHANNELS);
 
-    book_keeper.print_final();
     return 0;
 }

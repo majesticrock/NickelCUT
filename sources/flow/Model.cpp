@@ -4,6 +4,7 @@
 #include "../L.hpp"
 
 #include <mrock/utility/better_to_string.hpp>
+#include <mrock/utility/InputFileReader.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
 #include <nlohmann/json.hpp>
 
@@ -13,13 +14,12 @@
 
 namespace NickelCUT::flow
 {
-Model::Model(double U_0_, double tprime_, double E_F_, double temperature_) 
-    : U_0{U_0_},
-    tprime{tprime_},
-    E_F{E_F_},
-    temperature{temperature_},
+Model::Model(mrock::utility::InputFileReader& input) 
+    : U_0{input.getDouble("U_0")},
+    tprime{input.getDouble("tprime")},
+    E_F{input.getDouble("E_F")},
+    temperature{input.getDouble("T")},
     beta{temperature > 0.0 ? 1. / temperature : -1.}
-    //chemical_potential{E_F_}
 {
     filling = compute_occupation_numbers(*this);
 }

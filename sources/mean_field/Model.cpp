@@ -5,12 +5,17 @@
 #include "../L.hpp"
 #include "../flow/flow_state_serialization.hpp"
 #include "../flow/data_file_names.hpp"
+#include "../helper_functions.hpp"
 
+#include <mrock/utility/InputFileReader.hpp>
+
+#include <algorithm>
 #include <iostream>
 #include <filesystem>
 #include <fstream>
-#include <set>
+#include <iterator>
 #include <limits>
+#include <vector>
 
 #ifdef NICKEL_COMPLEX
 #define __conj(x) std::conj(x)
@@ -24,25 +29,25 @@ constexpr double MU_INITIAL_STEP = 0.1;
 namespace NickelCUT::mean_field
 {
     
-Model::Model(const std::string& binary_data_dir, double U_0_, double tprime_, double E_F_, double temperature_)
-    : flow::Model(U_0_, tprime_, E_F_, temperature_),
+Model::Model(const std::string& binary_data_dir, mrock::utility::InputFileReader& input)
+    : flow::Model(input),
     extracted_channels(flow::deserialize_extracted_channels(binary_data_dir + flow::Model::data_dir_name(), flow::data_file_names::LOWEST_ROD_EXTRACTED_CHANNELS)),
     deltas(5*N, 0.0),
-    chemical_potential{0.0}
+    chemical_potential{0.0},
+    target_filling{2. * filling} // filling is computed by the parent model.
 {
-    filling = 0.0;
-    // Compute the filling without any mean-field order
-    for (std::size_t p=0U; p < extracted_channels.dispersion.size(); ++p) {
-        filling += 2 * fermi_function_zero_temperature(extracted_channels.dispersion[p]); // factor 2 for spin degeneracy
-    }
-    filling /= N;
-    std::cout << "Filling = " << filling << std::endl;
+    reset_self_consistency_values();
+    std::cout << "Target filling = " << target_filling << "     Filling = " << filling << std::endl;
+}
 
+void Model::reset_self_consistency_values() noexcept
+{
     for (momentum_t p = momentum_t::begin(); p != momentum_t::end(); ++p) {
         Sigma_up(p) = extracted_channels.dispersion[p] - extracted_channels.epsilon_tilde[p];
         Sigma_down(p) = Sigma_up(p);
     }
-    //compute_chemical_potential();
+    compute_chemical_potential();
+    filling = compute_filling();
 
     for (int p = 0; p < N; ++p) {
         // Some mindlessly picked initial values
@@ -54,7 +59,6 @@ Model::Model(const std::string& binary_data_dir, double U_0_, double tprime_, do
 
 void Model::iteration_step(const ParameterVector& initial_values, ParameterVector& result) 
 {
-    static int i=0; ++i;
     result.setZero();
     this->deltas.fill_with(initial_values);
     
@@ -97,21 +101,22 @@ void Model::iteration_step(const ParameterVector& initial_values, ParameterVecto
     this->deltas.fill_with(result, 0.5);
     this->deltas.clear_noise(PRECISION);
 
-    std::cout << i << ": " << max_Delta_SC() << "\t" << max_Delta_AFM() << "\t" << max_Delta_CDW() 
-        << "\t" << chemical_potential << "\t" << compute_filling() << std::endl;
-
     result -= initial_values;
+
+    //static int i=0; ++i;
+    //std::cout << i << ": " << result.norm() << "  ||  " << max_Delta_SC() << "\t" << max_Delta_AFM() << "\t" << max_Delta_CDW() 
+    //    << "\t" << chemical_potential << "\t" << compute_filling() << std::endl;
 }
 
 double Model::compute_filling()
 {
-    double filling{};
+    double _filling{};
     for (momentum_t p = momentum_t::begin(); p != momentum_t::half_end(); ++p) {
         compute_rho(p);
-        filling += 2 - rho(0,0) - rho(1,1) + rho(2,2) + rho(3,3);
+        _filling += 2 - rho(0,0) - rho(1,1) + rho(2,2) + rho(3,3);
     }
-    filling /= N;
-    return filling;
+    _filling /= N;
+    return _filling;
 }
 
 double Model::max_Delta_SC() const noexcept 
@@ -140,6 +145,58 @@ double Model::max_Delta_CDW() const noexcept {
             current = std::abs(Delta_DW_up(i) + Delta_DW_down(i));
     }
     return 0.5 * current;
+}
+
+OrderType Model::order_type(double mean_field_precision) const noexcept {
+    OrderType ret = OrderType::NormalMetal;
+    if (max_Delta_SC() > 10. * mean_field_precision) {
+        // SC order exists
+        double c_s{};
+        double c_d{};
+        for (momentum_t k = momentum_t::begin(); k != momentum_t::end(); ++k) {
+            c_s += Delta_SC(k);
+            c_d += Delta_SC(k) * (std::cos(k.get_kx()) - std::cos(k.get_ky()));
+        }
+        c_s /= N;
+        c_d /= N;
+        
+        if (std::abs(c_s) > 10. * mean_field_precision) ret = ret | OrderType::swave_SC;
+        if (std::abs(c_d) > 10. * mean_field_precision) ret = ret | OrderType::dwave_SC;
+    }
+    if (max_Delta_AFM() > 10. * mean_field_precision) {
+        // AFM order exists
+        ret = ret | OrderType::AFM;
+    }
+    if (max_Delta_CDW() > 10. * mean_field_precision) {
+        // CDW order exists
+        ret = ret | OrderType::CDW;
+    }
+
+    return ret;
+}
+
+nlohmann::json Model::selfconsistency_to_json() const noexcept {
+    std::array<double, N> _Delta_SC; 
+    std::array<double, N> _Delta_AFM;
+    std::array<double, N> _Delta_CDW;
+    std::array<double, N> _epsilon_up;
+    std::array<double, N> _epsilon_down;
+
+    for (std::size_t i = 0U; i < _Delta_SC.size(); ++i) {
+        _Delta_SC[i] = Delta_SC(i);
+        _Delta_AFM[i] = 0.5 * (Delta_DW_up(i) - Delta_DW_down(i));
+        _Delta_CDW[i] = 0.5 * (Delta_DW_up(i) + Delta_DW_down(i));
+        _epsilon_up[i] = dispersion_up(i);
+        _epsilon_down[i] = dispersion_down(i);
+    }
+
+    return nlohmann::json{
+        { "Delta_SC",     _Delta_SC     },
+        { "Delta_AFM",    _Delta_AFM    },
+        { "Delta_CDW",    _Delta_CDW    },
+        { "epsilon_up",   _epsilon_up   },
+        { "epsilon_down", _epsilon_down }
+    };
 }
 
 void Model::fill_hamiltonian(const momentum_t& p)
@@ -179,97 +236,44 @@ void Model::compute_rho(const momentum_t& p)
 
 void Model::compute_chemical_potential()
 {
-    //static int i=0; ++i;
-    // If the chemical potential is too small, the computed filling will be too small
-    // and therefore this lambda will return -1
-    // If the chemical potential is too large, the lambda will return 1
-    // If the chemical potential is just right, the lambda returns 0
-    auto filling_func = [this](double mu_) {
-        this->chemical_potential = mu_;
-        return compute_filling() - filling;
+    std::vector<double> energy_levels;
+    for (momentum_t p = momentum_t::begin(); p != momentum_t::end(); ++p) {
+        energy_levels.push_back(dispersion_up(p) + chemical_potential);
+        energy_levels.push_back(dispersion_down(p) + chemical_potential);
+    }
+
+    if (energy_levels.empty()) {
+        return;
+    }
+
+    auto sort_and_unique = [](std::vector<double>& values) {
+        std::sort(values.begin(), values.end());
+        values.erase(std::unique(values.begin(), values.end(), float_equal), values.end());
     };
-    double low{ chemical_potential - MU_INITIAL_STEP }; 
-    double up{ chemical_potential + MU_INITIAL_STEP };
 
-    std::set<double> unique_energies;
-    for(momentum_t p = momentum_t::begin(); p != momentum_t::half_end(); ++p) {
-        fill_hamiltonian(p);
-        eigensolver.compute(hamiltonian, Eigen::EigenvaluesOnly);
-        for (const auto& ev : eigensolver.eigenvalues()) {
-            unique_energies.insert(ev);
+    sort_and_unique(energy_levels);
+
+    std::vector<double> chemical_potentials = energy_levels;
+    for (auto lower = energy_levels.begin(), upper = std::next(lower);
+         upper != energy_levels.end(); ++lower, ++upper) {
+        chemical_potentials.push_back(0.5 * (*lower + *upper));
+    }
+    sort_and_unique(chemical_potentials);
+
+    double best_chemical_potential = chemical_potentials.front();
+    double best_filling_difference = std::numeric_limits<double>::max();
+
+    for (const double candidate : chemical_potentials) {
+        chemical_potential = candidate;
+        const double filling_difference = std::abs(compute_filling() - target_filling);
+        if (filling_difference < best_filling_difference) {
+            best_chemical_potential = candidate;
+            best_filling_difference = filling_difference;
         }
     }
-    for (const auto& energy : unique_energies) {
-        if (is_zero(filling_func(energy))) {
-            // The chemical potential should lie exactly on one of the energy levels
-            return;
-        }
-    }
-    // The chemical potential should lie somewhere between the energy levels
 
-    // Starting values are for now guess work
-    double f_low{filling_func(low)};
-    while (greater_or_almost_equal(f_low, 0.0)) {
-        low -= MU_INITIAL_STEP;
-        f_low = filling_func(low);
-    }
-
-    double f_up{filling_func(up)};
-    while (!greater_or_almost_equal(f_up, 0.0)) {
-        up += MU_INITIAL_STEP;
-        f_up = filling_func(up);
-    }
-    const double initial_up{up};
-
-    double center{ 0.5 * (up + low) };
-    double f_center{filling_func(center)};
-
-    // First try to find mu_-; the smallest value for the chemical potential that matches our desired filling
-    while(up - low > MU_TOL) {
-        if (greater_or_almost_equal(f_center, 0.0)){
-            up = center;
-            f_up = f_center;
-        }
-        else {
-            low = center;
-            f_low = f_center;
-        }
-        center = 0.5 * (up + low);
-        f_center = filling_func(center);
-    }
-    const double mu_minus = center;
-
-    // Now try to find mu_+; the largest value for the chemical potential that matches our desired filling
-    low = mu_minus;
-    up = initial_up;
-    while (less_or_almost_equal(f_up, 0.0)) {
-        up += MU_INITIAL_STEP;
-        f_up = filling_func(up);
-    }
-    center = 0.5 * (up + low);
-
-    f_low = filling_func(low);
-    f_up = filling_func(up);
-    f_center = filling_func(center);
-    while(up - low > MU_TOL) {
-        if (less_or_almost_equal(f_center, 0.0)) {
-            low = center;
-            f_low = f_center;
-        }
-        else {
-            up = center;
-            f_up = f_center;
-        }
-        center = 0.5 * (up + low);
-        f_center = filling_func(center);
-    }
-    const double mu_plus = center;
-
-    this->chemical_potential = 0.5 * (mu_minus + mu_plus);
-    const double reached_filling = compute_filling();
-    if (!is_zero(reached_filling - filling)) {
-        throw std::runtime_error("Failed finding the chemical potential! Wanted a filling of " + std::to_string(filling) + " but got " + std::to_string(reached_filling));
-    }
+    chemical_potential = best_chemical_potential;
+    filling = compute_filling();
 }
 
 } // namespace NickelCUT::mean_field

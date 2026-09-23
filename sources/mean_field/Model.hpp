@@ -3,10 +3,13 @@
 #include "../flow/Model.hpp"
 #include "../flow/ExtractionContainer.hpp"
 #include "../flow/momentum_iterator.hpp"
-#include "ModelAttributes.hpp"
 #include "../L.hpp"
+#include "ModelAttributes.hpp"
+#include "OrderType.hpp"
 
+#include <mrock/utility/InputFileReader.hpp>
 #include <Eigen/Dense>
+#include <nlohmann/json.hpp>
 
 #include <cassert>
 #include <string>
@@ -21,8 +24,11 @@ struct Model : public flow::Model {
     ModelAttributes<double> deltas;
 
     double chemical_potential;
+    double target_filling;
 
-    Model(const std::string& binary_data_dir, double U_0_, double tprime_, double E_F_, double temperature_);
+    Model(const std::string& binary_data_dir, mrock::utility::InputFileReader& input);
+
+    void reset_self_consistency_values() noexcept;
 
     // Functionality for the self-consistency procedure
     void iteration_step(const ParameterVector& initial_values, ParameterVector& result);
@@ -31,6 +37,10 @@ struct Model : public flow::Model {
     double max_Delta_SC() const noexcept;
     double max_Delta_AFM() const noexcept;
     double max_Delta_CDW() const noexcept;
+
+    OrderType order_type(double mean_field_precision) const noexcept;
+
+    nlohmann::json selfconsistency_to_json() const noexcept;
 
     // Accessor convenience functions
     inline double Delta_SC(std::size_t i) const noexcept {
