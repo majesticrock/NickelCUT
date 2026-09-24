@@ -82,9 +82,9 @@ for NEW_VALUE in "${NEW_VALUES[@]}"; do
       -e "s|#SBATCH --job-name=flow|#SBATCH --job-name=flow_${NEW_NAME}_${CURRENT_TIME}|" \
       -e "s|#SBATCH --output=/home/althueser/phd/cpp/NickelCUT/output_med.txt|#SBATCH --output=${PROJECT_ROOT}/output_${CURRENT_TIME}_${NEW_NAME}.txt|" \
       -e "s|^#SBATCH --partition=.*|#SBATCH --partition=med|" \
-      -e "s|./build/cascadelake/flow params/med_queue.config|${BUILD_DIR}/flow ${OUTPUT_DIR}/${NEW_NAME}.config|" \
+      -e "s|./build/cascadelake/apps/flow params/med_queue.config|${BUILD_DIR}/apps/flow ${OUTPUT_DIR}/${NEW_NAME}.config|" \
       "${SLURM_TEMPLATE}" > "${slurm_path}"
 
   echo "Submitting ${slurm_path}"
-  #sbatch "${slurm_path}"
+  sbatch "${slurm_path}"
 done
