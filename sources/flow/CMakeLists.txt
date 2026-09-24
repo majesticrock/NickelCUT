@@ -15,6 +15,7 @@ endif()
 
 add_library(flow_lib STATIC
     BookKeeper.cpp
+    FlowExceptions.cpp
     DecouplingChannel.cpp
     Model.cpp
     ExtractionContainer.cpp

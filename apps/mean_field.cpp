@@ -28,11 +28,13 @@ int main(int argc, char** argv) {
 
     const std::string load_binary_dir = std::string(OUTPUT_DATA_DIR) 
         + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
+        + input.getString("output_dir") + "/"
         + "binaries/";
     mean_field::Model model(load_binary_dir, input);
 
     const std::string output_dir = std::string(OUTPUT_DATA_DIR) 
         + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
+        + input.getString("output_dir") + "/"
         + model.data_dir_name();
     
     const nlohmann::json j_metadata = model.generate_meta_data_json();

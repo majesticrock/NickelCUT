@@ -1,6 +1,7 @@
 #include "BookKeeper.hpp"
 #include "DecouplingChannel.hpp"
 #include "FlowContainer.hpp"
+#include "FlowExceptions.hpp"
 
 #include <mrock/utility/OutputConvenience.hpp>
 
@@ -10,7 +11,7 @@
 
 namespace NickelCUT::flow
 {
-BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _dl) 
+BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _dl, std::chrono::minutes::rep _max_runtime_duration) 
     : lowest_ROD{ initial_flow_state.residual_offdiagonality() },
     l_of_lowest_ROD{ 0.0 },
     index_of_lowest_ROD{ 0U },
@@ -21,6 +22,7 @@ BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _dl)
     dl{ _dl },
     max_dl{ 10 * dl },
     min_ROD_difference{ 0.02 * lowest_ROD },
+    max_runtime_duration{ _max_runtime_duration },
     begin(clock::now()), 
     last(begin),
     current_idx{ 0U }
@@ -70,6 +72,10 @@ void BookKeeper::print_final(const FlowContainer& x, double l) {
 
 void BookKeeper::operator()(const FlowContainer &x, double l)
 {
+    const auto total_runtime = std::chrono::duration_cast<std::chrono::minutes>(clock::now() - begin).count();
+    if (total_runtime > max_runtime_duration) {
+        throw LongRuntimeException(l);
+    }
     if (l - l_times.back() < dl) return;
 
     const double current_ROD = x.residual_offdiagonality();
@@ -98,7 +104,7 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
     }
 
     if (residual_offdiagonalities.back() > 5 * residual_offdiagonalities.front()) {
-        throw LargeRODException();
+        throw LargeRODException(l);
     }
 }
 

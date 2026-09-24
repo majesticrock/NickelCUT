@@ -7,6 +7,7 @@
 #include "../sources/flow/numerical_setup.hpp"
 #include "../sources/flow/data_file_names.hpp"
 #include "../sources/flow/flow_state_serialization.hpp"
+#include "../sources/flow/FlowExceptions.hpp"
 
 #include <mrock/utility/InputFileReader.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
@@ -35,9 +36,11 @@ int main(int argc, char** argv) {
 
     const std::string output_dir = std::string(OUTPUT_DATA_DIR) 
         + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
+        + input.getString("output_dir") + "/"
         + model.data_dir_name();
     const std::string binary_ouput_dir = std::string(OUTPUT_DATA_DIR) 
         + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
+        + input.getString("output_dir") + "/"
         + "binaries/"
         + model.data_dir_name();
 
@@ -47,17 +50,20 @@ int main(int argc, char** argv) {
 
     FlowContainer flow_state = deserialize_flow_state(binary_ouput_dir, data_file_names::FINAL_FLOW_STATE + (resume_step > 0 ? argv[1] : ""));
     FlowEquation flow_equation;
-    BookKeeper book_keeper(flow_state, target_dl(model.U_0));
+    BookKeeper book_keeper(flow_state, target_dl(model.U_0), input.getInt("max_runtime"));
 
+    double actual_l_final = -1.;
     try {
-        // Since the flow equation does not explicitl depend on l, we can just tell it to start again at l=0 and go to l_final
+        // Since the flow equation does not explicitly depend on l, we can just tell it to start again at l=0 and go to l_final
         // while keeping in mind that l=0 now corresponds to the l at which the last computation ended.
         boost::numeric::odeint::integrate_adaptive(
                     boost::numeric::odeint::make_controlled<boost_stepper>( abs_error, rel_error ),
                     flow_equation, flow_state, 0.0, l_final(model.U_0), dl(model.U_0), boost::ref(book_keeper));
+        actual_l_final = l_final(model.U_0);
     }
-    catch (LargeRODException& e) {
-        std::cout << e.what() << std::endl;
+    catch (ControlledFlowInterruption& e) {
+        actual_l_final = e.get_end_time();
+        std::cout << e.what() << "\nSaving current state..." << std::endl;
     }
 
     // Checks whether symmetries are preserved
@@ -65,7 +71,7 @@ int main(int argc, char** argv) {
         std::cerr << "State is no longer reliable!" << std::endl;
     }
 
-    book_keeper.print_final(flow_state, l_final(model.U_0));
+    book_keeper.print_final(flow_state, actual_l_final);
 
     const nlohmann::json j_metadata = model.generate_meta_data_json();
     nlohmann::json j_flow_data = book_keeper;
