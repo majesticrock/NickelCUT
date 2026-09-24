@@ -86,5 +86,5 @@ for NEW_VALUE in "${NEW_VALUES[@]}"; do
       "${SLURM_TEMPLATE}" > "${slurm_path}"
 
   echo "Submitting ${slurm_path}"
-  sbatch "${slurm_path}"
+  #sbatch "${slurm_path}"
 done

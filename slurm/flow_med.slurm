@@ -29,7 +29,6 @@ date
 echo "--- START ---"
 
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-## execute binary using mpirun on the allocated computation resource; the number of cores is $
 ./build/cascadelake/flow params/med_queue.config
 
 echo "--- END ---"
