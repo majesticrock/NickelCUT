@@ -40,3 +40,12 @@ target_link_libraries(mean_field
         mrock::utility
         mean_field_lib
 )
+
+add_executable(susceptibility_commute susceptibility_commute.cpp)
+target_link_libraries(susceptibility_commute
+    PRIVATE
+        nickelcut_options
+        mrock::utility
+        mrock::symbolic_operators
+        commute_lib
+)

@@ -11,7 +11,7 @@ inline constexpr double _ROD_0(double U_0) {
 }
 
 inline constexpr double l_final(double U_0) {
-    return (U_0 < 0. ? -1. : 1.) * (5. / U_0);
+    return (U_0 < 0. ? -1. : 1.) * (10. / U_0);
 }
 
 inline constexpr double target_dl(double U_0) {

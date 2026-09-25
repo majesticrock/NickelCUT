@@ -103,7 +103,7 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
         extracted_channels.push_back(ExtractionContainer(x));
     }
 
-    if (residual_offdiagonalities.back() > 5 * residual_offdiagonalities.front()) {
+    if (current_ROD > 5 * residual_offdiagonalities.front()) {
         throw LargeRODException(l);
     }
 }
