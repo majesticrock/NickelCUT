@@ -95,11 +95,10 @@ int main(int, char**)
             TermCollector terms = commutator(basis_daggered[j], commute_with_H);
             terms.clean_up();
 
-            WickTermCollector wicks;
-            wicks_theorem(terms, wick_templates, wicks);
+            WickTermCollector wicks = wicks_theorem(terms, wick_templates);
             wicks.clean_up(symmetries);
-            //carry_out_spin_summations(wicks);
-            //wicks.clean_up(symmetries);
+            carry_out_spin_summations(wicks);
+            wicks.clean_up(symmetries);
 
             std::cout << "\\begin{align*}\n\t\\langle [ " << basis_daggered[j].to_string_without_prefactor()
                         << ", [H, " << basis[i].to_string_without_prefactor() << " ]] \\rangle =" << wicks
@@ -109,8 +108,8 @@ int main(int, char**)
             wicks.clear();
             terms = commutator(basis_daggered[j], basis[i]);
             terms.clean_up();
-            wicks_theorem(terms, wick_templates, wicks);
-            //wicks.clean_up(symmetries);
+            wicks = wicks_theorem(terms, wick_templates);
+            wicks.clean_up(symmetries);
 
             std::cout << "\\begin{align*}\n\t[ " << basis_daggered[j].to_string_without_prefactor() << ", "
                         << basis[i].to_string_without_prefactor() << " ] =" << terms << "\\end{align*}" << std::endl;
