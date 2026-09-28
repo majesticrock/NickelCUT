@@ -141,23 +141,14 @@ std::ostream& operator<<(std::ostream& os, const WickOrderedTerm& term)
     return os;
 }
 
-bool operator==(const WickOrderedTerm& lhs, const WickOrderedTerm& rhs) {
-    if (lhs.coefficients != rhs.coefficients)
-        return false;
-    if (lhs.sums != rhs.sums)
-        return false;
-    if (lhs.delta_indices != rhs.delta_indices)
-        return false;
-    if (lhs.delta_momenta != rhs.delta_momenta)
-        return false;
-    if (lhs.operators != rhs.operators)
-        return false;
-    if (lhs.wick_expression != rhs.wick_expression)
-        return false;
-    return true;
+std::strong_ordering WickOrderedTerm::operator<=>(const WickOrderedTerm& other) const {
+    if (auto cmp = AbstractTerm<WickOperator>::operator<=>(other); cmp != 0)
+        return cmp;
+    return wick_expression.operators <=> other.wick_expression.operators;
 }
 
-bool operator!=(const WickOrderedTerm& lhs, const WickOrderedTerm& rhs) {
-    return !(lhs == rhs);
+bool WickOrderedTerm::operator==(const WickOrderedTerm& other) const {
+    return (*this <=> other) == 0;
 }
+
 }

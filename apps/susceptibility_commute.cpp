@@ -26,15 +26,15 @@ std::vector<TermCollector> get_basis_operators()
             TermCollector({Term(1, std::vector<Operator>({c_minus_k_dagger, c_minus_k}))}),
     };
 
-    //for (auto& _v : ret) {
-    //    for (auto& v : _v) {
-    //        if (v.operators.front().is_daggered) {
-    //            v.operators.front().momentum += Momentum('x');
-    //        } else {
-    //            v.operators.front().momentum += Momentum('x', -1);
-    //        }
-    //    }
-    //}
+    for (auto& _v : ret) {
+        for (auto& v : _v) {
+            if (v.operators.front().is_daggered) {
+                v.operators.front().momentum += Momentum('x');
+            } else {
+                v.operators.front().momentum += Momentum('x', -1);
+            }
+        }
+    }
     return ret;
 }
 
@@ -68,23 +68,38 @@ void carry_out_spin_summations(WickTermCollector& terms) {
     }
 }
 
+void help_not_summed(WickTermCollector& terms) {
+    for (auto& term : terms) {
+        if (term.coefficients.empty()) continue;
+        Coefficient& coeff = term.coefficients.front();
+        if (coeff.momenta.size() != 3U) continue;
+        if (coeff.momenta.front() == Momentum('l') || coeff.momenta.front() == Momentum('k', -1)) {
+            coeff.use_symmetric_interaction_exchange();
+            coeff.use_symmetric_interaction_inversion();
+        }
+    }
+}
+
 int main(int, char**)
 {
     const auto H = NickelCUT::commute::get_Hamiltonian();
-    const auto wick_templates = {WickOperatorTemplate{{SC_Comparison}, Momentum(), OperatorType::SC},
-            WickOperatorTemplate{{SC_Comparison}, Momentum(std::vector<MomentumSymbol>(), true), OperatorType::Eta},
-            WickOperatorTemplate{{Num_Comparison}, Momentum(), OperatorType::Number},
-            WickOperatorTemplate{{Num_Comparison}, Momentum(std::vector<MomentumSymbol>(), true), OperatorType::CDW}};
+    const auto wick_templates = NickelCUT::commute::get_wick_templates();
     const auto symmetries = NickelCUT::commute::get_symmetries();
 
     const std::vector<TermCollector> basis = get_basis_operators();
     std::vector<TermCollector> basis_daggered(basis);
+
+    std::cout << "The operator basis is\n\\begin{align*}\n\t B =";
     for (auto& t : basis_daggered) {
         t.hermitian_conjugate();
         t.rename_momenta('k', 'l');
+        std::cout << t << "\\\\\n";
     }
+    std::cout << "\\end{align*}\n" << std::endl;
 
     std::cout << "\\begin{align*}\n\t H =" << H << "\\end{align*}\n" << std::endl;
+
+    
 
     for (std::size_t i = 0U; i < basis.size(); ++i) {
         TermCollector commute_with_H = commutator(H, basis[i]);
@@ -98,6 +113,7 @@ int main(int, char**)
             WickTermCollector wicks = wicks_theorem(terms, wick_templates);
             wicks.clean_up(symmetries);
             carry_out_spin_summations(wicks);
+            help_not_summed(wicks);
             wicks.clean_up(symmetries);
 
             std::cout << "\\begin{align*}\n\t\\langle [ " << basis_daggered[j].to_string_without_prefactor()
@@ -111,8 +127,6 @@ int main(int, char**)
             wicks = wicks_theorem(terms, wick_templates);
             wicks.clean_up(symmetries);
 
-            std::cout << "\\begin{align*}\n\t[ " << basis_daggered[j].to_string_without_prefactor() << ", "
-                        << basis[i].to_string_without_prefactor() << " ] =" << terms << "\\end{align*}" << std::endl;
             std::cout << "\\begin{align*}\n\t[ " << basis_daggered[j].to_string_without_prefactor() << ", "
                         << basis[i].to_string_without_prefactor() << " ] =" << wicks << "\\end{align*}" << std::endl;
         }

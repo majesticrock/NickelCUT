@@ -8,6 +8,7 @@
 #include <mrock/symbolic_operators/WickOperatorTemplate.hpp>
 #include <mrock/symbolic_operators/WickTerm.hpp>
 
+#include <compare>
 #include <ostream>
 #include <vector>
 
@@ -107,6 +108,10 @@ public:
      * @return A copy of \c *this after the Hermitian conjugation 
      */
     WickOrderedTerm hermitian_conjugate() const noexcept;
+
+    std::strong_ordering operator<=>(const WickOrderedTerm& other) const;
+
+    bool operator==(const WickOrderedTerm& other) const;
 };
 
 /**
@@ -117,23 +122,5 @@ public:
  * @return The output stream.
  */
 std::ostream& operator<<(std::ostream& os, const WickOrderedTerm& term);
-
-/**
- * @brief Compares two WickOrderedTerm objects for equality.
- * 
- * @param lhs The left-hand side WickOrderedTerm.
- * @param rhs The right-hand side WickOrderedTerm.
- * @return true if the two WickOrderedTerm objects are equal, false otherwise.
- */
-bool operator==(const WickOrderedTerm& lhs, const WickOrderedTerm& rhs);
-
-/**
- * @brief Compares two WickOrderedTerm objects for inequality.
- * 
- * @param lhs The left-hand side WickOrderedTerm.
- * @param rhs The right-hand side WickOrderedTerm.
- * @return true if the two WickOrderedTerm objects are not equal, false otherwise.
- */
-bool operator!=(const WickOrderedTerm& lhs, const WickOrderedTerm& rhs);
 
 } // namespace mrock::symbolic_operators::experimental
