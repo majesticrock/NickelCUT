@@ -22,8 +22,14 @@ std::vector<TermCollector> get_basis_operators()
             TermCollector({Term(1, std::vector<Operator>({c_minus_k, c_k}))}),
             TermCollector({Term(1, std::vector<Operator>({c_k_dagger, c_minus_k_dagger}))}),
             // 2/3: n_up/down
-            TermCollector({Term(1, std::vector<Operator>({c_k_dagger, c_k}))}),
-            TermCollector({Term(1, std::vector<Operator>({c_minus_k_dagger, c_minus_k}))}),
+            TermCollector({
+                Term(1, std::vector<Operator>({c_k_dagger, c_k})),
+                Term(1, std::vector<Operator>({c_minus_k_dagger.with_momentum(Momentum('k',-1)), c_minus_k.with_momentum(Momentum('k',-1))}))
+            }),
+            TermCollector({
+                Term(1, std::vector<Operator>({c_k_dagger, c_k})),
+                Term(-1, std::vector<Operator>({c_minus_k_dagger.with_momentum(Momentum('k',-1)), c_minus_k.with_momentum(Momentum('k',-1))}))
+            })
     };
 
     for (auto& _v : ret) {

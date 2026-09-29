@@ -117,8 +117,9 @@ void to_json(nlohmann::json& j, const BookKeeper& book_keeper) noexcept
         { "lowest_ROD",                 book_keeper.lowest_ROD                },
         { "index_of_lowest_ROD",        book_keeper.index_of_lowest_ROD       },
         { "l_of_lowest_ROD",            book_keeper.l_of_lowest_ROD           },
-        { "extracted_channels",         book_keeper.extracted_channels        },
-        { "lowest_ROD_state",           book_keeper.lowest_ROD_state          }
+        { "extracted_channels",         book_keeper.extracted_channels        }
+        // Save lowest ROD state separately.
+        // { "lowest_ROD_state",           book_keeper.lowest_ROD_state          }
     };
 }
 
