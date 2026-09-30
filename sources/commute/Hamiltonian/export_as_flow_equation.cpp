@@ -254,7 +254,11 @@ void export_as_flow_equation(const std::array<experimental::WickOrderedCollector
         "momentum_iterator<L> K(K_pos);\n"
         "for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {\n"
         "for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {\n"
+        "#ifdef USE_LW_GENERATOR\n"
+        "alpha_sign_cache(K,P,Q) = current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q];\n"
+        "#else\n"
         "alpha_sign_cache(K,P,Q) = sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q]);\n"
+        "#endif\n"
         "} // Q-loop\n"
         "} // P-loop\n"
         "} // K-loop\n\n";

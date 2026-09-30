@@ -19,6 +19,15 @@
     },
 
     {
+      "name": "lw-generator",
+      "inherits": "base",
+      "binaryDir": "${sourceDir}/build/lw-generator",
+      "cacheVariables": {
+        "USE_LW_GENERATOR": "ON"
+      }
+    },
+
+    {
       "name": "cascadelake",
       "inherits": "base",
       "binaryDir": "${sourceDir}/build/cascadelake",
@@ -67,6 +76,10 @@
     {
       "name": "default",
       "configurePreset": "default"
+    },
+    {
+      "name": "lw-generator",
+      "configurePreset": "lw-generator"
     },
     {
       "name": "test",

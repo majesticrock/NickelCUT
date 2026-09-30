@@ -44,6 +44,8 @@ target_include_directories(nickelcut_options INTERFACE EXTRA_INCLUDE_DIRS)
 #
 # Tell the program where to place the data files
 #
+option(USE_LW_GENERATOR "Use the linear delta-epsilon generator for the flow equation" OFF)
+
 set(OUTPUT_DATA_DIR
     "${PROJECT_SOURCE_DIR}/../../data/nickel_cut/"
     CACHE PATH
@@ -53,6 +55,9 @@ cmake_path(
     APPEND OUTPUT_DATA_DIR "${_APPEND_DIR}"
     OUTPUT_VARIABLE OUTPUT_DATA_nickelcut_DIR
 )
+if(USE_LW_GENERATOR)
+    cmake_path(APPEND OUTPUT_DATA_nickelcut_DIR "LW")
+endif()
 # Ensure the path ends in exactly one "/"
 string(REGEX REPLACE "/+$" "" OUTPUT_DATA_nickelcut_DIR "${OUTPUT_DATA_nickelcut_DIR}")
 string(APPEND OUTPUT_DATA_nickelcut_DIR "/")

@@ -17,7 +17,11 @@ for (int K_pos=0; K_pos < N; ++K_pos) {
 momentum_iterator<L> K(K_pos);
 for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
 for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
+#ifdef USE_LW_GENERATOR
+alpha_sign_cache(K,P,Q) = current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q];
+#else
 alpha_sign_cache(K,P,Q) = sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q]);
+#endif
 } // Q-loop
 } // P-loop
 } // K-loop

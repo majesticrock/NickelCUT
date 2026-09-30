@@ -25,6 +25,10 @@ mean_field:
 	cmake -S . -B $(BUILD_DIR)
 	cmake --build $(BUILD_DIR) --target mean_field --parallel
 
+lw:
+	cmake --preset lw-generator
+	cmake --build --preset lw-generator --parallel
+
 cascadelake:
 	cmake --preset cascadelake
 	cmake --build --preset cascadelake --parallel
@@ -36,4 +40,4 @@ clean:
 	rm -rf build
 	rm -rf auto_generated*
 
-.PHONY: all clean commute debug BetaTest cascadelake
+.PHONY: all clean commute debug BetaTest cascadelake lw
