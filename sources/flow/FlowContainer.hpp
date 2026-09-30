@@ -43,6 +43,9 @@ struct FlowContainer {
     FlowContainer(FlowContainer&&) noexcept = default;
     FlowContainer& operator=(FlowContainer&&) noexcept = default;
 
+    double band_width() const noexcept;
+    double max_interaction() const noexcept;
+
     void fill_epsilon_tilde() noexcept;
 
     void fill(double value) noexcept;

@@ -11,17 +11,19 @@
 
 namespace NickelCUT::flow
 {
-BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _dl, std::chrono::minutes::rep _max_runtime_duration) 
+BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _band_width, double _dl, std::chrono::minutes::rep _max_runtime_duration) 
     : lowest_ROD{ initial_flow_state.residual_offdiagonality() },
     l_of_lowest_ROD{ 0.0 },
     index_of_lowest_ROD{ 0U },
     l_times{ 0.0 },
     residual_offdiagonalities{ lowest_ROD },
+    max_interactions{ initial_flow_state.max_interaction() },
     extracted_channels{ ExtractionContainer(initial_flow_state) },
     lowest_ROD_state{ initial_flow_state },
     dl{ _dl },
     max_dl{ 10 * dl },
     min_ROD_difference{ 0.02 * lowest_ROD },
+    initial_band_width{ _band_width },
     max_runtime_duration{ _max_runtime_duration },
     begin(clock::now()), 
     last(begin),
@@ -56,6 +58,7 @@ void BookKeeper::print_final(const FlowContainer& x, double l) {
     if (!float_equal(l_times.back(), l)) {
         l_times.push_back(l);
         residual_offdiagonalities.push_back(x.residual_offdiagonality());
+        max_interactions.push_back(N * x.max_interaction());
         extracted_channels.push_back(ExtractionContainer(x));
     }
 
@@ -76,6 +79,10 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
     if (total_runtime > max_runtime_duration) {
         throw LongRuntimeException(l);
     }
+    const double max_coeff = N * std::max(x.interactions_differing_spin.norm_inf(), x.interactions_same_spin.norm_inf());
+    if (max_coeff > 3. * initial_band_width) {
+        throw LargeInteractionException(l);
+    }
     if (l - l_times.back() < dl) return;
 
     const double current_ROD = x.residual_offdiagonality();
@@ -90,6 +97,7 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
                         && std::abs(l - *(l_times.end() - 2)) < max_dl) ) {
             l_times.back() = l;
             residual_offdiagonalities.back() = current_ROD;
+            max_interactions.back() = max_coeff;
             extracted_channels.back() = ExtractionContainer(x);
             --index_of_lowest_ROD;
         }
@@ -100,6 +108,7 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
     if (append) {
         l_times.push_back(l);
         residual_offdiagonalities.push_back(current_ROD);
+        max_interactions.push_back(max_coeff);
         extracted_channels.push_back(ExtractionContainer(x));
     }
 
@@ -114,6 +123,7 @@ void to_json(nlohmann::json& j, const BookKeeper& book_keeper) noexcept
         { "l_times",                    book_keeper.l_times                   },
         { "number_of_data_points",      book_keeper.l_times.size()            },
         { "residual_offdiagonalities",  book_keeper.residual_offdiagonalities },
+        { "max_interactions",           book_keeper.max_interactions          },
         { "lowest_ROD",                 book_keeper.lowest_ROD                },
         { "index_of_lowest_ROD",        book_keeper.index_of_lowest_ROD       },
         { "l_of_lowest_ROD",            book_keeper.l_of_lowest_ROD           },

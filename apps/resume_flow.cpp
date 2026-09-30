@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 
     FlowContainer flow_state = deserialize_flow_state(binary_ouput_dir, data_file_names::FINAL_FLOW_STATE + (resume_step > 0 ? argv[1] : ""));
     FlowEquation flow_equation;
-    BookKeeper book_keeper(flow_state, target_dl(model.U_0), input.getInt("max_runtime"));
+    BookKeeper book_keeper(flow_state, model.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
 
     double actual_l_final = -1.;
     try {
@@ -58,8 +58,8 @@ int main(int argc, char** argv) {
         // while keeping in mind that l=0 now corresponds to the l at which the last computation ended.
         boost::numeric::odeint::integrate_adaptive(
                     boost::numeric::odeint::make_controlled<boost_stepper>( abs_error, rel_error ),
-                    flow_equation, flow_state, 0.0, l_final(model.U_0), dl(model.U_0), boost::ref(book_keeper));
-        actual_l_final = l_final(model.U_0);
+                    flow_equation, flow_state, 0.0, l_final, dl(model.U_0), boost::ref(book_keeper));
+        actual_l_final = l_final;
     }
     catch (ControlledFlowInterruption& e) {
         actual_l_final = e.get_end_time();

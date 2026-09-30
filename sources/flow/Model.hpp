@@ -25,6 +25,8 @@ struct Model {
 
     double fermi_function(double energy) const noexcept;
 
+    double band_width() const noexcept;
+
     std::string info() const;
 
     std::string data_dir_name() const;

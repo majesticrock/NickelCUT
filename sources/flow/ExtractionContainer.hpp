@@ -35,5 +35,6 @@ struct ExtractionContainer {
 };
 
 void to_json(nlohmann::json& j, const ExtractionContainer& extracted_channels) noexcept;
+void from_json(const nlohmann::json& j, ExtractionContainer& extracted_channels);
 
 } // namespace NickelCUT::flow

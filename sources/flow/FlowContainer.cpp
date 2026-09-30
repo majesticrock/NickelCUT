@@ -175,6 +175,14 @@ bool FlowContainer::is_particle_hole_invariant() const noexcept
     return true;
 }
 
+double FlowContainer::band_width() const noexcept {
+    return (*std::max_element(dispersion.begin(), dispersion.end())) - (*std::min_element(dispersion.begin(), dispersion.end()));
+}
+
+double FlowContainer::max_interaction() const noexcept {
+    return std::max(interactions_same_spin.norm_inf(), interactions_differing_spin.norm_inf());
+}
+
 void FlowContainer::fill_epsilon_tilde() noexcept {
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
         epsilon_tilde[K] = dispersion[K];
@@ -199,15 +207,7 @@ double FlowContainer::abs_total() const noexcept
 
 double FlowContainer::norm_inf() const noexcept
 {
-    double val = interactions_same_spin.norm_inf();
-
-    double comp = interactions_differing_spin.norm_inf();
-    if(val < comp) val = comp;
-
-    comp = std::abs(*std::max_element(dispersion.begin(), dispersion.end(), LessThanAbs()));
-    if(val < comp) val = comp;
-
-    return val;
+    return std::max(max_interaction(), std::abs(*std::max_element(dispersion.begin(), dispersion.end(), LessThanAbs())));
 }
 
 FlowContainer abs(FlowContainer input) noexcept

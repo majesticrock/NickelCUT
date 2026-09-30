@@ -1,4 +1,5 @@
 #include "Model.hpp"
+#include "momentum_iterator.hpp"
 #include "occupation_numbers.hpp"
 #include "../helper_functions.hpp"
 #include "../L.hpp"
@@ -46,6 +47,19 @@ double Model::fermi_function(double energy) const noexcept
         return 1. / (1. + std::exp(beta*energy));
     }
     return fermi_function_zero_temperature(energy);
+}
+
+double Model::band_width() const noexcept {
+    double min = 100000.;
+    double max = -100000.;
+    for (const auto& kx : momentum_iterator<L>::momentum_cache) {
+        for (const auto& ky : momentum_iterator<L>::momentum_cache) {
+            const double E = epsilon_0(kx, ky);
+            if (E < min) min = E;
+            if (E > max) max = E;
+        }
+    }
+    return max - min;
 }
 
 std::string Model::info() const

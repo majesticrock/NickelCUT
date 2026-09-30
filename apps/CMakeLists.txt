@@ -41,6 +41,15 @@ target_link_libraries(mean_field
         mean_field_lib
 )
 
+add_executable(mean_field_flow mean_field_flow.cpp)
+target_link_libraries(mean_field_flow
+    PRIVATE
+        nickelcut_options
+        mrock::utility
+        mean_field_lib
+        Boost::iostreams
+    )
+
 add_executable(susceptibility_commute susceptibility_commute.cpp)
 target_link_libraries(susceptibility_commute
     PRIVATE

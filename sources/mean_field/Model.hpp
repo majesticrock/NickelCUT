@@ -27,6 +27,7 @@ struct Model : public flow::Model {
     double target_filling;
 
     Model(const std::string& binary_data_dir, mrock::utility::InputFileReader& input);
+    Model(flow::ExtractionContainer extracted_channels, mrock::utility::InputFileReader& input);
 
     void reset_self_consistency_values() noexcept;
 

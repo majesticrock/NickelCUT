@@ -10,12 +10,13 @@ inline constexpr double _ROD_0(double U_0) {
     return 0.5 * (U_0 < 0. ? -1. : 1.) * U_0;
 }
 
-inline constexpr double l_final(double U_0) {
-    return (U_0 < 0. ? -1. : 1.) * (10. / U_0);
-}
+// Just a very large number. The flow will be interrupted long before
+// this is actually reached, either by the max-runtime constraint, 
+// the max_ROD constraint, or the max_interaction constraint.
+constexpr double l_final = 10000.;
 
 inline constexpr double target_dl(double U_0) {
-    return l_final(U_0) / 50.;
+    return (U_0 < 0. ? -1. : 1.) * (10. / U_0) / 50.;
 }
 
 inline constexpr double dl(double U_0) {

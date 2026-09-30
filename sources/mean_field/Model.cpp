@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iterator>
 #include <limits>
+#include <utility>
 #include <vector>
 
 #ifdef NICKEL_COMPLEX
@@ -30,8 +31,18 @@ namespace NickelCUT::mean_field
 {
     
 Model::Model(const std::string& binary_data_dir, mrock::utility::InputFileReader& input)
+    : Model(
+        flow::deserialize_extracted_channels(
+            binary_data_dir + flow::Model::data_dir_name(),
+            flow::data_file_names::LOWEST_ROD_EXTRACTED_CHANNELS
+        ),
+        input
+    )
+{}
+
+Model::Model(flow::ExtractionContainer _extracted_channels, mrock::utility::InputFileReader& input)
     : flow::Model(input),
-    extracted_channels(flow::deserialize_extracted_channels(binary_data_dir + flow::Model::data_dir_name(), flow::data_file_names::LOWEST_ROD_EXTRACTED_CHANNELS)),
+    extracted_channels{std::move(_extracted_channels)},
     deltas(5*N, 0.0),
     chemical_potential{0.0},
     target_filling{2. * filling} // filling is computed by the parent model.

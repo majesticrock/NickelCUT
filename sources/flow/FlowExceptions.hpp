@@ -20,6 +20,11 @@ public:
     explicit LargeRODException(double end_time);
 };
 
+class LargeInteractionException : public ControlledFlowInterruption {
+public:
+    explicit LargeInteractionException(double end_time);
+};
+
 class LongRuntimeException : public ControlledFlowInterruption {
 public:
     explicit LongRuntimeException(double end_time);

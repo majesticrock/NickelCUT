@@ -18,6 +18,7 @@ struct BookKeeper {
     
     std::deque<double> l_times;
     std::deque<double> residual_offdiagonalities;
+    std::deque<double> max_interactions;
 
     std::deque<ExtractionContainer> extracted_channels;
 
@@ -25,7 +26,7 @@ struct BookKeeper {
 
     /////////////////////////////////////////////////////////
 
-    BookKeeper(const FlowContainer& initial_flow_state, double _dl, std::chrono::minutes::rep _max_runtime_duration);
+    BookKeeper(const FlowContainer& initial_flow_state, double _band_width, double _dl, std::chrono::minutes::rep _max_runtime_duration);
 
     // Returns true if the current ROD is the new lowest ROD
     bool process_step(double current_l, double ROD);
@@ -40,6 +41,7 @@ private:
     const double dl;
     const double max_dl;
     const double min_ROD_difference;
+    const double initial_band_width;
     const std::chrono::minutes::rep max_runtime_duration;
 
     const clock::time_point begin;

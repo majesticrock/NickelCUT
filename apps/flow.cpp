@@ -49,14 +49,14 @@ int main(int argc, char** argv) {
     std::filesystem::create_directories(binary_ouput_dir);
 
     FlowEquation flow_equation;
-    BookKeeper book_keeper(flow_state, target_dl(model.U_0), input.getInt("max_runtime"));
+    BookKeeper book_keeper(flow_state, flow_state.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
 
-    double actual_l_final = -1.;
+    double actual_l_final = 0.;
     try {
         boost::numeric::odeint::integrate_adaptive(
                     boost::numeric::odeint::make_controlled<boost_stepper>( abs_error, rel_error ),
-                    flow_equation, flow_state, 0.0, l_final(model.U_0), dl(model.U_0), boost::ref(book_keeper));
-        actual_l_final = l_final(model.U_0);
+                    flow_equation, flow_state, 0.0, l_final, dl(model.U_0), boost::ref(book_keeper));
+        actual_l_final = l_final;
     }
     catch (ControlledFlowInterruption& e) {
         actual_l_final = e.get_end_time();
