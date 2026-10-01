@@ -12,17 +12,12 @@
 namespace NickelCUT::flow
 {
 BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _band_width, double _dl, std::chrono::minutes::rep _max_runtime_duration) 
-    : lowest_ROD{ initial_flow_state.residual_offdiagonality() },
-    l_of_lowest_ROD{ 0.0 },
-    index_of_lowest_ROD{ 0U },
-    l_times{ 0.0 },
-    residual_offdiagonalities{ lowest_ROD },
-    max_interactions{ initial_flow_state.max_interaction() },
-    extracted_channels{ ExtractionContainer(initial_flow_state) },
-    lowest_ROD_state{ initial_flow_state },
+    : l_times{ 0.0 },
+    residual_offdiagonalities{ initial_flow_state.residual_offdiagonality() },
+    max_interactions{ N * initial_flow_state.max_interaction() },
     dl{ _dl },
     max_dl{ 10 * dl },
-    min_ROD_difference{ 0.02 * lowest_ROD },
+    min_interaction_difference{ 0.05 * _band_width },
     initial_band_width{ _band_width },
     max_runtime_duration{ _max_runtime_duration },
     begin(clock::now()), 
@@ -30,45 +25,30 @@ BookKeeper::BookKeeper(const FlowContainer& initial_flow_state, double _band_wid
     current_idx{ 0U }
 {
     std::cout << mrock::utility::time_stamp() << "   -   " << "Starting calculations...\n"
-        << "Initial ROD = " << lowest_ROD << "\n"
-        << "Saving data with a spacing of at least dl=" << dl << " and a maximum of dl=" << max_dl << " if the ROD difference is at least " << min_ROD_difference << std::endl;
+        << "Initial ROD = " << residual_offdiagonalities.back() << "\n"
+        << "Saving data with a spacing of at least dl=" << dl << " and a maximum of dl=" << max_dl
+         << " if the max(U) difference is at least " << min_interaction_difference << std::endl;
 };
-
-bool BookKeeper::process_step(double current_l, double ROD) {
-    bool updated = false;
-    ++current_idx;
-    if (ROD < lowest_ROD) {
-        lowest_ROD = ROD;
-        l_of_lowest_ROD = current_l;
-        index_of_lowest_ROD = extracted_channels.size();
-        updated = true;
-    }
-    clock::time_point now = clock::now();
-    std::cout << "//------------------------------------------------------//\n"
-        << "Step #" << current_idx << "\t" << mrock::utility::time_stamp() << "\n"
-        << "l = " << current_l
-        << "\t\tROD = " << ROD << "\n"
-        << "Step took " << std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count() << "ms to execute."
-        << std::endl;
-    last = now;
-    return updated;
-}
 
 void BookKeeper::print_final(const FlowContainer& x, double l) {
     if (!float_equal(l_times.back(), l)) {
         l_times.push_back(l);
         residual_offdiagonalities.push_back(x.residual_offdiagonality());
         max_interactions.push_back(N * x.max_interaction());
-        extracted_channels.push_back(ExtractionContainer(x));
     }
 
-    clock::time_point now = clock::now();
+    const std::chrono::hh_mm_ss hms(clock::now() - begin);
+
     std::cout << "//------------------------------------------------------//\n"
         << "\t Flow program finished at "
         << mrock::utility::time_stamp() << "\n"
-        << "lowest ROD achieved at l=" << l_of_lowest_ROD << "."
-        << "\t\tlowest ROD = " << lowest_ROD << "\n"
-        << "Total executation took " << std::chrono::duration_cast<std::chrono::seconds>(now - begin).count() << "s.\n"
+        << "\t\tfinal max(U) = " << max_interactions.back() << "\n"
+        << "Total executation took " 
+            << std::setfill('0')
+              << std::setw(2) << hms.hours().count() << ':'
+              << std::setw(2) << hms.minutes().count() << ':'
+              << std::setw(2) << hms.seconds().count()
+              << '\n'
         << "\tGoodbye."
         << std::endl;
 }
@@ -85,36 +65,19 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
     }
     if (l - l_times.back() < dl) return;
 
-    const double current_ROD = x.residual_offdiagonality();
-    bool append = std::abs(current_ROD - residual_offdiagonalities.back()) > min_ROD_difference 
-                        || std::abs(l - l_times.back()) > max_dl;
+    ++current_idx;
+    clock::time_point now = clock::now();
+    std::cout << "//------------------------------------------------------//\n"
+        << "Step #" << current_idx << "\t" << mrock::utility::time_stamp() << "\n"
+        << "l = " << l
+        << "\t\tmax(U) = " << max_coeff << "\n"
+        << "Step took " << std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count() << "ms to execute."
+        << std::endl;
+    last = now;
 
-    if (process_step(l, current_ROD)) {
-        lowest_ROD_state = x;
-
-        if (l_times.size() > 1U && 
-                    (std::abs(current_ROD - *(residual_offdiagonalities.end() - 2)) < min_ROD_difference 
-                        && std::abs(l - *(l_times.end() - 2)) < max_dl) ) {
-            l_times.back() = l;
-            residual_offdiagonalities.back() = current_ROD;
-            max_interactions.back() = max_coeff;
-            extracted_channels.back() = ExtractionContainer(x);
-            --index_of_lowest_ROD;
-        }
-        else {
-            append = true;
-        }
-    }
-    if (append) {
-        l_times.push_back(l);
-        residual_offdiagonalities.push_back(current_ROD);
-        max_interactions.push_back(max_coeff);
-        extracted_channels.push_back(ExtractionContainer(x));
-    }
-
-    if (current_ROD > 5 * residual_offdiagonalities.front()) {
-        throw LargeRODException(l);
-    }
+    l_times.push_back(l);
+    residual_offdiagonalities.push_back(x.residual_offdiagonality());
+    max_interactions.push_back(max_coeff);
 }
 
 void to_json(nlohmann::json& j, const BookKeeper& book_keeper) noexcept
@@ -123,13 +86,7 @@ void to_json(nlohmann::json& j, const BookKeeper& book_keeper) noexcept
         { "l_times",                    book_keeper.l_times                   },
         { "number_of_data_points",      book_keeper.l_times.size()            },
         { "residual_offdiagonalities",  book_keeper.residual_offdiagonalities },
-        { "max_interactions",           book_keeper.max_interactions          },
-        { "lowest_ROD",                 book_keeper.lowest_ROD                },
-        { "index_of_lowest_ROD",        book_keeper.index_of_lowest_ROD       },
-        { "l_of_lowest_ROD",            book_keeper.l_of_lowest_ROD           },
-        { "extracted_channels",         book_keeper.extracted_channels        }
-        // Save lowest ROD state separately.
-        // { "lowest_ROD_state",           book_keeper.lowest_ROD_state          }
+        { "max_interactions",           book_keeper.max_interactions          }
     };
 }
 

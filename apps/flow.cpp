@@ -8,6 +8,7 @@
 #include "../sources/flow/data_file_names.hpp"
 #include "../sources/flow/flow_state_serialization.hpp"
 #include "../sources/flow/FlowExceptions.hpp"
+#include "../sources/flow/ExtractionContainer.hpp"
 
 #include <mrock/utility/InputFileReader.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
@@ -26,8 +27,9 @@ using namespace NickelCUT::flow;
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::cerr << "Invalid number of arguments: Use <path_to_executable> <configfile>" << std::endl;
-        return -1;
+        std::cerr << "Not enough arguments provided to " << argv[0]
+                << "\nUsage: " << argv[0] << "<configfile>" << std::endl;
+        return 1;
     }
     mrock::utility::InputFileReader input(argv[1]);
 
@@ -51,6 +53,8 @@ int main(int argc, char** argv) {
     FlowEquation flow_equation;
     BookKeeper book_keeper(flow_state, flow_state.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
 
+    // Default end_reason will probably never be reached.
+    std::string end_reason = "Reached l_final";
     double actual_l_final = 0.;
     try {
         boost::numeric::odeint::integrate_adaptive(
@@ -60,27 +64,30 @@ int main(int argc, char** argv) {
     }
     catch (ControlledFlowInterruption& e) {
         actual_l_final = e.get_end_time();
-        std::cout << e.what() << "\nSaving current state..." << std::endl;
+        end_reason = e.what();
+        std::cout << end_reason << "\nSaving current state..." << std::endl;
     }
 
     // Checks whether symmetries are preserved
-    if (!(book_keeper.lowest_ROD_state.is_inversion_symmetric() && book_keeper.lowest_ROD_state.is_hermitian())) {
+    if (!(flow_state.is_inversion_symmetric() && flow_state.is_hermitian())) {
         std::cerr << "State is no longer reliable!" << std::endl;
     }
     
     book_keeper.print_final(flow_state, actual_l_final);
 
-    const nlohmann::json j_metadata = model.generate_meta_data_json();
+    nlohmann::json j_metadata = model.generate_meta_data_json();
+    j_metadata.update(nlohmann::json{{"end_reason", end_reason}});
+
     nlohmann::json j_flow_data = book_keeper;
-    j_flow_data.merge_patch(j_metadata);
-    nlohmann::json j_full_flow_state = book_keeper.lowest_ROD_state;
-    j_full_flow_state.merge_patch(j_metadata);
+    j_flow_data.update(j_metadata);
+    j_flow_data.update({"extracted_channels", ExtractionContainer(flow_state)});
+    nlohmann::json j_full_flow_state = flow_state;
+    j_full_flow_state.update(j_metadata);
 
     mrock::utility::save_string(j_flow_data.dump(4), output_dir + data_file_names::FLOW_STEPS);
     mrock::utility::save_string(j_full_flow_state.dump(4), output_dir + data_file_names::FULL_FLOW_STATE);
-    serialize_flow_state(book_keeper.lowest_ROD_state, binary_ouput_dir, data_file_names::LOWEST_ROD_STATE);
     serialize_flow_state(flow_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE);
-    serialize_extracted_channels(book_keeper.extracted_channels[book_keeper.index_of_lowest_ROD], binary_ouput_dir, data_file_names::LOWEST_ROD_EXTRACTED_CHANNELS);
+    serialize_extracted_channels(ExtractionContainer(flow_state), binary_ouput_dir, data_file_names::EXTRACTED_CHANNELS);
 
     return 0;
 }

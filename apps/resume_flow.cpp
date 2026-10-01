@@ -8,6 +8,7 @@
 #include "../sources/flow/data_file_names.hpp"
 #include "../sources/flow/flow_state_serialization.hpp"
 #include "../sources/flow/FlowExceptions.hpp"
+#include "../sources/flow/ExtractionContainer.hpp"
 
 #include <mrock/utility/InputFileReader.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
@@ -30,32 +31,48 @@ int main(int argc, char** argv) {
                 << "\nUsage: " << argv[0] << "<configfile> <int: resume_step>" << std::endl;
         return 1;
     }
+
+    const bool resume_run = argc >= 3;
+    const int resume_step = resume_run ? std::stoi(argv[2]) : 0;
+    (void)resume_step;
+
     mrock::utility::InputFileReader input(argv[1]);
-    const int resume_step = std::stoi(argv[2]);
     Model model(input);
 
     const std::string output_dir = std::string(OUTPUT_DATA_DIR) 
-        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
+        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/")
         + input.getString("output_dir") + "/"
         + model.data_dir_name();
     const std::string binary_ouput_dir = std::string(OUTPUT_DATA_DIR) 
-        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
+        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/")
         + input.getString("output_dir") + "/"
         + "binaries/"
         + model.data_dir_name();
 
-    if (!(std::filesystem::exists(output_dir) && std::filesystem::exists(binary_ouput_dir))) {
-        std::cerr << "Output dir does not exist. Cannot resume flow." << std::endl;
+    std::filesystem::create_directories(output_dir);
+    std::filesystem::create_directories(binary_ouput_dir);
+
+    FlowContainer flow_state;
+    if (resume_run) {
+        const std::string final_state_file = binary_ouput_dir + data_file_names::FINAL_FLOW_STATE;
+        if (!std::filesystem::exists(final_state_file)) {
+            std::cerr << "No serialized flow state found at " << final_state_file << ". Cannot resume flow." << std::endl;
+            return 1;
+        }
+        flow_state = deserialize_flow_state(binary_ouput_dir, data_file_names::FINAL_FLOW_STATE);
+        std::cout << "Loaded serialized flow state from " << final_state_file << std::endl;
+    }
+    else {
+        flow_state = FlowContainer(model);
+        std::cout << "\nConstructed initial states. The filling of the system is " << model.filling << std::endl;
     }
 
-    FlowContainer flow_state = deserialize_flow_state(binary_ouput_dir, data_file_names::FINAL_FLOW_STATE + (resume_step > 0 ? argv[1] : ""));
     FlowEquation flow_equation;
-    BookKeeper book_keeper(flow_state, model.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
+    BookKeeper book_keeper(flow_state, flow_state.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
 
-    double actual_l_final = -1.;
+    std::string end_reason = "Reached l_final";
+    double actual_l_final = 0.;
     try {
-        // Since the flow equation does not explicitly depend on l, we can just tell it to start again at l=0 and go to l_final
-        // while keeping in mind that l=0 now corresponds to the l at which the last computation ended.
         boost::numeric::odeint::integrate_adaptive(
                     boost::numeric::odeint::make_controlled<boost_stepper>( abs_error, rel_error ),
                     flow_equation, flow_state, 0.0, l_final, dl(model.U_0), boost::ref(book_keeper));
@@ -63,28 +80,30 @@ int main(int argc, char** argv) {
     }
     catch (ControlledFlowInterruption& e) {
         actual_l_final = e.get_end_time();
-        std::cout << e.what() << "\nSaving current state..." << std::endl;
+        end_reason = e.what();
+        std::cout << end_reason << "\nSaving current state..." << std::endl;
     }
 
-    // Checks whether symmetries are preserved
-    if (!(book_keeper.lowest_ROD_state.is_inversion_symmetric() && book_keeper.lowest_ROD_state.is_hermitian())) {
+    if (!(flow_state.is_inversion_symmetric() && flow_state.is_hermitian())) {
         std::cerr << "State is no longer reliable!" << std::endl;
     }
 
     book_keeper.print_final(flow_state, actual_l_final);
 
-    const nlohmann::json j_metadata = model.generate_meta_data_json();
-    nlohmann::json j_flow_data = book_keeper;
-    j_flow_data.merge_patch(j_metadata);
-    nlohmann::json j_full_flow_state = book_keeper.lowest_ROD_state;
-    j_full_flow_state.merge_patch(j_metadata);
+    nlohmann::json j_metadata = model.generate_meta_data_json();
+    j_metadata.update(nlohmann::json{{"end_reason", end_reason}});
 
-    const std::string name_append = std::to_string(resume_step + 1);
-    mrock::utility::save_string(j_flow_data.dump(4), output_dir + data_file_names::FLOW_STEPS + name_append);
-    mrock::utility::save_string(j_full_flow_state.dump(4), output_dir + data_file_names::FULL_FLOW_STATE + name_append);
-    serialize_flow_state(book_keeper.lowest_ROD_state, binary_ouput_dir, data_file_names::LOWEST_ROD_STATE + name_append);
-    serialize_flow_state(flow_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE + name_append);
-    serialize_extracted_channels(book_keeper.extracted_channels[book_keeper.index_of_lowest_ROD], binary_ouput_dir, data_file_names::LOWEST_ROD_EXTRACTED_CHANNELS + name_append);
+    nlohmann::json j_flow_data = book_keeper;
+    j_flow_data.update(j_metadata);
+    j_flow_data.update({"extracted_channels", ExtractionContainer(flow_state)});
+
+    nlohmann::json j_full_flow_state = flow_state;
+    j_full_flow_state.update(j_metadata);
+
+    mrock::utility::save_string(j_flow_data.dump(4), output_dir + data_file_names::FLOW_STEPS);
+    mrock::utility::save_string(j_full_flow_state.dump(4), output_dir + data_file_names::FULL_FLOW_STATE);
+    serialize_flow_state(flow_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE);
+    serialize_extracted_channels(ExtractionContainer(flow_state), binary_ouput_dir, data_file_names::EXTRACTED_CHANNELS);
 
     return 0;
 }
