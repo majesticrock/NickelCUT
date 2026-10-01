@@ -83,6 +83,12 @@ public:
         }}}
     }
 
+    void clear_noise() noexcept {
+        for (auto& val : _data) {
+            if (is_zero(val)) val = 0.;
+        }
+    }
+
     inline void fill(double value) noexcept {
         for (auto& element : _data) {
             element = value;

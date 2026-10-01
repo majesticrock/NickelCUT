@@ -22,6 +22,7 @@ endif()
 
 add_library(flow_lib STATIC
     BookKeeper.cpp
+    DenseBookKeeper.cpp
     FlowExceptions.cpp
     DecouplingChannel.cpp
     Model.cpp

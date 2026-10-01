@@ -47,7 +47,7 @@ nlohmann::json load_flow_json(const std::filesystem::path& path)
 
 std::string output_filename(const std::filesystem::path& flow_file)
 {
-    constexpr std::string_view flow_prefix = "flow.json.gz";
+    constexpr std::string_view flow_prefix = "dense_flow.json.gz";
     const std::string filename = flow_file.filename().string();
     if (!filename.starts_with(flow_prefix)) {
         throw std::invalid_argument("Expected a flow.json.gz[segment] input file");
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
             / input.getString("output_dir");
         const std::filesystem::path flow_file = output_root
             / model_parameters.data_dir_name()
-            / flow::data_file_names::FLOW_STEPS;
+            / flow::data_file_names::DENSE_FLOW_STEPS;
 
         if (!std::filesystem::is_regular_file(flow_file)) {
             throw std::runtime_error("Flow data file not found: " + flow_file.string());
@@ -120,7 +120,6 @@ int main(int argc, char** argv)
             { "E_F", flow_data.at("E_F") },
             { "target_filling", model.target_filling },
             { "l_times", l_times_json },
-            { "residual_offdiagonalities", rods_json },
             { "solutions", nlohmann::json::array() }
         };
 

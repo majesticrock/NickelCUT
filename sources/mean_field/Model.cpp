@@ -34,7 +34,7 @@ Model::Model(const std::string& binary_data_dir, mrock::utility::InputFileReader
     : Model(
         flow::deserialize_extracted_channels(
             binary_data_dir + flow::Model::data_dir_name(),
-            flow::data_file_names::EXTRACTED_CHANNELS
+            flow::data_file_names::FINAL_EXTRACTED_CHANNELS
         ),
         input
     )

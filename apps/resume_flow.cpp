@@ -3,12 +3,20 @@
 #include "../sources/flow/Model.hpp"
 #include "../sources/flow/FlowEquation.hpp"
 #include "../sources/helper_functions.hpp"
-#include "../sources/flow/BookKeeper.hpp"
 #include "../sources/flow/numerical_setup.hpp"
 #include "../sources/flow/data_file_names.hpp"
 #include "../sources/flow/flow_state_serialization.hpp"
 #include "../sources/flow/FlowExceptions.hpp"
 #include "../sources/flow/ExtractionContainer.hpp"
+
+#define DENSE_BOOK_KEEPING
+#ifdef DENSE_BOOK_KEEPING
+#include "../sources/flow/DenseBookKeeper.hpp"
+typedef NickelCUT::flow::DenseBookKeeper _book_keeper;
+#else
+#include "../sources/flow/BookKeeper.hpp"
+typedef NickelCUT::flow::BookKeeper _book_keeper;
+#endif
 
 #include <mrock/utility/InputFileReader.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
@@ -54,12 +62,12 @@ int main(int argc, char** argv) {
 
     FlowContainer flow_state;
     if (resume_run) {
-        const std::string final_state_file = binary_ouput_dir + data_file_names::FINAL_FLOW_STATE;
+        const std::string final_state_file = binary_ouput_dir + data_file_names::FINAL_FLOW_STATE_BIN;
         if (!std::filesystem::exists(final_state_file)) {
             std::cerr << "No serialized flow state found at " << final_state_file << ". Cannot resume flow." << std::endl;
             return 1;
         }
-        flow_state = deserialize_flow_state(binary_ouput_dir, data_file_names::FINAL_FLOW_STATE);
+        flow_state = deserialize_flow_state(binary_ouput_dir, data_file_names::FINAL_FLOW_STATE_BIN);
         std::cout << "Loaded serialized flow state from " << final_state_file << std::endl;
     }
     else {
@@ -68,7 +76,7 @@ int main(int argc, char** argv) {
     }
 
     FlowEquation flow_equation;
-    BookKeeper book_keeper(flow_state, flow_state.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
+    _book_keeper book_keeper(flow_state, flow_state.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
 
     std::string end_reason = "Reached l_final";
     double actual_l_final = 0.;
@@ -95,15 +103,19 @@ int main(int argc, char** argv) {
 
     nlohmann::json j_flow_data = book_keeper;
     j_flow_data.update(j_metadata);
-    j_flow_data.update({"extracted_channels", ExtractionContainer(flow_state)});
+    nlohmann::json j_final_flow_state = book_keeper.last_good_state;
+    j_final_flow_state.update(j_metadata);
 
-    nlohmann::json j_full_flow_state = flow_state;
-    j_full_flow_state.update(j_metadata);
-
+#ifdef DENSE_BOOK_KEEPING
+    mrock::utility::save_string(j_flow_data.dump(4), output_dir + data_file_names::DENSE_FLOW_STEPS);
+#else
     mrock::utility::save_string(j_flow_data.dump(4), output_dir + data_file_names::FLOW_STEPS);
-    mrock::utility::save_string(j_full_flow_state.dump(4), output_dir + data_file_names::FULL_FLOW_STATE);
-    serialize_flow_state(flow_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE);
-    serialize_extracted_channels(ExtractionContainer(flow_state), binary_ouput_dir, data_file_names::EXTRACTED_CHANNELS);
+#endif
+    
+    mrock::utility::save_string(j_final_flow_state.dump(4), output_dir + data_file_names::FINAL_FLOW_STATE_JSON);
+
+    serialize_flow_state(book_keeper.last_good_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE_BIN);
+    serialize_extracted_channels(ExtractionContainer(book_keeper.last_good_state), binary_ouput_dir, data_file_names::FINAL_EXTRACTED_CHANNELS);
 
     return 0;
 }

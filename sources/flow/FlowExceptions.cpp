@@ -21,4 +21,7 @@ LongRuntimeException::LongRuntimeException(double end_time)
 LargeInteractionException::LargeInteractionException(double end_time) 
     : ControlledFlowInterruption("One interaction matrix element grew very large...", end_time) {}
 
+BrokenSymmetriesException::BrokenSymmetriesException(double end_time) 
+    : ControlledFlowInterruption("Numerical errors have acrued and symmetries are broken.", end_time) {}
+
 }  // namespace NickelCUT::flow

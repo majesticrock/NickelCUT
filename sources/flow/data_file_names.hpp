@@ -5,10 +5,11 @@
 namespace NickelCUT::flow::data_file_names
 {
 
-inline const std::string FINAL_FLOW_STATE    = "final_flow_state.bin";
-inline const std::string LOWEST_ROD_STATE    = "lowest_ROD_state.bin";
-inline const std::string EXTRACTED_CHANNELS  = "extraced_channels.bin";
-inline const std::string FLOW_STEPS          = "flow.json.gz";
-inline const std::string FULL_FLOW_STATE     = "full_flow_state.json.gz";
+inline const std::string FINAL_FLOW_STATE_BIN     = "final_flow_state.bin";
+inline const std::string FINAL_FLOW_STATE_JSON    = "final_flow_state.json.gz";
+inline const std::string FINAL_EXTRACTED_CHANNELS = "final_extracted_channels.bin";
+inline const std::string FLOW_STEPS               = "flow.json.gz";
+inline const std::string DENSE_FLOW_STEPS         = "dense_flow.json.gz";
+
 
 } // namespace NickelCUT::flow::data_file_names

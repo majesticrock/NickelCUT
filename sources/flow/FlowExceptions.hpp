@@ -30,4 +30,9 @@ public:
     explicit LongRuntimeException(double end_time);
 };
 
+class BrokenSymmetriesException : public ControlledFlowInterruption {
+public:
+    explicit BrokenSymmetriesException(double end_time);
+};
+
 } // namespace NickelCUT::flow
