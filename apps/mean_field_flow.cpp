@@ -92,11 +92,12 @@ int main(int argc, char** argv)
         const auto& l_times_json = flow_data.at("l_times");
         const auto& rods_json = flow_data.at("residual_offdiagonalities");
         const auto& extracted_json = flow_data.at("extracted_channels");
-        if (!l_times_json.is_array() || !rods_json.is_array() || !extracted_json.is_array()
-            || l_times_json.empty() || l_times_json.size() != rods_json.size()
-            || l_times_json.size() != extracted_json.size()) {
-            throw std::invalid_argument("Flow data step arrays are missing or have inconsistent sizes");
+        if (!l_times_json.is_array() || !rods_json.is_array() || !extracted_json.is_array()) {
+            throw std::invalid_argument("Not all data are arrays");
         }
+        //if (l_times_json.empty() || l_times_json.size() != rods_json.size() || l_times_json.size() != extracted_json.size()) {
+        //    throw std::invalid_argument("Flow data step arrays are missing or have inconsistent sizes");
+        //}
 
         const std::vector<double> l_times = l_times_json.get<std::vector<double>>();
         const std::vector<double> rods = rods_json.get<std::vector<double>>();
@@ -106,15 +107,11 @@ int main(int argc, char** argv)
             input
         );
 
-        model.temperature = 0.0;
-        model.beta = -1.0;
-
         nlohmann::json output = {
             { "time", mrock::utility::time_stamp() },
             { "source_flow_file", flow_file.string() },
             { "L", flow_data.at("L") },
-            { "flow_temperature", flow_temperature },
-            { "mean_field_temperature", 0.0 },
+            { "T", flow_temperature },
             { "U_0", flow_data.at("U_0") },
             { "tprime", flow_data.at("tprime") },
             { "E_F", flow_data.at("E_F") },
@@ -123,7 +120,7 @@ int main(int argc, char** argv)
             { "solutions", nlohmann::json::array() }
         };
 
-        for (std::size_t index = 0; index < l_times.size(); ++index) {
+        for (std::size_t index = 0; index < extracted_json.size(); ++index) {
             model.extracted_channels = extracted_json.at(index).get<flow::ExtractionContainer>();
             model.reset_self_consistency_values();
             model.deltas.converged = false;

@@ -21,8 +21,9 @@ using namespace NickelCUT;
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::cerr << "Invalid number of arguments: Use <path_to_executable> <configfile>" << std::endl;
-        return -1;
+        std::cerr << "Not enough arguments provided to " << argv[0]
+                << "\nUsage: " << argv[0] << "<configfile>" << std::endl;
+        return 1;
     }
     mrock::utility::InputFileReader input(argv[1]);
 
@@ -52,18 +53,19 @@ int main(int argc, char** argv) {
     }
 
     nlohmann::json jData = model.selfconsistency_to_json();
-    std::cout << "Finished initial mean-field calculations. Found "
-        << to_string(model.order_type(1e-10)) 
-        << " order. Proceeding with T_c..." << std::endl;
-
-    mean_field::TCFinder tc(model, 0.05);
-    std::deque<mean_field::TransitionData> transition_data = tc.compute();
-
-    jData.update({
-        { "time", mrock::utility::time_stamp() } ,
-        { "transition_data", transition_data }
-    });
-    jData.update(j_metadata);
+    jData.update(nlohmann::json{{ "time", mrock::utility::time_stamp() }});
+    //std::cout << "Finished initial mean-field calculations. Found "
+    //    << to_string(model.order_type(1e-10)) 
+    //    << " order. Proceeding with T_c..." << std::endl;
+//
+    //mean_field::TCFinder tc(model, 0.05);
+    //std::deque<mean_field::TransitionData> transition_data = tc.compute();
+//
+    //jData.update({
+    //    { "time", mrock::utility::time_stamp() } ,
+    //    { "transition_data", transition_data }
+    //});
+    //jData.update(j_metadata);
 
     mrock::utility::save_string(jData.dump(4), output_dir + "mean_field_solution.json.gz");
 

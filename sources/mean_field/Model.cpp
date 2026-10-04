@@ -31,21 +31,25 @@ namespace NickelCUT::mean_field
 {
     
 Model::Model(const std::string& binary_data_dir, mrock::utility::InputFileReader& input)
-    : Model(
-        flow::deserialize_extracted_channels(
+    : flow::Model(input),
+    extracted_channels(flow::deserialize_extracted_channels(
             binary_data_dir + flow::Model::data_dir_name(),
             flow::data_file_names::FINAL_EXTRACTED_CHANNELS
-        ),
-        input
-    )
-{}
+        )),
+    deltas(5*N, 0.0),
+    chemical_potential{0.0},
+    target_filling{filling} // filling is computed by the parent model.
+{
+    reset_self_consistency_values();
+    std::cout << "Target filling = " << target_filling << "     Filling = " << filling << std::endl;
+}
 
 Model::Model(flow::ExtractionContainer _extracted_channels, mrock::utility::InputFileReader& input)
     : flow::Model(input),
     extracted_channels{std::move(_extracted_channels)},
     deltas(5*N, 0.0),
     chemical_potential{0.0},
-    target_filling{2. * filling} // filling is computed by the parent model.
+    target_filling{filling} // filling is computed by the parent model.
 {
     reset_self_consistency_values();
     std::cout << "Target filling = " << target_filling << "     Filling = " << filling << std::endl;

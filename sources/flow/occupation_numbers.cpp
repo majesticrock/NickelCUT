@@ -18,7 +18,7 @@ double compute_occupation_numbers(const Model& model) {
         occupation_numbers[p.get_position()] = model.fermi_function(model.epsilon_0(p.get_kx(), p.get_ky()));
         filling += occupation_numbers[p.get_position()];
     }
-    filling /= N;
+    filling *= 2. / N;
     return filling;
 }
 

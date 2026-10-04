@@ -62,7 +62,7 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
         throw LongRuntimeException(l);
     }
     const double max_coeff = N * std::max(x.interactions_differing_spin.norm_inf(), x.interactions_same_spin.norm_inf());
-    if (max_coeff > 3. * initial_band_width) {
+    if (max_coeff > 10. * initial_band_width) {
         throw LargeInteractionException(l);
     }
     const bool state_is_good = x.is_inversion_symmetric() && x.is_hermitian();

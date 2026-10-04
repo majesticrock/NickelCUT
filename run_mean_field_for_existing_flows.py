@@ -12,7 +12,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_DATA_ROOT = (PROJECT_ROOT / "../../data/nickel_cut").resolve()
-EXTRACTED_CHANNELS = "lowest_ROD_extraced_channels.bin"
+EXTRACTED_CHANNELS = "final_extracted_channels.bin"
 
 
 def read_config(path):
