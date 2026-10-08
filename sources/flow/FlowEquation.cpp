@@ -13,18 +13,17 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
 dHdl.reset();
 static InteractionDataFrame alpha_sign_cache;
 #pragma omp parallel for
-for (int K_pos=0; K_pos < N; ++K_pos) {
-momentum_iterator<L> K(K_pos);
-for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
-for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
+for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {
+const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];
+momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));
+momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
+momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
 #ifdef USE_LW_GENERATOR
 alpha_sign_cache(K,P,Q) = current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q];
 #else
 alpha_sign_cache(K,P,Q) = sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q]);
 #endif
-} // Q-loop
-} // P-loop
-} // K-loop
+}
 
 #pragma omp parallel for
 for (int K_pos=0; K_pos < N; ++K_pos) {
@@ -113,10 +112,11 @@ dHdl.dispersion[K] += 8.000000 * one_value * occupation_numbers[P];
 
 //--------------------------------------------------------------//
 #pragma omp parallel for
-for (int K_pos=0; K_pos < N; ++K_pos) {
-momentum_iterator<L> K(K_pos);
-for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
-for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
+for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {
+const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];
+momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));
+momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
+momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
 dHdl.interactions_differing_spin(K, P, Q) += 4.000000 * alpha_sign_cache(K, P, Q) 
 	* current.interactions_differing_spin(K, P, Q)
 	* current.epsilon_tilde[P-Q];
@@ -206,17 +206,16 @@ nR_value -= 2.000000 * current.interactions_same_spin(-K, -Q+R, K+R)
 	* current.interactions_differing_spin(-P, R, Q);
 dHdl.interactions_differing_spin(K, P, Q) += 4.000000 * (one_value + occupation_numbers[R] * nR_value);
 } // R-loop
-} // Q-loop
-} // P-loop
-} // K-loop
+}
 
 //--------------------------------------------------------------//
 #pragma omp parallel for
-for (int K_pos=0; K_pos < N; ++K_pos) {
-momentum_iterator<L> K(K_pos);
-for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
+for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {
+const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];
+momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));
+momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
+momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
 if (K==P) continue; // Pauli principle
-for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
 if (K+Q==P-Q) continue; // Pauli principle
 dHdl.interactions_same_spin(K, P, Q) += 4.000000 * alpha_sign_cache(K, P, Q) 
 	* current.interactions_same_spin(K, P, Q)
@@ -307,9 +306,7 @@ nR_value -= 2.000000 * current.interactions_same_spin(-K, -Q+R, K+R)
 	* current.interactions_same_spin(-P, R, Q);
 dHdl.interactions_same_spin(K, P, Q) += 4.000000 * (one_value + occupation_numbers[R] * nR_value);
 } // R-loop
-} // Q-loop
-} // P-loop
-} // K-loop
+}
 dHdl.interactions_same_spin.antisymmetrize();
 dHdl.interactions_same_spin.symmetrize();
 dHdl.interactions_differing_spin.symmetrize();
