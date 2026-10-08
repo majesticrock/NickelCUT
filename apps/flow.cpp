@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     std::filesystem::create_directories(binary_ouput_dir);
 
     FlowEquation flow_equation;
-    _book_keeper book_keeper(flow_state, flow_state.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
+    _book_keeper book_keeper(flow_state, flow_equation, flow_state.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
 
     // Default end_reason will probably never be reached.
     std::string end_reason = "Reached l_final";

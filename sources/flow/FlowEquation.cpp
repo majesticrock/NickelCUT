@@ -310,5 +310,8 @@ dHdl.interactions_same_spin(K, P, Q) += 4.000000 * (one_value + occupation_numbe
 dHdl.interactions_same_spin.antisymmetrize();
 dHdl.interactions_same_spin.symmetrize();
 dHdl.interactions_differing_spin.symmetrize();
+
+dHdl.interactions_same_spin.clear_noise();
+dHdl.interactions_differing_spin.clear_noise();
 }
 } // namespace NickelCUT::flow

@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
     }
 
     FlowEquation flow_equation;
-    _book_keeper book_keeper(flow_state, flow_state.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
+    _book_keeper book_keeper(flow_state, flow_equation, flow_state.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
 
     std::string end_reason = "Reached l_final";
     double actual_l_final = 0.;

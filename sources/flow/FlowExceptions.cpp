@@ -15,6 +15,12 @@ double ControlledFlowInterruption::get_end_time() const noexcept {
 LargeRODException::LargeRODException(double end_time)
     : ControlledFlowInterruption("The ROD grew very large...", end_time) {}
 
+LargeDerivativeRODException::LargeDerivativeRODException(double end_time)
+    : ControlledFlowInterruption("The derivative ROD grew very large...", end_time) {}
+
+SmallDerivativeRODException::SmallDerivativeRODException(double end_time)
+    : ControlledFlowInterruption("The derivative ROD became very small...", end_time) {}
+
 LongRuntimeException::LongRuntimeException(double end_time)
     : ControlledFlowInterruption("The program ran for a long time...", end_time) {}
 
