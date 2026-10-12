@@ -1,12 +1,13 @@
 #include "commutator_of_cut.hpp"
 
-#include "../experimental/WickOrderedCollector.hpp"
-#include "verify/Verifier.hpp"
+#include <mrock/symbolic_operators/experimental/WickOrderedCollector.hpp>
+#include <mrock/symbolic_operators/experimental/verify/Verifier.hpp>
 
 #include <mrock/symbolic_operators/Commutation>
 #include <mrock/symbolic_operators/ExpectationValues>
 
 namespace NickelCUT::commute {
+namespace verify = mrock::symbolic_operators::experimental::verify;
 using namespace mrock::symbolic_operators;
 
 const Operator c_p_sigma        = Operator(Momentum('K'), Index::Sigma,      false);

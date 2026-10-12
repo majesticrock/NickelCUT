@@ -5,7 +5,7 @@
 //#include "export_as_flow_equation.hpp"
 
 #include "../commutator_of_cut.hpp"
-#include "../../experimental/WickOrderedCollector.hpp"
+#include <mrock/symbolic_operators/experimental/WickOrderedCollector.hpp>
 
 #include <mrock/symbolic_operators/Commutation>
 #include <mrock/symbolic_operators/ExpectationValues>

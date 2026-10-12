@@ -4,9 +4,9 @@
 #include "restructure_terms.hpp"
 #include "export_as_flow_equation.hpp"
 
-#include "../verify/Verifier.hpp"
+#include <mrock/symbolic_operators/experimental/verify/Verifier.hpp>
 #include "../commutator_of_cut.hpp"
-#include "../../experimental/WickOrderedCollector.hpp"
+#include <mrock/symbolic_operators/experimental/WickOrderedCollector.hpp>
 
 #include <mrock/symbolic_operators/Commutation>
 #include <mrock/symbolic_operators/ExpectationValues>
@@ -19,6 +19,7 @@
 
 namespace NickelCUT::commute::Hamiltonian
 {
+namespace verify = mrock::symbolic_operators::experimental::verify;
 using namespace mrock::symbolic_operators;
 using namespace NickelCUT::commute;
 

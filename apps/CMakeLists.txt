@@ -6,7 +6,6 @@ target_link_libraries(commute
         nickelcut_options 
         mrock::utility
         mrock::symbolic_operators
-        SymOp_Experimental
         commute_lib
 )
 

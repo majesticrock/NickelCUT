@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../experimental/WickOrderedCollector.hpp"
+#include <mrock/symbolic_operators/experimental/WickOrderedCollector.hpp>
 
 #include <array>
 

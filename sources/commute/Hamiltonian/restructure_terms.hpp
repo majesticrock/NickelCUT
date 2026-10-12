@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../experimental/WickOrderedTerm.hpp"
-#include "../../experimental/WickOrderedCollector.hpp"
+#include <mrock/symbolic_operators/experimental/WickOrderedTerm.hpp>
+#include <mrock/symbolic_operators/experimental/WickOrderedCollector.hpp>
 
 #include <mrock/symbolic_operators/MomentumSymbol.hpp>
 #include <mrock/symbolic_operators/IndexWrapper.hpp>

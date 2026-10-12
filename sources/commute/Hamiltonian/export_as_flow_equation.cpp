@@ -1,5 +1,5 @@
 #include "export_as_flow_equation.hpp"
-#include "../../experimental/WickOrderedCollector.hpp"
+#include <mrock/symbolic_operators/experimental/WickOrderedCollector.hpp>
 
 #include <mrock/utility/OutputConvenience.hpp>
 
