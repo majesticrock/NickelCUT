@@ -355,6 +355,58 @@ void improve_flow_coefficient_structure(experimental::WickOrderedCollector& term
     }
 
     terms.combine_duplicates();
+
+    for (auto& term : terms) {
+        for (auto& expec : term.operators) {
+            if (expec.momentum.first_momentum_is_negative()) {
+                expec.momentum.flip_momentum();
+            }
+        }
+
+        Momentum& target = term.operators.back().momentum;
+        if (target.size() < 2U) continue;
+        for (MomentumSymbol& symbol : target) {
+            if (term.sums.momenta.is_summed_over(symbol.name) && symbol.factor < 0) {
+                term.invert_momentum_sum(symbol.name);
+            }
+        }
+        
+        for (auto& expec : term.operators) {
+            if (expec.momentum.first_momentum_is_negative()) {
+                expec.momentum.flip_momentum();
+            }
+        }
+    }
+    experimental::WickOrderedCollector extra_terms;
+    for (auto& term : terms) {
+        if (term.coefficients[1].name != "\\varepsilon") continue;
+        if (term.operators.front().type != OperatorType::HoleNumber) continue;
+
+        extra_terms.push_back(term);
+        extra_terms.back().operators.clear();
+
+        term.operators.front().type = OperatorType::Number;
+        term.multiplicity *= -1;
+    }
+    append_vector(terms, extra_terms);
+    for (auto& term : terms) {
+        if (term.coefficients[1].name != "\\varepsilon") continue;
+        if (term.coefficients.back().momenta.front().uses('P')) {
+            /* We are allowed to exchange K and P in the entire term by applying a minus to Q
+            * because this is summed over and it is then easy to see that the terms are actually the same.
+            */
+            experimental::WickOrderedExpression old = term.wick_expression; 
+
+            term.swap_momenta('K', 'P');
+            term.invert_momentum('Q');
+
+            std::swap(term.coefficients.front().momenta[0], term.coefficients.front().momenta[1]);
+            term.coefficients.front().momenta[2].flip_momentum();
+
+            term.wick_expression = std::move(old);
+        }
+    }
+    terms.combine_duplicates();
     terms.sort();
 }
 

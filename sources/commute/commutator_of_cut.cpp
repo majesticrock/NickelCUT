@@ -6,6 +6,8 @@
 #include <mrock/symbolic_operators/Commutation>
 #include <mrock/symbolic_operators/ExpectationValues>
 
+//#define RUN_FIRST_VERIFICATION
+
 namespace NickelCUT::commute {
 namespace verify = mrock::symbolic_operators::experimental::verify;
 using namespace mrock::symbolic_operators;
@@ -88,14 +90,64 @@ TermCollector get_cut_generator() {
     return {cut_generator_half};
 }
 
+experimental::WickOrderedCollector get_wick_ordered_Hamiltonian()
+{
+    const experimental::WickOrderedTerm H_kin(1, 
+        Coefficient::RealInversionSymmetric("\\varepsilon", MomentumList(Momentum('K'))),
+        SumContainer{MomentumSum{'K'}, IndexSum{ Index::Sigma }},
+        std::vector<Operator>({
+            c_p_sigma.hermitian_conjugate(),
+            c_p_sigma
+        }),
+        std::vector<WickOperator>()
+    );
+
+    const experimental::WickOrderedTerm H_int(1, 
+        Coefficient::RealInteraction("U", MomentumList({Momentum('K'), Momentum('P'), Momentum('Q')}), 
+            IndexWrapper{Index::Sigma, Index::SigmaPrime},
+            spin_symmetry
+        ),
+        SumContainer{MomentumSum{'K', 'P', 'Q'}, IndexSum{Index::Sigma, Index::SigmaPrime}},
+        std::vector<Operator>({
+            c_p_sigma.hermitian_conjugate(),
+            c_p_sigma_prime.with_momentum('P').hermitian_conjugate(),
+            c_p_sigma_prime.with_momentum(Momentum("P-Q")),
+            c_p_sigma.with_momentum(Momentum("K+Q"))
+        }),
+        std::vector<WickOperator>()
+    );
+
+    return {H_kin, H_int};
+}
+
+experimental::WickOrderedCollector get_wick_ordered_cut_generator()
+{
+    const experimental::WickOrderedTerm cut_generator_half(2, 
+        Coefficient::RealInteraction("\\alpha", 
+            MomentumList({Momentum('K'), Momentum('P'), Momentum('Q')}), 
+            IndexWrapper{Index::Sigma, Index::SigmaPrime},
+            spin_symmetry
+        ),
+        SumContainer{MomentumSum{'K', 'P', 'Q'}, IndexSum{Index::Sigma, Index::SigmaPrime}},
+        std::vector<Operator>({
+            c_p_sigma.hermitian_conjugate(),
+            c_p_sigma_prime.with_momentum('P').hermitian_conjugate(),
+            c_p_sigma_prime.with_momentum(Momentum("P-Q")),
+            c_p_sigma.with_momentum(Momentum("K+Q"))
+        }),
+        std::vector<WickOperator>()
+    );
+    return {cut_generator_half};
+}
+
 experimental::WickOrderedCollector commutator_of_cut(std::ostringstream& oss) {
-    const auto templates = get_wick_templates();
-    const auto H = experimental::wick_decompose(get_Hamiltonian(), templates, true);
-    auto cut_generator = experimental::wick_decompose(get_cut_generator(), templates, true);
-    std::erase_if(cut_generator.terms, [](const experimental::WickOrderedTerm& term) {
-        return term.wick_expression.size() != 4U;
-    });
-    auto cut_commutator = commutator(cut_generator, H, templates);
+    const auto templates     = get_wick_templates();
+    const auto H             = get_wick_ordered_Hamiltonian();
+    const auto cut_generator = get_wick_ordered_cut_generator();
+    auto cut_commutator      = commutator(cut_generator, H, templates);
+    // The terms with more than 6 ladder operators vanish analytically, but teaching this
+    // to the program is not worth the effort. Thus we just drop them here.
+    std::erase_if(cut_commutator.terms, [](const auto& term) { return term.wick_expression.size() > 6U; });
     const auto symmetries = get_symmetries();
     experimental::clean_wick_ordered_terms(cut_commutator, symmetries);
 
@@ -113,31 +165,32 @@ experimental::WickOrderedCollector commutator_of_cut(std::ostringstream& oss) {
     }
     cut_commutator.combine_duplicates();
 
-    std::cout << "% Starting verification..." << std::endl;
+    //std::cout << "% Starting verification..." << std::endl;
 
-    //verify::Verifier verifier;
-    //const verify::Verifier::SparseMatrix H_mat = verifier.symbolic_to_matrix(get_Hamiltonian());
-    //const verify::Verifier::SparseMatrix eta_mat = verifier.symbolic_to_matrix(cut_generator);
-    //const verify::Verifier::SparseMatrix commutator_symbolic_mat = verifier.symbolic_to_matrix(cut_commutator);
-    //const verify::Verifier::SparseMatrix commutator_raw_mat = eta_mat * H_mat - H_mat * eta_mat;
-    //if (!verifier.matrices_equal(commutator_symbolic_mat, commutator_raw_mat)) {
-    //    std::cout << "Commutator evaluation failed!  " 
-    //        << commutator_symbolic_mat.norm() << "   " << commutator_raw_mat.norm() << std::endl;
-    //    throw;
-    //}
-    //else {
-    //    std::cout << "Commutator evaluation succesful." << std::endl;
-    //}
-//
-    //if(verifier.is_particle_hole_invariant(H, "H")) {
-    //    std::cout << "H is particle-hole invariant." << std::endl;
-    //}
-    //if(verifier.is_particle_hole_invariant(cut_generator, "eta")) {
-    //    std::cout << "eta is particle-hole invariant." << std::endl;
-    //}
-    //if(verifier.is_particle_hole_invariant(cut_commutator, "[eta, H]")) {
-    //    std::cout << "[eta, H] is particle-hole invariant." << std::endl;
-    //}
+#ifdef RUN_FIRST_VERIFICATION
+    verify::Verifier verifier;
+    const verify::Verifier::SparseMatrix H_mat = verifier.symbolic_to_matrix(H);
+    const verify::Verifier::SparseMatrix eta_mat = verifier.symbolic_to_matrix(cut_generator);
+    const verify::Verifier::SparseMatrix commutator_symbolic_mat = verifier.symbolic_to_matrix(cut_commutator);
+    const verify::Verifier::SparseMatrix commutator_raw_mat = eta_mat * H_mat - H_mat * eta_mat;
+    if (!verifier.matrices_equal(commutator_symbolic_mat, commutator_raw_mat)) {
+        std::cout << "Commutator evaluation failed!  " 
+            << commutator_symbolic_mat.norm() << "   " << commutator_raw_mat.norm() << std::endl;
+        throw;
+    }
+    else {
+        std::cout << "Commutator evaluation succesful." << std::endl;
+    }
+    if(verifier.is_particle_hole_invariant(H, "H")) {
+        std::cout << "H is particle-hole invariant." << std::endl;
+    }
+    if(verifier.is_particle_hole_invariant(cut_generator, "eta")) {
+        std::cout << "eta is particle-hole invariant." << std::endl;
+    }
+    if(verifier.is_particle_hole_invariant(cut_commutator, "[eta, H]")) {
+        std::cout << "[eta, H] is particle-hole invariant." << std::endl;
+    }
+#endif // RUN_FIRST_VERIFICATION
 
     // --------------------------------------------------------- //
 
@@ -156,8 +209,8 @@ experimental::WickOrderedCollector commutator_of_cut(std::ostringstream& oss) {
         << "Note that, at $\\ell=0$, the interaction is independent of the momenta. " << std::endl;
     
     oss << "\nThe commutator reads\n\\begin{align}\n[\\eta, H] =" 
-        //<< "\\text{1 page of terms}" 
-        << cut_commutator
+        << "\\text{A billion terms}" 
+        //<< cut_commutator
         << "\\end{align}" << std::endl;
 
     return cut_commutator;

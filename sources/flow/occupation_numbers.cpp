@@ -6,6 +6,7 @@
 namespace NickelCUT::flow {
 
 std::array<double, N> occupation_numbers;
+std::array<double, N> hole_numbers;
 
 double compute_occupation_numbers(const Model& model) {
     // model.epsilon_0(p) includes the net chemical potential originating from a finite U
@@ -16,6 +17,7 @@ double compute_occupation_numbers(const Model& model) {
     double filling{};
     for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
         occupation_numbers[p.get_position()] = model.fermi_function(model.epsilon_0(p.get_kx(), p.get_ky()));
+        hole_numbers[p.get_position()] = 1. - occupation_numbers[p.get_position()];
         filling += occupation_numbers[p.get_position()];
     }
     filling *= 2. / N;

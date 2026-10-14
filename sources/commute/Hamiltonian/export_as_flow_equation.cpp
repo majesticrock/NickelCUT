@@ -53,27 +53,26 @@ std::string momentum_to_code(Momentum momentum, bool make_positive=false) {
     return code;
 }
 
+std::string access_expectation_value(const WickOperator& symbol) {
+    std::string code;
+    if (symbol.type == OperatorType::Number) {
+        code += "occupation_numbers";
+    }
+    else if (symbol.type == OperatorType::HoleNumber) {
+        code += "hole_numbers";
+    }
+    else {
+        throw std::invalid_argument("Got an unexpected expectation value.");
+    }
+    code += "[";
+    code += momentum_to_code(symbol.momentum);
+    code += "]";
+    return code;
+}
+
 std::string access_coefficient(const Coefficient& coeff) {
     std::string code = "";
     if (coeff.name == "\\alpha") {
-        //code += "sign(";
-        //
-        //code += "current.epsilon_tilde[";
-        //code += momentum_to_code(coeff.momenta[0], true);
-        //code += "] + ";
-        //code += "current.epsilon_tilde[";
-        //code += momentum_to_code(coeff.momenta[1], true);
-        //code += "] - ";
-//
-        //code += "current.epsilon_tilde[";
-        //code += momentum_to_code(coeff.momenta[0] + coeff.momenta[2], true);
-        //code += "] - ";
-        //code += "current.epsilon_tilde[";
-        //code += momentum_to_code(coeff.momenta[1] - coeff.momenta[2], true);
-        //code += "]";
-//
-        //code += ") \n\t* ";
-
         code += "alpha_sign_cache(";
         code += momentum_to_code(coeff.momenta[0]) + ", " + momentum_to_code(coeff.momenta[1]) + ", " + momentum_to_code(coeff.momenta[2]);
         code += ")\n\t* ";
@@ -97,6 +96,11 @@ std::string access_coefficient(const Coefficient& coeff) {
         code += momentum_to_code(coeff.momenta[0]);
         code += "]";
     }
+    if (coeff.name == "\\varepsilon") {
+        code += "current.dispersion[";
+        code += momentum_to_code(coeff.momenta[0]);
+        code += "]";
+    }
 
     return code;
 }
@@ -111,14 +115,13 @@ IntFractional get_smallest_factor(const experimental::WickOrderedCollector& term
 
 std::string generate_bilinear(const experimental::WickOrderedCollector& bilinears) 
 {
-    const std::string accessor = "dHdl.dispersion[K]";
+    const std::string accessor = "dHdl.dispersion[K] ";
 
     std::string code = outer_K_loop;
     code += momentum_for_loop("P");
-    code += "double one_value{};\n";
+    code += "double Q_sum_value{};\n";
     code += momentum_for_loop("Q");
-    code += "double nQ_value{};\n";
-
+    
     const IntFractional smallest_factor = get_smallest_factor(bilinears);
 
     for (const auto& term : bilinears) {
@@ -126,13 +129,7 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
         assert(term.coefficients[0].name == "U");
         assert(term.coefficients[1].name == "\\alpha");
 
-        if (term.operators.size() == 1U) {
-            code += "one_value ";
-        }
-        else {
-            assert(term.operators[1].momentum == Momentum('Q'));
-            code += "nQ_value ";
-        }
+        code += "Q_sum_value ";
 
         const auto mult = term.multiplicity / smallest_factor;
         code += mult > 0 ? "+= " : "-= ";
@@ -144,13 +141,18 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
         code += access_coefficient(term.coefficients[0]);
         code += "\n\t* ";
         code += access_coefficient(term.coefficients[1]);
+        code += "\n\t";
+        // The first expectation value is <n_P> which we drag out of the Q-sum.
+        for (auto it = term.operators.begin() + 1; it != term.operators.end(); ++it) {
+            code += " * ";
+            code += access_expectation_value(*it);
+        }
         code += ";\n";
     }
 
-    code += "one_value += nQ_value * occupation_numbers[Q];\n";
     code += "} // Q-loop\n";
-    code += accessor + " += " + std::to_string(static_cast<double>(smallest_factor)) 
-        + " * one_value * occupation_numbers[P];\n";
+    code += accessor + "+= " + std::to_string(static_cast<double>(smallest_factor)) 
+        + " * Q_sum_value * occupation_numbers[P];\n";
     code += "} // P-loop\n";
     code += "} // K-loop\n";
     return code;
@@ -159,7 +161,7 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
 std::string generate_quartic(const experimental::WickOrderedCollector& quartics, bool parallel) {
     const std::string accessor = std::string("dHdl.") 
         + (parallel ? std::string("interactions_same_spin") : std::string("interactions_differing_spin"))
-        + std::string("(K, P, Q)");
+        + std::string("(K, P, Q) ");
 
     std::string code = independent_interaction_loop;
     if (parallel) {
@@ -171,7 +173,7 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
 
     for (auto it = quartics.begin(); it != quartics.end(); ++it) {
         if (!(it->sums.momenta.empty())) continue;
-        code += accessor + (it->multiplicity > 0 ? " += " : " -= ");
+        code += accessor + (it->multiplicity > 0 ? "+= " : "-= ");
         if (it->multiplicity != 1 && it->multiplicity != -1) {
             code += std::to_string(std::abs(static_cast<double>(it->multiplicity)));
             code += " * ";
@@ -181,24 +183,26 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
         code += "\n\t* ";
         code += access_coefficient(it->coefficients[1]);
 
-        if (!(it->operators.empty())) {
-            assert(it->operators.size() == 1U);
-            code += "\n\t* occupation_numbers[";
-            code += momentum_to_code(it->operators[0].momentum);
-            code += "]";
-        }
+        assert(it->operators.empty());
         code += ";\n";
     }
 
     code += momentum_for_loop("R");
-    code += "double nR_value{};\ndouble one_value{};\n";
+    code += "double nR_hQR_value{};\n";
+
+    const auto is_nR_hQR = [](const std::vector<WickOperator>& expecs) {
+        if (expecs.size() != 2U) return false;
+        if (expecs[0].type != OperatorType::Number || expecs[0].momentum != Momentum('R')) return false;
+        return (expecs[1].type == OperatorType::HoleNumber && expecs[1].momentum == Momentum("Q+R"));
+    };
+
 
     const IntFractional smallest_factor = get_smallest_factor(quartics);
 
     for (auto& term : quartics) {
         if (term.sums.momenta.empty()) continue;
 
-        code += term.operators.empty() ? "one_value " : "nR_value ";
+        code += is_nR_hQR(term.operators) ? "nR_hQR_value " : accessor;
 
         const auto mult = term.multiplicity / smallest_factor;
         code += mult > 0 ? "+= " : "-= ";
@@ -211,27 +215,19 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
         code += "\n\t* ";
         code += access_coefficient(term.coefficients[1]);
 
-        if (term.operators.size() == 2U) {
-            code += "\n\t* occupation_numbers[";
-            if (term.operators[0].momentum == Momentum('R')) {
-                code += momentum_to_code(term.operators[1].momentum);
+        if (!is_nR_hQR(term.operators)) {
+            code += "\n\t";
+            for (auto it = term.operators.begin(); it != term.operators.end(); ++it) {
+                code += " * ";
+                code += access_expectation_value(*it);
             }
-            else if (term.operators[1].momentum == Momentum('R')) {
-                code += momentum_to_code(term.operators[0].momentum);
-            }
-            else {
-                code += "QUARTIC ONE SHOULD BE R!";
-                return code;
-            }
-            code += "]";
         }
         code += ";\n";
     }
 
-    code += accessor + " += " + std::to_string(static_cast<double>(smallest_factor)) 
-        + " * (one_value + occupation_numbers[R] * nR_value);\n";
-
+    code += accessor + "+= nR_hQR_value * occupation_numbers[R] * hole_numbers[Q+R];\n";
     code += "} // R-loop\n";
+    code += accessor + "*= " + std::to_string(static_cast<double>(smallest_factor)) + ";\n";
 
     code += "}\n";
 

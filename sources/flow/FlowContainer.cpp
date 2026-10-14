@@ -184,6 +184,7 @@ double FlowContainer::max_interaction() const noexcept {
 }
 
 void FlowContainer::fill_epsilon_tilde() noexcept {
+    return;
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
         epsilon_tilde[K] = dispersion[K];
 
