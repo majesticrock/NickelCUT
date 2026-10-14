@@ -91,10 +91,10 @@ const std::size_t tuple_index = InteractionDataFrame::independent_indices()[inde
 momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));
 momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
 momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
-dHdl.interactions_differing_spin(K, P, Q) -= 4.000000 * alpha_sign_cache(K, P, Q)
+dHdl.interactions_differing_spin(K, P, Q) -= alpha_sign_cache(K, P, Q)
 	* current.interactions_differing_spin(K, P, Q)
 	* current.dispersion[K];
-dHdl.interactions_differing_spin(K, P, Q) += 4.000000 * alpha_sign_cache(K, P, Q)
+dHdl.interactions_differing_spin(K, P, Q) += alpha_sign_cache(K, P, Q)
 	* current.interactions_differing_spin(K, P, Q)
 	* current.dispersion[K+Q];
 for (momentum_iterator<L> R = momentum_iterator<L>::begin(); R != momentum_iterator<L>::end(); ++R) {
@@ -161,10 +161,10 @@ momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
 momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
 if (K==P) continue; // Pauli principle
 if (K+Q==P-Q) continue; // Pauli principle
-dHdl.interactions_same_spin(K, P, Q) -= 4.000000 * alpha_sign_cache(K, P, Q)
+dHdl.interactions_same_spin(K, P, Q) -= alpha_sign_cache(K, P, Q)
 	* current.interactions_same_spin(K, P, Q)
 	* current.dispersion[K];
-dHdl.interactions_same_spin(K, P, Q) += 4.000000 * alpha_sign_cache(K, P, Q)
+dHdl.interactions_same_spin(K, P, Q) += alpha_sign_cache(K, P, Q)
 	* current.interactions_same_spin(K, P, Q)
 	* current.dispersion[K+Q];
 for (momentum_iterator<L> R = momentum_iterator<L>::begin(); R != momentum_iterator<L>::end(); ++R) {

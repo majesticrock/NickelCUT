@@ -171,11 +171,14 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
         code += "if (K+Q==P-Q) continue; // Pauli principle\n";
     }
 
+    const IntFractional smallest_factor = get_smallest_factor(quartics);
+
     for (auto it = quartics.begin(); it != quartics.end(); ++it) {
         if (!(it->sums.momenta.empty())) continue;
-        code += accessor + (it->multiplicity > 0 ? "+= " : "-= ");
-        if (it->multiplicity != 1 && it->multiplicity != -1) {
-            code += std::to_string(std::abs(static_cast<double>(it->multiplicity)));
+        const auto mult = it->multiplicity / smallest_factor;
+        code += accessor + (mult > 0 ? "+= " : "-= ");
+        if (mult != 1 && mult != -1) {
+            code += std::to_string(std::abs(static_cast<double>(mult)));
             code += " * ";
         }
 
@@ -196,8 +199,6 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
         return (expecs[1].type == OperatorType::HoleNumber && expecs[1].momentum == Momentum("Q+R"));
     };
 
-
-    const IntFractional smallest_factor = get_smallest_factor(quartics);
 
     for (auto& term : quartics) {
         if (term.sums.momenta.empty()) continue;
