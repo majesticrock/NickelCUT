@@ -25,13 +25,13 @@ using namespace NickelCUT::commute;
 
 experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& oss)
 {
-    const TermCollector commutator = commutator_of_cut(oss);
+    experimental::WickOrderedCollector commutator = commutator_of_cut(oss);
 
-    const std::vector<WickOperatorTemplate> wick_templates = get_wick_templates();
-    const std::vector<std::unique_ptr<WickSymmetry>> symmetries = get_symmetries();
-
-    experimental::WickOrderedCollector normal_ordered_result = experimental::wick_decompose(commutator, wick_templates);
-    experimental::clean_wick_ordered_terms(normal_ordered_result, symmetries);
+    //const std::vector<WickOperatorTemplate> wick_templates = get_wick_templates();
+    //const std::vector<std::unique_ptr<WickSymmetry>> symmetries = get_symmetries();
+//
+    //experimental::WickOrderedCollector normal_ordered_result = experimental::wick_decompose(commutator, wick_templates);
+    //experimental::clean_wick_ordered_terms(normal_ordered_result, symmetries);
 
 #ifdef RUN_FIRST_VERIFICATION
     const verify::Verifier verifier;
@@ -54,7 +54,7 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
 
     // We don't care about sextic terms (delete size > 4) and we also don't care about the
     // renormalization of the groundstate energy (delte empty expressions)
-    std::erase_if(normal_ordered_result.terms, [](const experimental::WickOrderedTerm& term){
+    std::erase_if(commutator.terms, [](const experimental::WickOrderedTerm& term){
         return term.wick_expression.size() > 4U || term.wick_expression.empty();
     });
     
@@ -69,7 +69,7 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
     }
 #endif
 
-    advanced_clean_up(normal_ordered_result);
+    advanced_clean_up(commutator);
 
 #ifdef RUN_FIRST_VERIFICATION
     if (!verifier(normal_ordered_result, "CUT commutator after advanced cleaning", matrix_rep)) {
@@ -92,10 +92,10 @@ experimental::WickOrderedCollector commute_and_normal_order(std::ostringstream& 
         << "so we omit any contribution proportional to the identity. "
         << "The result reads\n\\begin{align*}\n\t"
         //<< "\\text{2 pages of terms}"
-        << normal_ordered_result 
+        << commutator 
         << "\\end{align*}" << std::endl;
     
-    return normal_ordered_result;
+    return commutator;
 }
 
 void commute_and_extract(std::ostringstream& oss) {

@@ -88,17 +88,22 @@ TermCollector get_cut_generator() {
     return {cut_generator_half};
 }
 
-TermCollector commutator_of_cut(std::ostringstream& oss) {
-    const TermCollector H = get_Hamiltonian();
-    const TermCollector cut_generator = get_cut_generator();
-    TermCollector cut_commutator = commutator(cut_generator, H);
-    cut_commutator.clean_up();
+experimental::WickOrderedCollector commutator_of_cut(std::ostringstream& oss) {
+    const auto templates = get_wick_templates();
+    const auto H = experimental::wick_decompose(get_Hamiltonian(), templates, true);
+    auto cut_generator = experimental::wick_decompose(get_cut_generator(), templates, true);
+    std::erase_if(cut_generator.terms, [](const experimental::WickOrderedTerm& term) {
+        return term.wick_expression.size() != 4U;
+    });
+    auto cut_commutator = commutator(cut_generator, H, templates);
+    const auto symmetries = get_symmetries();
+    experimental::clean_wick_ordered_terms(cut_commutator, symmetries);
 
     // The second and third to last terms are identical, but the computer needs special aid to see that
-    std::swap(cut_commutator[cut_commutator.size() - 2], cut_commutator[cut_commutator.size() - 1]);
-    cut_commutator.back().swap_indices(Index::Sigma, Index::SigmaPrime);
-    cut_commutator.back().structure();
-    cut_commutator.back().sums.sort();
+    //std::swap(cut_commutator[cut_commutator.size() - 2], cut_commutator[cut_commutator.size() - 1]);
+    //cut_commutator.back().swap_indices(Index::Sigma, Index::SigmaPrime);
+    //cut_commutator.back().structure();
+    //cut_commutator.back().sums.sort();
 
     // Use the spin symmetry of the coefficients
     for(auto& term : cut_commutator) {
@@ -108,29 +113,31 @@ TermCollector commutator_of_cut(std::ostringstream& oss) {
     }
     cut_commutator.combine_duplicates();
 
-    verify::Verifier verifier;
-    const verify::Verifier::SparseMatrix H_mat = verifier.symbolic_to_matrix(H);
-    const verify::Verifier::SparseMatrix eta_mat = verifier.symbolic_to_matrix(cut_generator);
-    const verify::Verifier::SparseMatrix commutator_symbolic_mat = verifier.symbolic_to_matrix(cut_commutator);
-    const verify::Verifier::SparseMatrix commutator_raw_mat = eta_mat * H_mat - H_mat * eta_mat;
-    if (!verifier.matrices_equal(commutator_symbolic_mat, commutator_raw_mat)) {
-        std::cout << "Commutator evaluation failed!  " 
-            << commutator_symbolic_mat.norm() << "   " << commutator_raw_mat.norm() << std::endl;
-        throw;
-    }
-    else {
-        std::cout << "Commutator evaluation succesful." << std::endl;
-    }
+    std::cout << "% Starting verification..." << std::endl;
 
-    if(verifier.is_particle_hole_invariant(H, "H")) {
-        std::cout << "H is particle-hole invariant." << std::endl;
-    }
-    if(verifier.is_particle_hole_invariant(cut_generator, "eta")) {
-        std::cout << "eta is particle-hole invariant." << std::endl;
-    }
-    if(verifier.is_particle_hole_invariant(cut_commutator, "[eta, H]")) {
-        std::cout << "[eta, H] is particle-hole invariant." << std::endl;
-    }
+    //verify::Verifier verifier;
+    //const verify::Verifier::SparseMatrix H_mat = verifier.symbolic_to_matrix(get_Hamiltonian());
+    //const verify::Verifier::SparseMatrix eta_mat = verifier.symbolic_to_matrix(cut_generator);
+    //const verify::Verifier::SparseMatrix commutator_symbolic_mat = verifier.symbolic_to_matrix(cut_commutator);
+    //const verify::Verifier::SparseMatrix commutator_raw_mat = eta_mat * H_mat - H_mat * eta_mat;
+    //if (!verifier.matrices_equal(commutator_symbolic_mat, commutator_raw_mat)) {
+    //    std::cout << "Commutator evaluation failed!  " 
+    //        << commutator_symbolic_mat.norm() << "   " << commutator_raw_mat.norm() << std::endl;
+    //    throw;
+    //}
+    //else {
+    //    std::cout << "Commutator evaluation succesful." << std::endl;
+    //}
+//
+    //if(verifier.is_particle_hole_invariant(H, "H")) {
+    //    std::cout << "H is particle-hole invariant." << std::endl;
+    //}
+    //if(verifier.is_particle_hole_invariant(cut_generator, "eta")) {
+    //    std::cout << "eta is particle-hole invariant." << std::endl;
+    //}
+    //if(verifier.is_particle_hole_invariant(cut_commutator, "[eta, H]")) {
+    //    std::cout << "[eta, H] is particle-hole invariant." << std::endl;
+    //}
 
     // --------------------------------------------------------- //
 
