@@ -83,7 +83,7 @@ class InteractionDataFrame {
     }
 
 public:
-    static constexpr std::size_t independent_size() noexcept {
+    static constexpr int independent_size() noexcept {
         return stored_size;
     }
 

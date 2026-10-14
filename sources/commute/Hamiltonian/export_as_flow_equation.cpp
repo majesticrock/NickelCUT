@@ -14,6 +14,14 @@ using namespace mrock::symbolic_operators;
 
 const std::string outer_K_loop = "#pragma omp parallel for\nfor (int K_pos=0; K_pos < N; ++K_pos) {\nmomentum_iterator<L> K(K_pos);\n";
 
+const std::string independent_interaction_loop =
+    "#pragma omp parallel for\n"
+    "for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {\n"
+    "const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];\n"
+    "momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));\n"
+    "momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));\n"
+    "momentum_iterator<L> Q(static_cast<int>(tuple_index % N));\n";
+
 std::string momentum_for_loop(std::string const& it_name) {
     return "for (momentum_iterator<L> " + it_name + " = momentum_iterator<L>::begin(); " 
         + it_name + " != momentum_iterator<L>::end(); ++" + it_name + ") {\n";
@@ -68,7 +76,7 @@ std::string access_coefficient(const Coefficient& coeff) {
 
         code += "alpha_sign_cache(";
         code += momentum_to_code(coeff.momenta[0]) + ", " + momentum_to_code(coeff.momenta[1]) + ", " + momentum_to_code(coeff.momenta[2]);
-        code += ") \n\t* ";
+        code += ")\n\t* ";
     }
     if (coeff.name == "U" || coeff.name == "\\alpha") {
         if (coeff.indices[0] == Index::Parallel) {
@@ -153,12 +161,10 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
         + (parallel ? std::string("interactions_same_spin") : std::string("interactions_differing_spin"))
         + std::string("(K, P, Q)");
 
-    std::string code = outer_K_loop;
-    code += momentum_for_loop("P");
+    std::string code = independent_interaction_loop;
     if (parallel) {
         code += "if (K==P) continue; // Pauli principle\n";
     }
-    code += momentum_for_loop("Q");
     if (parallel) {
         code += "if (K+Q==P-Q) continue; // Pauli principle\n";
     }
@@ -227,9 +233,7 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
 
     code += "} // R-loop\n";
 
-    code += "} // Q-loop\n";
-    code += "} // P-loop\n";
-    code += "} // K-loop\n";
+    code += "}\n";
 
     return code;
 }
@@ -249,24 +253,20 @@ void export_as_flow_equation(const std::array<experimental::WickOrderedCollector
         "void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/) {\n"
         "dHdl.reset();\n"
         "static InteractionDataFrame alpha_sign_cache;\n"
-        "#pragma omp parallel for\n"
-        "for (int K_pos=0; K_pos < N; ++K_pos) {\n"
-        "momentum_iterator<L> K(K_pos);\n"
-        "for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {\n"
-        "for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {\n"
+        + independent_interaction_loop +
         "#ifdef USE_LW_GENERATOR\n"
         "alpha_sign_cache(K,P,Q) = current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q];\n"
         "#else\n"
         "alpha_sign_cache(K,P,Q) = sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q]);\n"
         "#endif\n"
-        "} // Q-loop\n"
-        "} // P-loop\n"
-        "} // K-loop\n\n";
+        "}\n\n";
 
     const std::string file_footer = 
         "dHdl.interactions_same_spin.antisymmetrize();\n"
         "dHdl.interactions_same_spin.symmetrize();\n"
         "dHdl.interactions_differing_spin.symmetrize();\n"
+        "dHdl.interactions_same_spin.clear_noise();\n"
+        "dHdl.interactions_differing_spin.clear_noise();\n"
         "}\n} // namespace NickelCUT::flow";
 
     const std::string bilinear_code = generate_bilinear(flow_coeffs[0]) 
