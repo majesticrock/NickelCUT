@@ -74,6 +74,8 @@ void DenseBookKeeper::operator()(const FlowContainer &x, double l)
     if (total_runtime > max_runtime_duration) {
         throw LongRuntimeException(l);
     }
+    if (l - l_times.back() < dl) return;
+
     const double max_coeff = N * std::max(x.interactions_differing_spin.norm_inf(), x.interactions_same_spin.norm_inf());
     if (max_coeff > 5. * initial_band_width) {
         throw LargeInteractionException(l);
@@ -86,10 +88,9 @@ void DenseBookKeeper::operator()(const FlowContainer &x, double l)
     if (derivative_rod > 5. * initial_band_width) {
         throw LargeDerivativeRODException(l);
     }
-    //if (derivative_rod < 0.001 * initial_band_width) {
-    //    throw SmallDerivativeRODException(l);
-    //}
-    if (l - l_times.back() < dl) return;
+    if (derivative_rod < 0.005 * initial_band_width) {
+        throw SmallDerivativeRODException(l);
+    }
 
     const_cast<FlowContainer&>(x).interactions_differing_spin.clear_noise();
     const_cast<FlowContainer&>(x).interactions_same_spin.clear_noise();

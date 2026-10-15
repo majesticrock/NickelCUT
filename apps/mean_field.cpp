@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     }
 
     nlohmann::json jData = model.selfconsistency_to_json();
-    jData.update(nlohmann::json{{ "time", mrock::utility::time_stamp() }});
+    jData.update(j_metadata);
     //std::cout << "Finished initial mean-field calculations. Found "
     //    << to_string(model.order_type(1e-10)) 
     //    << " order. Proceeding with T_c..." << std::endl;
@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
     //    { "time", mrock::utility::time_stamp() } ,
     //    { "transition_data", transition_data }
     //});
-    //jData.update(j_metadata);
+   
 
     mrock::utility::save_string(jData.dump(4), output_dir + "mean_field_solution.json.gz");
 

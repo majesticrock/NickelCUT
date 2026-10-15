@@ -73,8 +73,10 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
     if (total_runtime > max_runtime_duration) {
         throw LongRuntimeException(l);
     }
+    if (l - l_times.back() < dl) return;
+
     const double max_coeff = N * std::max(x.interactions_differing_spin.norm_inf(), x.interactions_same_spin.norm_inf());
-    if (max_coeff > 10. * initial_band_width) {
+    if (max_coeff > 5. * initial_band_width) {
         throw LargeInteractionException(l);
     }
     const bool state_is_good = x.is_inversion_symmetric() && x.is_hermitian();
@@ -85,10 +87,9 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
     if (derivative_rod > 5. * initial_band_width) {
         throw LargeDerivativeRODException(l);
     }
-    if (derivative_rod < 0.001 * initial_band_width) {
+    if (derivative_rod < 0.005 * initial_band_width) {
         throw SmallDerivativeRODException(l);
     }
-    if (l - l_times.back() < dl) return;
 
     ++current_idx;
     clock::time_point now = clock::now();

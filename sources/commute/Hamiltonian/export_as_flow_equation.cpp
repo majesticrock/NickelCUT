@@ -202,10 +202,11 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
 
     for (auto& term : quartics) {
         if (term.sums.momenta.empty()) continue;
+        const bool nr_hQR = is_nR_hQR(term.operators);
 
-        code += is_nR_hQR(term.operators) ? "nR_hQR_value " : accessor;
+        code += nr_hQR ? "nR_hQR_value " : accessor;
 
-        const auto mult = term.multiplicity / smallest_factor;
+        const auto mult = (nr_hQR ? (term.multiplicity / 2) : term.multiplicity) / smallest_factor;
         code += mult > 0 ? "+= " : "-= ";
         if (mult != 1 && mult != -1) {
             code += std::to_string(std::abs(static_cast<double>(mult)));
@@ -216,7 +217,7 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
         code += "\n\t* ";
         code += access_coefficient(term.coefficients[1]);
 
-        if (!is_nR_hQR(term.operators)) {
+        if (!nr_hQR) {
             code += "\n\t";
             for (auto it = term.operators.begin(); it != term.operators.end(); ++it) {
                 code += " * ";
@@ -226,7 +227,7 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
         code += ";\n";
     }
 
-    code += accessor + "+= nR_hQR_value * occupation_numbers[R] * hole_numbers[Q+R];\n";
+    code += accessor + "+= 2. * nR_hQR_value * occupation_numbers[R] * hole_numbers[Q+R];\n";
     code += "} // R-loop\n";
     code += accessor + "*= " + std::to_string(static_cast<double>(smallest_factor)) + ";\n";
 

@@ -99,16 +99,16 @@ dHdl.interactions_differing_spin(K, P, Q) += alpha_sign_cache(K, P, Q)
 	* current.dispersion[K+Q];
 for (momentum_iterator<L> R = momentum_iterator<L>::begin(); R != momentum_iterator<L>::end(); ++R) {
 double nR_hQR_value{};
-nR_hQR_value -= 2.000000 * current.interactions_same_spin(-K, -Q-R, K-R)
+nR_hQR_value -= current.interactions_same_spin(-K, -Q-R, K-R)
 	* alpha_sign_cache(-P, -R, Q)
 	* current.interactions_differing_spin(-P, -R, Q);
-nR_hQR_value += 2.000000 * current.interactions_same_spin(K, Q+R, Q)
+nR_hQR_value += current.interactions_same_spin(K, Q+R, Q)
 	* alpha_sign_cache(-P, -R, Q)
 	* current.interactions_differing_spin(-P, -R, Q);
-nR_hQR_value -= 2.000000 * current.interactions_same_spin(-P, -R, Q)
+nR_hQR_value -= current.interactions_same_spin(-P, -R, Q)
 	* alpha_sign_cache(K, Q+R, Q)
 	* current.interactions_differing_spin(K, Q+R, Q);
-nR_hQR_value += 2.000000 * current.interactions_same_spin(-P, -R, P-Q-R)
+nR_hQR_value += current.interactions_same_spin(-P, -R, P-Q-R)
 	* alpha_sign_cache(K, Q+R, Q)
 	* current.interactions_differing_spin(K, Q+R, Q);
 dHdl.interactions_differing_spin(K, P, Q) += current.interactions_differing_spin(-K, -P, K+R)
@@ -123,16 +123,16 @@ dHdl.interactions_differing_spin(K, P, Q) += 2.000000 * current.interactions_dif
 	* alpha_sign_cache(-P, -K+P-Q-R, P-R)
 	* current.interactions_differing_spin(-P, -K+P-Q-R, P-R)
 	 * occupation_numbers[R] * hole_numbers[K-P+Q+R];
-nR_hQR_value += 2.000000 * current.interactions_differing_spin(K, Q+R, Q)
+nR_hQR_value += current.interactions_differing_spin(K, Q+R, Q)
 	* alpha_sign_cache(-P, -R, Q)
 	* current.interactions_same_spin(-P, -R, Q);
-nR_hQR_value -= 2.000000 * current.interactions_differing_spin(K, Q+R, Q)
+nR_hQR_value -= current.interactions_differing_spin(K, Q+R, Q)
 	* alpha_sign_cache(-P, -R, P-Q-R)
 	* current.interactions_same_spin(-P, -R, P-Q-R);
-nR_hQR_value += 2.000000 * current.interactions_differing_spin(-P, -R, Q)
+nR_hQR_value += current.interactions_differing_spin(-P, -R, Q)
 	* alpha_sign_cache(-K, -Q-R, K-R)
 	* current.interactions_same_spin(-K, -Q-R, K-R);
-nR_hQR_value -= 2.000000 * current.interactions_differing_spin(-P, -R, Q)
+nR_hQR_value -= current.interactions_differing_spin(-P, -R, Q)
 	* alpha_sign_cache(K, Q+R, Q)
 	* current.interactions_same_spin(K, Q+R, Q);
 dHdl.interactions_differing_spin(K, P, Q) -= 2.000000 * current.interactions_differing_spin(-P, -K+P-Q-R, P-R)
@@ -147,7 +147,7 @@ dHdl.interactions_differing_spin(K, P, Q) += current.interactions_differing_spin
 	* alpha_sign_cache(-K, -P, K+R)
 	* current.interactions_differing_spin(-K, -P, K+R)
 	 * hole_numbers[R] * hole_numbers[K+P+R];
-dHdl.interactions_differing_spin(K, P, Q) += nR_hQR_value * occupation_numbers[R] * hole_numbers[Q+R];
+dHdl.interactions_differing_spin(K, P, Q) += 2. * nR_hQR_value * occupation_numbers[R] * hole_numbers[Q+R];
 } // R-loop
 dHdl.interactions_differing_spin(K, P, Q) *= 4.000000;
 }
@@ -181,22 +181,22 @@ dHdl.interactions_same_spin(K, P, Q) += 2.000000 * current.interactions_same_spi
 	* alpha_sign_cache(-P, -K+P-Q-R, P-R)
 	* current.interactions_same_spin(-P, -K+P-Q-R, P-R)
 	 * occupation_numbers[R] * hole_numbers[K-P+Q+R];
-nR_hQR_value -= 2.000000 * current.interactions_same_spin(-K, -Q-R, K-R)
+nR_hQR_value -= current.interactions_same_spin(-K, -Q-R, K-R)
 	* alpha_sign_cache(-P, -R, Q)
 	* current.interactions_same_spin(-P, -R, Q);
-nR_hQR_value += 2.000000 * current.interactions_same_spin(K, Q+R, Q)
+nR_hQR_value += current.interactions_same_spin(K, Q+R, Q)
 	* alpha_sign_cache(-P, -R, Q)
 	* current.interactions_same_spin(-P, -R, Q);
-nR_hQR_value -= 2.000000 * current.interactions_same_spin(K, Q+R, Q)
+nR_hQR_value -= current.interactions_same_spin(K, Q+R, Q)
 	* alpha_sign_cache(-P, -R, P-Q-R)
 	* current.interactions_same_spin(-P, -R, P-Q-R);
-nR_hQR_value += 2.000000 * current.interactions_same_spin(-P, -R, Q)
+nR_hQR_value += current.interactions_same_spin(-P, -R, Q)
 	* alpha_sign_cache(-K, -Q-R, K-R)
 	* current.interactions_same_spin(-K, -Q-R, K-R);
-nR_hQR_value -= 2.000000 * current.interactions_same_spin(-P, -R, Q)
+nR_hQR_value -= current.interactions_same_spin(-P, -R, Q)
 	* alpha_sign_cache(K, Q+R, Q)
 	* current.interactions_same_spin(K, Q+R, Q);
-nR_hQR_value += 2.000000 * current.interactions_same_spin(-P, -R, P-Q-R)
+nR_hQR_value += current.interactions_same_spin(-P, -R, P-Q-R)
 	* alpha_sign_cache(K, Q+R, Q)
 	* current.interactions_same_spin(K, Q+R, Q);
 dHdl.interactions_same_spin(K, P, Q) -= 2.000000 * current.interactions_same_spin(-P, -K+P-Q-R, P-R)
@@ -211,13 +211,13 @@ dHdl.interactions_same_spin(K, P, Q) += current.interactions_same_spin(-R, K+P+R
 	* alpha_sign_cache(-K, -P, K+R)
 	* current.interactions_same_spin(-K, -P, K+R)
 	 * hole_numbers[R] * hole_numbers[K+P+R];
-nR_hQR_value += 2.000000 * current.interactions_differing_spin(K, Q+R, Q)
+nR_hQR_value += current.interactions_differing_spin(K, Q+R, Q)
 	* alpha_sign_cache(-P, -R, Q)
 	* current.interactions_differing_spin(-P, -R, Q);
-nR_hQR_value -= 2.000000 * current.interactions_differing_spin(-P, -R, Q)
+nR_hQR_value -= current.interactions_differing_spin(-P, -R, Q)
 	* alpha_sign_cache(K, Q+R, Q)
 	* current.interactions_differing_spin(K, Q+R, Q);
-dHdl.interactions_same_spin(K, P, Q) += nR_hQR_value * occupation_numbers[R] * hole_numbers[Q+R];
+dHdl.interactions_same_spin(K, P, Q) += 2. * nR_hQR_value * occupation_numbers[R] * hole_numbers[Q+R];
 } // R-loop
 dHdl.interactions_same_spin(K, P, Q) *= 4.000000;
 }
