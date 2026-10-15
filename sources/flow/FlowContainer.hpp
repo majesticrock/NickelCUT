@@ -46,6 +46,11 @@ struct FlowContainer {
     double band_width() const noexcept;
     double max_interaction() const noexcept;
 
+    inline double delta_epsilon(const mom_it& k, const mom_it& p, const mom_it& q) const noexcept
+    {
+        return dispersion[k] + dispersion[p] - dispersion[k+q] - dispersion[p-q];
+    }
+
     void fill_epsilon_tilde() noexcept;
 
     void fill(double value) noexcept;

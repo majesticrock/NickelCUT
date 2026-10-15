@@ -55,6 +55,7 @@ class InteractionDataFrame {
         });
     }
 
+public:
     static const std::array<storage_index_type, total_size>& storage_indices() noexcept {
         static const std::array<storage_index_type, total_size> indices = [] {
             std::array<storage_index_type, total_size> result{};
@@ -82,7 +83,6 @@ class InteractionDataFrame {
         return storage_indices()[z + N * (y + N * x)];
     }
 
-public:
     static constexpr int independent_size() noexcept {
         return stored_size;
     }

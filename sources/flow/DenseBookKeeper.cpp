@@ -86,9 +86,9 @@ void DenseBookKeeper::operator()(const FlowContainer &x, double l)
     if (derivative_rod > 5. * initial_band_width) {
         throw LargeDerivativeRODException(l);
     }
-    if (derivative_rod < 0.001 * initial_band_width) {
-        throw SmallDerivativeRODException(l);
-    }
+    //if (derivative_rod < 0.001 * initial_band_width) {
+    //    throw SmallDerivativeRODException(l);
+    //}
     if (l - l_times.back() < dl) return;
 
     const_cast<FlowContainer&>(x).interactions_differing_spin.clear_noise();
