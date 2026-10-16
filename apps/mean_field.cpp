@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     
     const nlohmann::json j_metadata = model.generate_meta_data_json();
 
-    auto solver = mrock::utility::Selfconsistency::make_broyden<double>(&model, &model.deltas, 200, 1e-6);
+    auto solver = mrock::utility::Selfconsistency::make_broyden<double>(&model, &model.deltas, 400, 1e-6);
     solver.compute(true, 600);
     if (!model.deltas.converged)
     {

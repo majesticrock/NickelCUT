@@ -34,7 +34,8 @@ Eigen::MatrixXd compute_M(const flow::FlowContainer& flow_result,
                 - flow_result.interactions_same_spin(k,K,K-k-x)
                 + flow_result.interactions_same_spin(k,K,flow::Gamma<L>)) * occupation_numbers[K];
         }
-        dynamical_matrix(k.get_position(), k.get_position()) += 0.5 * (flow_result.epsilon_tilde[k] + flow_result.epsilon_tilde[k+x]);
+        const auto epsilon_tilde = flow_result.epsilon_tilde();
+        dynamical_matrix(k.get_position(), k.get_position()) += 0.5 * (epsilon_tilde[k] + epsilon_tilde[k+x]);
         dynamical_matrix(k.get_position(), k.get_position()) *= 2. * (1. - occupation_numbers[k] - occupation_numbers[k+x]);
 
         for (mt l = mt::begin(); l != mt::end(); ++l) {

@@ -19,14 +19,12 @@ struct FlowContainer {
     InteractionDataFrame interactions_same_spin;
     InteractionDataFrame interactions_differing_spin;
     coeff_array dispersion;
-    coeff_array epsilon_tilde;
 
     template<class Archive>
     void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
         ar & interactions_same_spin;
         ar & interactions_differing_spin;
         ar & dispersion;
-        ar & epsilon_tilde;
     }
 
     FlowContainer() noexcept;
@@ -51,7 +49,7 @@ struct FlowContainer {
         return dispersion[k] + dispersion[p] - dispersion[k+q] - dispersion[p-q];
     }
 
-    void fill_epsilon_tilde() noexcept;
+    coeff_array epsilon_tilde() const noexcept;
 
     void fill(double value) noexcept;
     void reset() noexcept;

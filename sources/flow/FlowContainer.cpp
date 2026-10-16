@@ -15,7 +15,6 @@ FlowContainer::FlowContainer() noexcept
     : interactions_same_spin(), interactions_differing_spin()
 {
     dispersion.fill(double{});
-    epsilon_tilde.fill(double{});
 }
 
 FlowContainer::FlowContainer(const Model& model) noexcept 
@@ -24,9 +23,8 @@ FlowContainer::FlowContainer(const Model& model) noexcept
     interactions_differing_spin(0.5 * model.U_0 / N)
 {
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-        dispersion[K] = model.epsilon_0(K.get_kx(), K.get_ky());// + 0.25 * model.U_0;
+        dispersion[K] = model.epsilon_0(K.get_kx(), K.get_ky());
     }
-    fill_epsilon_tilde();
 }
 
 void FlowContainer::print_memory_allocation() const
@@ -44,7 +42,6 @@ void FlowContainer::fill(double value) noexcept
     interactions_same_spin.fill(value);
     interactions_differing_spin.fill(value);
     dispersion.fill(value);
-    epsilon_tilde.fill(value);
 }
 
 void FlowContainer::reset() noexcept
@@ -60,9 +57,6 @@ bool FlowContainer::contains_nan_or_inf() const noexcept {
         if (std::isnan(val) || std::isinf(val)) return true;
     }
     for (const auto& val : dispersion) {
-        if (std::isnan(val) || std::isinf(val)) return true;
-    }
-    for (const auto& val : epsilon_tilde) {
         if (std::isnan(val) || std::isinf(val)) return true;
     }
     return false;
@@ -194,18 +188,19 @@ double FlowContainer::max_interaction() const noexcept {
     return std::max(interactions_same_spin.norm_inf(), interactions_differing_spin.norm_inf());
 }
 
-void FlowContainer::fill_epsilon_tilde() noexcept {
-    return;
+FlowContainer::coeff_array FlowContainer::epsilon_tilde() const noexcept {
+    coeff_array ret;
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-        epsilon_tilde[K] = dispersion[K];
+        ret[K] = dispersion[K];
 
         for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
-            epsilon_tilde[K] -= 2. * (interactions_differing_spin(K, P, Gamma<L>)
+            ret[K] -= 2. * (interactions_differing_spin(K, P, Gamma<L>)
                                     + interactions_same_spin(K, P, Gamma<L>)
                                     - interactions_same_spin(K, P, P-K)
                                  ) * occupation_numbers[P];
         }
     }
+    return ret;
 };
 
 double FlowContainer::abs_total() const noexcept
@@ -240,8 +235,6 @@ FlowContainer& FlowContainer::operator+=(const FlowContainer& other) noexcept
         dispersion[i] += other.dispersion[i];
     }
 
-    fill_epsilon_tilde();
-
     return *this;
 }
 FlowContainer& FlowContainer::operator-=(const FlowContainer& other) noexcept
@@ -251,8 +244,6 @@ FlowContainer& FlowContainer::operator-=(const FlowContainer& other) noexcept
     for (int i=0; i<N; ++i) {
         dispersion[i] -= other.dispersion[i];
     }
-
-    fill_epsilon_tilde();
 
     return *this;
 }
@@ -265,8 +256,6 @@ FlowContainer& FlowContainer::operator*=(const FlowContainer& other) noexcept
         dispersion[i] *= other.dispersion[i];
     }
 
-    fill_epsilon_tilde();
-
     return *this;
 }
 FlowContainer& FlowContainer::operator/=(const FlowContainer& other) noexcept
@@ -276,8 +265,6 @@ FlowContainer& FlowContainer::operator/=(const FlowContainer& other) noexcept
     for (int i=0; i<N; ++i) {
         dispersion[i] /= other.dispersion[i];
     }
-
-    fill_epsilon_tilde();
 
     return *this;
 }
@@ -290,8 +277,6 @@ FlowContainer& FlowContainer::operator*=(const double other) noexcept
         dispersion[i] *= other;
     }
 
-    fill_epsilon_tilde();
-
     return *this;
 }
 FlowContainer& FlowContainer::operator/=(const double other) noexcept
@@ -301,8 +286,6 @@ FlowContainer& FlowContainer::operator/=(const double other) noexcept
     for (int i=0; i<N; ++i) {
         dispersion[i] /= other;
     }
-
-    fill_epsilon_tilde();
 
     return *this;
 }
@@ -315,8 +298,6 @@ FlowContainer& FlowContainer::operator+=(const double other) noexcept
         dispersion[i] += other;
     }
 
-    fill_epsilon_tilde();
-
     return *this;
 }
 
@@ -324,7 +305,6 @@ void to_json(nlohmann::json& j, const FlowContainer& container) noexcept
 {
     j = nlohmann::json{
         { "dispersion",                  container.dispersion                                },
-        { "epsilon_tilde",               container.epsilon_tilde                             },
         { "interactions_same_spin",      container.interactions_same_spin.as_3D_array()      },
         { "interactions_differing_spin", container.interactions_differing_spin.as_3D_array() }
     };

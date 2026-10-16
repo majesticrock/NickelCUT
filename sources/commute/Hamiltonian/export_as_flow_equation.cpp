@@ -91,11 +91,6 @@ std::string access_coefficient(const Coefficient& coeff) {
         }
         code += ")";
     }
-    if (coeff.name == "\\tilde{\\varepsilon}") {
-        code += "current.epsilon_tilde[";
-        code += momentum_to_code(coeff.momenta[0]);
-        code += "]";
-    }
     if (coeff.name == "\\varepsilon") {
         code += "current.dispersion[";
         code += momentum_to_code(coeff.momenta[0]);

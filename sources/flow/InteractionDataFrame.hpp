@@ -56,11 +56,11 @@ class InteractionDataFrame {
     }
 
 public:
-    static const std::array<storage_index_type, total_size>& storage_indices() noexcept {
-        static const std::array<storage_index_type, total_size> indices = [] {
-            std::array<storage_index_type, total_size> result{};
-            std::array<storage_index_type, total_size> canonical_to_storage{};
-            canonical_to_storage.fill(std::numeric_limits<storage_index_type>::max());
+    static const std::vector<storage_index_type>& storage_indices() noexcept {
+        static const std::vector<storage_index_type> indices = [] {
+            std::vector<storage_index_type> result(total_size);
+            std::vector<storage_index_type> canonical_to_storage(
+                total_size, std::numeric_limits<storage_index_type>::max());
 
             std::size_t next_storage_index = 0;
             for (std::size_t index = 0; index < total_size; ++index) {
@@ -87,9 +87,9 @@ public:
         return stored_size;
     }
 
-    static const std::array<std::size_t, stored_size>& independent_indices() noexcept {
-        static const std::array<std::size_t, stored_size> indices = [] {
-            std::array<std::size_t, stored_size> result{};
+    static const std::vector<std::size_t>& independent_indices() noexcept {
+        static const std::vector<std::size_t> indices = [] {
+            std::vector<std::size_t> result(stored_size);
             std::size_t next_index = 0;
             for (std::size_t index = 0; index < total_size; ++index) {
                 if (canonical_index(index) == index) {
