@@ -305,6 +305,7 @@ void to_json(nlohmann::json& j, const FlowContainer& container) noexcept
 {
     j = nlohmann::json{
         { "dispersion",                  container.dispersion                                },
+        { "epsilon_tilde",               container.epsilon_tilde()                           },
         { "interactions_same_spin",      container.interactions_same_spin.as_3D_array()      },
         { "interactions_differing_spin", container.interactions_differing_spin.as_3D_array() }
     };
