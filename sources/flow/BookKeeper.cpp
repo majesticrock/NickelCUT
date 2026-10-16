@@ -87,7 +87,7 @@ void BookKeeper::operator()(const FlowContainer &x, double l)
     if (derivative_rod > 5. * initial_band_width) {
         throw LargeDerivativeRODException(l);
     }
-    if (derivative_rod < 0.005 * initial_band_width) {
+    if (derivative_rod < 0.002 * initial_band_width) {
         throw SmallDerivativeRODException(l);
     }
 
