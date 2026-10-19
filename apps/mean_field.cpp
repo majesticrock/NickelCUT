@@ -41,13 +41,13 @@ int main(int argc, char** argv) {
     const nlohmann::json j_metadata = model.generate_meta_data_json();
 
     auto solver = mrock::utility::Selfconsistency::make_broyden<double>(&model, &model.deltas, 400, 1e-6);
-    solver.compute(true, 600);
-    if (!model.deltas.converged)
+    auto convergence = solver.compute(true, 600);
+    if (!convergence.converged)
     {
         std::cout << "Initial mean-field calculations did not converge. Retrying..." << std::endl;
-        solver.compute(true, 600);
+        convergence = solver.compute(true, 600);
 
-        if(!model.deltas.converged) {
+        if(!convergence.converged) {
             throw std::runtime_error("Initial mean-field calculations did not converge even after retry.");
         }
     }

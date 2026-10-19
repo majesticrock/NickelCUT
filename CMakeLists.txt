@@ -59,6 +59,7 @@ target_include_directories(nickelcut_options INTERFACE ${MROCK_GENERATED_INCLUDE
 add_subdirectory(sources/commute)
 add_subdirectory(sources/flow)
 add_subdirectory(sources/mean_field)
+add_subdirectory(sources/susceptibility)
 
 add_subdirectory(apps)
 

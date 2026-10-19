@@ -156,6 +156,28 @@ struct momentum_iterator {
     int _pos{};
 };
 
+template <int _L>
+constexpr int number_of_high_symmtry_momenta = 3 * _L / 2 + 1;
+
+template<int _L>
+constexpr std::array<momentum_iterator<_L>, number_of_high_symmtry_momenta<_L>> square_lattice_high_symmetry_path() noexcept {
+    constexpr int half_L = _L / 2;
+    std::array<momentum_iterator<_L>, number_of_high_symmtry_momenta<_L>> path{};
+    int position = 0;
+
+    for (int step = 0; step <= half_L; ++step) {
+        path[position++] = momentum_iterator<_L>(half_L - step, half_L);
+    }
+    for (int step = 1; step <= half_L; ++step) {
+        path[position++] = momentum_iterator<_L>(0, half_L - step);
+    }
+    for (int step = 1; step <= half_L; ++step) {
+        path[position++] = momentum_iterator<_L>(step, step);
+    }
+
+    return path;
+}
+
 template<int _L>
 std::ostream& operator<<(std::ostream& os, momentum_iterator<_L> mom_it) {
     os << "(" << mom_it.get_kx() / std::numbers::pi << ", " << mom_it.get_ky() / std::numbers::pi << ")";

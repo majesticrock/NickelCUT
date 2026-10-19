@@ -53,6 +53,36 @@ int main(int /*argc*/, char** /*argv*/) {
         return 1;
     }
 
+    {
+        constexpr auto path = square_lattice_high_symmetry_path<L>();
+        constexpr int half_L = L / 2;
+        if (path.size() != 3 * half_L + 1
+            || path.front() != Gamma<L>
+            || path[half_L] != it_type(0, half_L)
+            || path[2 * half_L] != PI<L>
+            || path.back() != Gamma<L>) {
+            std::cerr << "high-symmetry path has incorrect endpoints!" << std::endl;
+            return 1;
+        }
+
+        for (int step = 0; step <= half_L; ++step) {
+            if (path[step] != it_type(half_L - step, half_L)) {
+                std::cerr << "Gamma-to-X segment is incorrect!" << std::endl;
+                return 1;
+            }
+        }
+        for (int step = 1; step <= half_L; ++step) {
+            if (path[half_L + step] != it_type(0, half_L - step)) {
+                std::cerr << "X-to-M segment is incorrect!" << std::endl;
+                return 1;
+            }
+            if (path[2 * half_L + step] != it_type(step, step)) {
+                std::cerr << "M-to-Gamma segment is incorrect!" << std::endl;
+                return 1;
+            }
+        }
+    }
+
     int half_count = 0;
     for(it_type p = it_type::begin(); p != it_type::half_end(); ++p) {
         ++half_count;

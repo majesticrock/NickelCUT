@@ -57,3 +57,12 @@ target_link_libraries(susceptibility_commute
         mrock::symbolic_operators
         commute_lib
 )
+
+add_executable(susceptibility_ieom susceptibility_ieom.cpp)
+target_link_libraries(susceptibility_ieom
+    PRIVATE
+        nickelcut_options
+        mrock::utility
+        susceptibility_lib
+        flow_lib
+)

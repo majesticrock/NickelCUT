@@ -77,17 +77,15 @@ struct Model : public flow::Model {
     }
     
     inline double dispersion_up(std::size_t p) const noexcept {
-        return epsilon_tilde[p] + Sigma_up(p) - chemical_potential;
+        return extracted_channels.epsilon_tilde[p] + Sigma_up(p) - chemical_potential;
     }
     inline double dispersion_down(std::size_t p) const noexcept {
-        return epsilon_tilde[p] + Sigma_down(p) - chemical_potential;
+        return extracted_channels.epsilon_tilde[p] + Sigma_down(p) - chemical_potential;
     }
 private:  
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> eigensolver;
     Eigen::Matrix4d hamiltonian;
     Eigen::Matrix4d rho;
-
-    flow::FlowContainer::coeff_array epsilon_tilde;
 
     void fill_hamiltonian(const momentum_t& p);
     void compute_rho(const momentum_t& p);

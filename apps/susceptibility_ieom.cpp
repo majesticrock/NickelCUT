@@ -1,7 +1,13 @@
-#include "../sources/flow/momentum_iterator.hpp"
 #include "../sources/L.hpp"
-#include "../sources/mean_field/Model.hpp"
+#include "../sources/flow/Model.hpp"
+
 #include "../sources/flow/FlowContainer.hpp"
+#include "../sources/flow/flow_state_serialization.hpp"
+#include "../sources/flow/data_file_names.hpp"
+
+#include "../sources/susceptibility/SC.hpp"
+#include "../sources/susceptibility/Spin.hpp"
+#include "../sources/susceptibility/Charge.hpp"
 
 #include <Eigen/Dense>
 #include <mrock/utility/InputFileReader.hpp>
@@ -16,48 +22,7 @@
 #endif
 
 using namespace NickelCUT;
-
-typedef flow::momentum_iterator<L> mt;
-
-Eigen::MatrixXd compute_M(const flow::FlowContainer& flow_result, 
-    const std::array<double, N>& occupation_numbers, 
-    const mt& x) 
-{
-    Eigen::MatrixXd dynamical_matrix = Eigen::MatrixXd::Zero(N, N);
-
-    for (mt k = mt::begin(); k != mt::end(); ++k) {
-        for (mt K = mt::begin(); K != mt::end(); ++K) {
-            dynamical_matrix(k.get_position(), k.get_position()) += (flow_result.interactions_differing_spin(k+x,K,flow::Gamma<L>)
-                + flow_result.interactions_differing_spin(k,K,flow::Gamma<L>)
-                - flow_result.interactions_same_spin(k+x,K,K-k-x)
-                + flow_result.interactions_same_spin(k+x,K,flow::Gamma<L>)
-                - flow_result.interactions_same_spin(k,K,K-k-x)
-                + flow_result.interactions_same_spin(k,K,flow::Gamma<L>)) * occupation_numbers[K];
-        }
-        const auto epsilon_tilde = flow_result.epsilon_tilde();
-        dynamical_matrix(k.get_position(), k.get_position()) += 0.5 * (epsilon_tilde[k] + epsilon_tilde[k+x]);
-        dynamical_matrix(k.get_position(), k.get_position()) *= 2. * (1. - occupation_numbers[k] - occupation_numbers[k+x]);
-
-        for (mt l = mt::begin(); l != mt::end(); ++l) {
-            dynamical_matrix(k.get_position(), l.get_position()) += 2 * flow_result.interactions_differing_spin(-k-x,k,k-l) * (
-                (1. - occupation_numbers[k] - occupation_numbers[k+x]) * (1. - occupation_numbers[l] - occupation_numbers[l+x])
-            );
-        }
-    }
-    return dynamical_matrix;
-} 
-
-Eigen::DiagonalMatrix<double, Eigen::Dynamic> compute_N(const std::array<double, N>& occupation_numbers, 
-    const mt& x) 
-{
-    Eigen::DiagonalMatrix<double, Eigen::Dynamic> norm_matrix;
-    norm_matrix.setZero(N);
-
-    for (mt k = mt::begin(); k != mt::end(); ++k) {
-        norm_matrix.diagonal()(k.get_position()) = occupation_numbers[k] + occupation_numbers[k+x] - 1.;
-    }
-    return norm_matrix;
-}
+using namespace NickelCUT::susceptibility;
 
 int main(int argc, char** argv) {
     if (argc < 2) {
@@ -65,19 +30,43 @@ int main(int argc, char** argv) {
         return -1;
     }
     mrock::utility::InputFileReader input(argv[1]);
+    const flow::Model model(input);
 
     const std::string load_binary_dir = std::string(OUTPUT_DATA_DIR) 
         + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
         + input.getString("output_dir") + "/"
         + "binaries/";
-    mean_field::Model model(load_binary_dir, input);
+    const flow::FlowContainer final_flow_state = flow::deserialize_flow_state(load_binary_dir + model.data_dir_name(), flow::data_file_names::FINAL_FLOW_STATE_BIN);
 
     const std::string output_dir = std::string(OUTPUT_DATA_DIR) 
         + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
         + input.getString("output_dir") + "/"
         + model.data_dir_name();
-    
+
     const nlohmann::json j_metadata = model.generate_meta_data_json();
 
-    
+    SC ieom_sc(final_flow_state, model);
+    Spin ieom_spin(&ieom_sc);
+    Charge ieom_charge(&ieom_sc);
+
+    const std::vector<ieom_base::Vector> states = {ieom_sc.swave_state(), ieom_sc.dwave_state()};
+
+    const auto sc_result = ieom_sc.static_susceptibility_at_high_symmetry(states);
+    const auto spin_result = ieom_spin.static_susceptibility_at_high_symmetry(states);
+    const auto charge_result = ieom_charge.static_susceptibility_at_high_symmetry(states);
+
+    nlohmann::json jData = {
+        {"SC", sc_result },
+        {"spin", spin_result },
+        {"charge", charge_result },
+        {"dispersion", ieom_sc.get_dispersion() },
+        {"negative_excitation_sc", ieom_sc.found_negative_excitation() },
+        {"negative_excitation_spin", ieom_spin.found_negative_excitation() },
+        {"negative_excitation_charge", ieom_charge.found_negative_excitation() }
+    };
+    jData.update(j_metadata);
+
+    mrock::utility::save_string(jData.dump(4), output_dir + "ieom_susceptibility.json.gz");
+
+    return 0;
 }

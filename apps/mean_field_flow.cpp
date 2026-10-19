@@ -128,12 +128,12 @@ int main(int argc, char** argv)
             auto solver = mrock::utility::Selfconsistency::make_broyden<double>(
                 &model, &model.deltas, 400, 1e-6
             );
-            solver.compute(true, 600);
-            if (!model.deltas.converged) {
+            auto convergence = solver.compute(true, 600);
+            if (!convergence.converged) {
                 std::cout << "Mean-field calculation did not converge at l=" << l_times[index]
                     << ". Retrying..." << std::endl;
-                solver.compute(true, 600);
-                if (!model.deltas.converged) {
+                convergence = solver.compute(true, 600);
+                if (!convergence.converged) {
                     throw std::runtime_error("Mean-field calculation did not converge at l="
                         + std::to_string(l_times[index]));
                 }
