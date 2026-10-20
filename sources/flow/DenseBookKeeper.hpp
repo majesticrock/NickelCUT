@@ -4,17 +4,17 @@
  * However, I noticed that the ROD is a poor indictor of when to stop the flow.
  * The new version simply saves the very last state and interrupts the flow, when some interaction matrix element
  * grows too large. Thereby, it forgoes saving a lot of unneeded data.
- * 
+ *
  * This file is kept in case I do need dense output later down the line.
  */
-#include "FlowContainer.hpp"
 #include "ExtractionContainer.hpp"
+#include "FlowContainer.hpp"
 
 #include <nlohmann/json.hpp>
 
-#include <deque>
-#include <cstddef>
 #include <chrono>
+#include <cstddef>
+#include <deque>
 
 namespace NickelCUT::flow {
 
@@ -32,7 +32,11 @@ struct DenseBookKeeper {
 
     /////////////////////////////////////////////////////////
 
-    DenseBookKeeper(const FlowContainer& initial_flow_state, FlowEquation& flow_equation, double _band_width, double _dl, std::chrono::minutes::rep _max_runtime_duration);
+    DenseBookKeeper(const FlowContainer& initial_flow_state,
+                    FlowEquation& flow_equation,
+                    double _band_width,
+                    double _dl,
+                    std::chrono::minutes::rep _max_runtime_duration);
 
     void print_final(const FlowContainer& x, double l);
 
@@ -56,4 +60,4 @@ private:
 
 void to_json(nlohmann::json& j, const DenseBookKeeper& book_keeper) noexcept;
 
-} // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow

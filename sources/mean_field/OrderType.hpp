@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../flow/Model.hpp"
+#include "../L.hpp"
 #include "../flow/ExtractionContainer.hpp"
+#include "../flow/Model.hpp"
 #include "../flow/momentum_iterator.hpp"
 #include "ModelAttributes.hpp"
-#include "../L.hpp"
 
 #include <Eigen/Dense>
 
@@ -24,13 +24,11 @@ enum class OrderType : unsigned char {
 
 std::string to_string(OrderType order);
 
-constexpr OrderType operator|(OrderType lhs, OrderType rhs) 
-{
+constexpr OrderType operator|(OrderType lhs, OrderType rhs) {
     return static_cast<OrderType>(static_cast<unsigned char>(lhs) | static_cast<unsigned char>(rhs));
 }
-constexpr OrderType operator&(OrderType lhs, OrderType rhs) 
-{
+constexpr OrderType operator&(OrderType lhs, OrderType rhs) {
     return static_cast<OrderType>(static_cast<unsigned char>(lhs) & static_cast<unsigned char>(rhs));
 }
 
-} // namespace NickelCUT::mean_field
+}  // namespace NickelCUT::mean_field

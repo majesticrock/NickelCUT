@@ -1,11 +1,11 @@
 #pragma once
 
-#include <mrock/symbolic_operators/Term.hpp>
 #include <mrock/symbolic_operators/ExpectationValues>
+#include <mrock/symbolic_operators/Term.hpp>
 #include <mrock/symbolic_operators/experimental/WickOrderedCollector.hpp>
 
-#include <sstream>
 #include <memory>
+#include <sstream>
 #include <vector>
 
 namespace NickelCUT::commute {
@@ -24,4 +24,4 @@ experimental::WickOrderedCollector commutator_of_cut(std::ostringstream& oss);
 
 TermCollector commutator_pair_annihilation(std::ostringstream& oss);
 
-} // namespace NickelCUT::commute
+}  // namespace NickelCUT::commute

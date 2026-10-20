@@ -1,7 +1,7 @@
 #include "../sources/flow/momentum_iterator.hpp"
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 #include <numbers>
 
 using namespace NickelCUT::flow;
@@ -11,9 +11,11 @@ constexpr int L = 6;
 using it_type = momentum_iterator<L>;
 
 double momentum_modulo(double input) {
-    while(input < -pi) input += 2 * pi;
+    while (input < -pi)
+        input += 2 * pi;
     // - 1e-12 because floating point precision
-    while(input >= pi - 1e-12) input -= 2 * pi;
+    while (input >= pi - 1e-12)
+        input -= 2 * pi;
     return input;
 }
 
@@ -22,33 +24,32 @@ bool float_equal(double l, double r) {
 }
 
 int main(int /*argc*/, char** /*argv*/) {
-    for(int y = 0; y < L; ++y) {
-        for(int x = 0; x < L; ++x) {
+    for (int y = 0; y < L; ++y) {
+        for (int x = 0; x < L; ++x) {
             it_type from_coordinates(x, y);
             it_type from_position(x + L * y);
 
-            if(from_coordinates.get_position() != x + L * y
-                || from_position.get_position() != x + L * y
-                || from_coordinates.get_momentum() != from_position.get_momentum()) {
+            if (from_coordinates.get_position() != x + L * y || from_position.get_position() != x + L * y ||
+                from_coordinates.get_momentum() != from_position.get_momentum()) {
                 std::cerr << "coordinate and position constructors disagree!" << std::endl;
                 return 1;
             }
 
             const auto indexed_momentum = it_type::begin()[x + L * y];
-            if(indexed_momentum != from_coordinates.get_momentum()) {
+            if (indexed_momentum != from_coordinates.get_momentum()) {
                 std::cerr << "operator[] does not use row-major positions!" << std::endl;
                 return 1;
             }
         }
     }
 
-    if(PI<L>.get_position() != 0 || PI<L>.get_momentum() != it_type::begin().get_momentum()) {
+    if (PI<L>.get_position() != 0 || PI<L>.get_momentum() != it_type::begin().get_momentum()) {
         std::cerr << "Q is not the first momentum point!" << std::endl;
         return 1;
     }
 
-    if(Gamma<L>.get_position() != L / 2 + L * (L / 2)
-        || Gamma<L>.get_momentum() != std::pair<double, double>{0.0, 0.0}) {
+    if (Gamma<L>.get_position() != L / 2 + L * (L / 2) ||
+        Gamma<L>.get_momentum() != std::pair<double, double>{0.0, 0.0}) {
         std::cerr << "Gamma is not at zero momentum!" << std::endl;
         return 1;
     }
@@ -56,11 +57,8 @@ int main(int /*argc*/, char** /*argv*/) {
     {
         constexpr auto path = square_lattice_high_symmetry_path<L>();
         constexpr int half_L = L / 2;
-        if (path.size() != 3 * half_L + 1
-            || path.front() != Gamma<L>
-            || path[half_L] != it_type(0, half_L)
-            || path[2 * half_L] != PI<L>
-            || path.back() != Gamma<L>) {
+        if (path.size() != 3 * half_L + 1 || path.front() != Gamma<L> || path[half_L] != it_type(0, half_L) ||
+            path[2 * half_L] != PI<L> || path.back() != Gamma<L>) {
             std::cerr << "high-symmetry path has incorrect endpoints!" << std::endl;
             return 1;
         }
@@ -84,10 +82,10 @@ int main(int /*argc*/, char** /*argv*/) {
     }
 
     int half_count = 0;
-    for(it_type p = it_type::begin(); p != it_type::half_end(); ++p) {
+    for (it_type p = it_type::begin(); p != it_type::half_end(); ++p) {
         ++half_count;
     }
-    if(half_count != L * L / 2 || it_type::half_end().get_position() != L * L / 2) {
+    if (half_count != L * L / 2 || it_type::half_end().get_position() != L * L / 2) {
         std::cerr << "half_end does not cover half of the Brillouin zone!" << std::endl;
         return 1;
     }
@@ -95,30 +93,30 @@ int main(int /*argc*/, char** /*argv*/) {
     {
         it_type p(4);
         const it_type before = p++;
-        if(before.get_position() != 4 || p.get_position() != 5) {
+        if (before.get_position() != 4 || p.get_position() != 5) {
             std::cerr << "postfix increment has incorrect semantics!" << std::endl;
             return 1;
         }
 
         const it_type& same = ++p;
-        if(&same != &p || p.get_position() != 6) {
+        if (&same != &p || p.get_position() != 6) {
             std::cerr << "prefix increment has incorrect semantics!" << std::endl;
             return 1;
         }
     }
 
-    for(it_type p = it_type::begin(); p != it_type::end(); ++p) {
-        for(it_type add = it_type::begin(); add != it_type::end(); ++add) {
+    for (it_type p = it_type::begin(); p != it_type::end(); ++p) {
+        for (it_type add = it_type::begin(); add != it_type::end(); ++add) {
             it_type in_place_add = p;
             in_place_add += add;
-            if(in_place_add != p + add) {
+            if (in_place_add != p + add) {
                 std::cerr << "operator+= disagrees with operator+!" << std::endl;
                 return 1;
             }
 
             it_type in_place_subtract = p;
             in_place_subtract -= add;
-            if(in_place_subtract != p - add) {
+            if (in_place_subtract != p - add) {
                 std::cerr << "operator-= disagrees with operator-!" << std::endl;
                 return 1;
             }
@@ -126,20 +124,20 @@ int main(int /*argc*/, char** /*argv*/) {
     }
 
     int n = 0;
-    for(it_type p = it_type::begin(); p != it_type::end(); ++p) {
-        if(p.get_position() != n) {
+    for (it_type p = it_type::begin(); p != it_type::end(); ++p) {
+        if (p.get_position() != n) {
             std::cerr << "p.get_position() != n     failed!" << std::endl;
             return 1;
         }
 
         it_type tmp = p + Gamma<L>;
-        if(p != tmp){
+        if (p != tmp) {
             std::cerr << "p + Gamma<L> == p     failed!" << std::endl;
             return 1;
         }
 
         it_type tmp2 = p - Gamma<L>;
-        if(p != tmp2){
+        if (p != tmp2) {
             std::cerr << "p - Gamma<L> == p     failed!" << std::endl;
             return 1;
         }
@@ -147,66 +145,68 @@ int main(int /*argc*/, char** /*argv*/) {
         ++n;
     }
 
-    for(it_type p = it_type::begin(); p != it_type::end(); ++p) {
+    for (it_type p = it_type::begin(); p != it_type::end(); ++p) {
         for (it_type add = it_type::begin(); add != it_type::end(); ++add) {
             it_type tmp = p + add;
             double should_be_x = momentum_modulo(add.get_kx() + p.get_kx());
             double should_be_y = momentum_modulo(add.get_ky() + p.get_ky());
-            
-            if(!float_equal(should_be_x, tmp.get_kx())){
+
+            if (!float_equal(should_be_x, tmp.get_kx())) {
                 std::cerr << "p_x + q_x == p_x + q_x     failed!" << std::endl;
-                std::cerr << "Got " << tmp.get_kx() << ", but expected " 
-                    << p.get_kx() << " + " << add.get_kx() << " = " << should_be_x << std::endl;
+                std::cerr << "Got " << tmp.get_kx() << ", but expected " << p.get_kx() << " + " << add.get_kx() << " = "
+                          << should_be_x << std::endl;
                 std::cerr << "Difference is " << should_be_x - tmp.get_kx() << std::endl;
                 return 1;
             }
-            if(!float_equal(should_be_y, tmp.get_ky())){
+            if (!float_equal(should_be_y, tmp.get_ky())) {
                 std::cerr << "p_y + q_y == p_y + q_y     failed!" << std::endl;
-                std::cerr << "Got " << tmp.get_ky() << ", but expected " 
-                    << p.get_ky() << " + " << add.get_ky() << " = " << should_be_y << std::endl;
+                std::cerr << "Got " << tmp.get_ky() << ", but expected " << p.get_ky() << " + " << add.get_ky() << " = "
+                          << should_be_y << std::endl;
                 std::cerr << "Difference is " << should_be_y - tmp.get_ky() << std::endl;
                 return 1;
             }
         }
     }
 
-    for(it_type p = it_type::begin(); p != it_type::end(); ++p) {
+    for (it_type p = it_type::begin(); p != it_type::end(); ++p) {
         for (it_type add = it_type::begin(); add != it_type::end(); ++add) {
             it_type tmp = p - add;
             double should_be_x = momentum_modulo(p.get_kx() - add.get_kx());
             double should_be_y = momentum_modulo(p.get_ky() - add.get_ky());
 
-            if(!float_equal(should_be_x, tmp.get_kx())){
+            if (!float_equal(should_be_x, tmp.get_kx())) {
                 std::cerr << "p_x - q_x == p_x - q_x     failed!" << std::endl;
-                std::cerr << "Got " << tmp.get_kx() << ", but expected " 
-                    << p.get_kx() << " + " << add.get_kx() << " = " << should_be_x << std::endl;
+                std::cerr << "Got " << tmp.get_kx() << ", but expected " << p.get_kx() << " + " << add.get_kx() << " = "
+                          << should_be_x << std::endl;
                 std::cerr << "Difference is " << should_be_x - tmp.get_kx() << std::endl;
                 return 1;
             }
-            if(!float_equal(should_be_y, tmp.get_ky())){
+            if (!float_equal(should_be_y, tmp.get_ky())) {
                 std::cerr << "p_y - q_y == p_y - q_y     failed!" << std::endl;
-                std::cerr << "Got " << tmp.get_ky() << ", but expected " 
-                    << p.get_ky() << " - " << add.get_ky() << " = " << should_be_y << std::endl;
+                std::cerr << "Got " << tmp.get_ky() << ", but expected " << p.get_ky() << " - " << add.get_ky() << " = "
+                          << should_be_y << std::endl;
                 std::cerr << "Difference is " << should_be_y - tmp.get_ky() << std::endl;
                 return 1;
             }
         }
     }
 
-    for(it_type p = it_type::begin(); p != it_type::end(); ++p) {
+    for (it_type p = it_type::begin(); p != it_type::end(); ++p) {
         it_type tmp = -p;
-        double should_be_x = momentum_modulo(- (p.get_kx()));
-        double should_be_y = momentum_modulo(- (p.get_ky()));
+        double should_be_x = momentum_modulo(-(p.get_kx()));
+        double should_be_y = momentum_modulo(-(p.get_ky()));
 
-        if(!float_equal(should_be_x, tmp.get_kx())){
+        if (!float_equal(should_be_x, tmp.get_kx())) {
             std::cerr << "-p_x = -p_x     failed!" << std::endl;
-            std::cerr << "Got " << tmp.get_kx() << ", but expected -" << p.get_kx() << " = " << should_be_x << std::endl;
+            std::cerr << "Got " << tmp.get_kx() << ", but expected -" << p.get_kx() << " = " << should_be_x
+                      << std::endl;
             std::cerr << "Difference is " << should_be_x - tmp.get_kx() << std::endl;
             return 1;
         }
-        if(!float_equal(should_be_y, tmp.get_ky())){
+        if (!float_equal(should_be_y, tmp.get_ky())) {
             std::cerr << "-p_y = -p_y     failed!" << std::endl;
-            std::cerr << "Got " << tmp.get_ky() << ", but expected -" << p.get_ky() << " = " << should_be_y << std::endl;
+            std::cerr << "Got " << tmp.get_ky() << ", but expected -" << p.get_ky() << " = " << should_be_y
+                      << std::endl;
             std::cerr << "Difference is " << should_be_y - tmp.get_ky() << std::endl;
             return 1;
         }

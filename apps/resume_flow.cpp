@@ -1,13 +1,13 @@
 #include "../sources/L.hpp"
+#include "../sources/flow/ExtractionContainer.hpp"
 #include "../sources/flow/FlowContainer.hpp"
-#include "../sources/flow/Model.hpp"
 #include "../sources/flow/FlowEquation.hpp"
-#include "../sources/helper_functions.hpp"
-#include "../sources/flow/numerical_setup.hpp"
+#include "../sources/flow/FlowExceptions.hpp"
+#include "../sources/flow/Model.hpp"
 #include "../sources/flow/data_file_names.hpp"
 #include "../sources/flow/flow_state_serialization.hpp"
-#include "../sources/flow/FlowExceptions.hpp"
-#include "../sources/flow/ExtractionContainer.hpp"
+#include "../sources/flow/numerical_setup.hpp"
+#include "../sources/helper_functions.hpp"
 
 #define DENSE_BOOK_KEEPING
 #ifdef DENSE_BOOK_KEEPING
@@ -23,8 +23,8 @@ typedef NickelCUT::flow::BookKeeper _book_keeper;
 #include <nlohmann/json.hpp>
 
 #include <cmath>
-#include <iostream>
 #include <filesystem>
+#include <iostream>
 
 #ifndef OUTPUT_DATA_DIR
 #define OUTPUT_DATA_DIR "../../data/nickel_cut/"
@@ -35,8 +35,8 @@ using namespace NickelCUT::flow;
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        std::cerr << "Not enough arguments provided to " << argv[0]
-                << "\nUsage: " << argv[0] << "<configfile> <int: resume_step>" << std::endl;
+        std::cerr << "Not enough arguments provided to " << argv[0] << "\nUsage: " << argv[0]
+                  << "<configfile> <int: resume_step>" << std::endl;
         return 1;
     }
 
@@ -47,15 +47,12 @@ int main(int argc, char** argv) {
     mrock::utility::InputFileReader input(argv[1]);
     Model model(input);
 
-    const std::string output_dir = std::string(OUTPUT_DATA_DIR) 
-        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/")
-        + input.getString("output_dir") + "/"
-        + model.data_dir_name();
-    const std::string binary_ouput_dir = std::string(OUTPUT_DATA_DIR) 
-        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/")
-        + input.getString("output_dir") + "/"
-        + "binaries/"
-        + model.data_dir_name();
+    const std::string output_dir = std::string(OUTPUT_DATA_DIR) +
+                                   (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") +
+                                   input.getString("output_dir") + "/" + model.data_dir_name();
+    const std::string binary_ouput_dir = std::string(OUTPUT_DATA_DIR) +
+                                         (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") +
+                                         input.getString("output_dir") + "/" + "binaries/" + model.data_dir_name();
 
     std::filesystem::create_directories(output_dir);
     std::filesystem::create_directories(binary_ouput_dir);
@@ -64,29 +61,29 @@ int main(int argc, char** argv) {
     if (resume_run) {
         const std::string final_state_file = binary_ouput_dir + data_file_names::FINAL_FLOW_STATE_BIN;
         if (!std::filesystem::exists(final_state_file)) {
-            std::cerr << "No serialized flow state found at " << final_state_file << ". Cannot resume flow." << std::endl;
+            std::cerr << "No serialized flow state found at " << final_state_file << ". Cannot resume flow."
+                      << std::endl;
             return 1;
         }
         flow_state = deserialize_flow_state(binary_ouput_dir, data_file_names::FINAL_FLOW_STATE_BIN);
         std::cout << "Loaded serialized flow state from " << final_state_file << std::endl;
-    }
-    else {
+    } else {
         flow_state = FlowContainer(model);
         std::cout << "\nConstructed initial states. The filling of the system is " << model.filling << std::endl;
     }
 
     FlowEquation flow_equation;
-    _book_keeper book_keeper(flow_state, flow_equation, flow_state.band_width(), target_dl(model.U_0), input.getInt("max_runtime"));
+    _book_keeper book_keeper(flow_state, flow_equation, flow_state.band_width(), target_dl(model.U_0),
+                             input.getInt("max_runtime"));
 
     std::string end_reason = "Reached l_final";
     double actual_l_final = 0.;
     try {
         boost::numeric::odeint::integrate_adaptive(
-                    boost::numeric::odeint::make_controlled<boost_stepper>( abs_error, rel_error ),
-                    flow_equation, flow_state, 0.0, l_final, dl(model.U_0), boost::ref(book_keeper));
+            boost::numeric::odeint::make_controlled<boost_stepper>(abs_error, rel_error), flow_equation, flow_state,
+            0.0, l_final, dl(model.U_0), boost::ref(book_keeper));
         actual_l_final = l_final;
-    }
-    catch (ControlledFlowInterruption& e) {
+    } catch (ControlledFlowInterruption& e) {
         actual_l_final = e.get_end_time();
         end_reason = e.what();
         std::cout << end_reason << "\nSaving current state..." << std::endl;
@@ -111,11 +108,12 @@ int main(int argc, char** argv) {
 #else
     mrock::utility::save_string(j_flow_data.dump(4), output_dir + data_file_names::FLOW_STEPS);
 #endif
-    
+
     mrock::utility::save_string(j_final_flow_state.dump(4), output_dir + data_file_names::FINAL_FLOW_STATE_JSON);
 
     serialize_flow_state(book_keeper.last_good_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE_BIN);
-    serialize_extracted_channels(ExtractionContainer(book_keeper.last_good_state), binary_ouput_dir, data_file_names::FINAL_EXTRACTED_CHANNELS);
+    serialize_extracted_channels(ExtractionContainer(book_keeper.last_good_state), binary_ouput_dir,
+                                 data_file_names::FINAL_EXTRACTED_CHANNELS);
 
     return 0;
 }

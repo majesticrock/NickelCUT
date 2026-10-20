@@ -1,20 +1,19 @@
 #pragma once
 
+#include "../L.hpp"
 #include "../helper_functions.hpp"
 #include "momentum_iterator.hpp"
-#include "../L.hpp"
 
-#include <omp.h>
-
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <limits>
-#include <utility>
-#include <algorithm>
-#include <vector>
 #include <iostream>
+#include <limits>
+#include <omp.h>
+#include <utility>
+#include <vector>
 
 namespace NickelCUT::flow {
 
@@ -43,24 +42,19 @@ class InteractionDataFrame {
         const std::size_t x = index / (N * N);
         const std::size_t y = (index / N) % N;
         const std::size_t z = index % N;
-        const auto flatten = [](std::size_t a, std::size_t b, std::size_t c) {
-            return c + N * (b + N * a);
-        };
+        const auto flatten = [](std::size_t a, std::size_t b, std::size_t c) { return c + N * (b + N * a); };
 
-        return std::min({
-            index,
-            flatten(reflect_kx(x), reflect_kx(y), reflect_kx(z)),
-            flatten(reflect_ky(x), reflect_ky(y), reflect_ky(z)),
-            flatten(reflect_kx(reflect_ky(x)), reflect_kx(reflect_ky(y)), reflect_kx(reflect_ky(z)))
-        });
+        return std::min({index, flatten(reflect_kx(x), reflect_kx(y), reflect_kx(z)),
+                         flatten(reflect_ky(x), reflect_ky(y), reflect_ky(z)),
+                         flatten(reflect_kx(reflect_ky(x)), reflect_kx(reflect_ky(y)), reflect_kx(reflect_ky(z)))});
     }
 
 public:
     static const std::vector<storage_index_type>& storage_indices() noexcept {
         static const std::vector<storage_index_type> indices = [] {
             std::vector<storage_index_type> result(total_size);
-            std::vector<storage_index_type> canonical_to_storage(
-                total_size, std::numeric_limits<storage_index_type>::max());
+            std::vector<storage_index_type> canonical_to_storage(total_size,
+                                                                 std::numeric_limits<storage_index_type>::max());
 
             std::size_t next_storage_index = 0;
             for (std::size_t index = 0; index < total_size; ++index) {
@@ -83,9 +77,7 @@ public:
         return storage_indices()[z + N * (y + N * x)];
     }
 
-    static constexpr int independent_size() noexcept {
-        return stored_size;
-    }
+    static constexpr int independent_size() noexcept { return stored_size; }
 
     static const std::vector<std::size_t>& independent_indices() noexcept {
         static const std::vector<std::size_t> indices = [] {
@@ -102,41 +94,31 @@ public:
         return indices;
     }
 
-    template<class Archive>
+    template <class Archive>
     void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
         ar & _data;
     }
 
-    InteractionDataFrame()
-        : _data(stored_size, 0.0)
-    {}
-    InteractionDataFrame(double value)
-        : _data(stored_size, value)
-    {}
+    InteractionDataFrame() : _data(stored_size, 0.0) {}
+    InteractionDataFrame(double value) : _data(stored_size, value) {}
 
-    InteractionDataFrame(const std::vector<double>& data)
-        : _data(data) { assert(data.size() == stored_size); };
-    InteractionDataFrame(std::vector<double>&& data)
-        : _data(std::move(data)) { assert(_data.size() == stored_size); };
+    InteractionDataFrame(const std::vector<double>& data) : _data(data) { assert(data.size() == stored_size); };
+    InteractionDataFrame(std::vector<double>&& data) : _data(std::move(data)) { assert(_data.size() == stored_size); };
 
     InteractionDataFrame(const InteractionDataFrame&) = default;
     InteractionDataFrame& operator=(const InteractionDataFrame&) = default;
-    
+
     InteractionDataFrame(InteractionDataFrame&&) noexcept = default;
     InteractionDataFrame& operator=(InteractionDataFrame&&) noexcept = default;
 
-    inline double& operator()(std::size_t x,
-                                 std::size_t y,
-                                 std::size_t z) noexcept {
+    inline double& operator()(std::size_t x, std::size_t y, std::size_t z) noexcept {
         assert(x < N);
         assert(y < N);
         assert(z < N);
         return _data[data_index(x, y, z)];
     }
 
-    inline const double& operator()(std::size_t x,
-                                       std::size_t y,
-                                       std::size_t z) const noexcept {
+    inline const double& operator()(std::size_t x, std::size_t y, std::size_t z) const noexcept {
         assert(x < N);
         assert(y < N);
         assert(z < N);
@@ -145,29 +127,30 @@ public:
 
     inline void symmetrize() noexcept {
         for (momentum_iterator<L> K = momentum_iterator<L>::begin(); K != momentum_iterator<L>::end(); ++K) {
-        for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
-        for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
-            operator()(K, P, Q) = 0.5 * (
-                operator()(K, P, Q) + operator()(P, K, -Q)
-            );
-            operator()(P, K, -Q) = operator()(K, P, Q);
-        }}}
+            for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
+                for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
+                    operator()(K, P, Q) = 0.5 * (operator()(K, P, Q) + operator()(P, K, -Q));
+                    operator()(P, K, -Q) = operator()(K, P, Q);
+                }
+            }
+        }
     }
 
     inline void antisymmetrize() noexcept {
         for (momentum_iterator<L> K = momentum_iterator<L>::begin(); K != momentum_iterator<L>::end(); ++K) {
-        for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
-        for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
-            operator()(K, P, Q) = 0.5 * (
-                operator()(K, P, Q) - operator()(K, P, P-K-Q)
-            );
-            operator()(K, P, P-K-Q) = -operator()(K, P, Q);
-        }}}
+            for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
+                for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
+                    operator()(K, P, Q) = 0.5 * (operator()(K, P, Q) - operator()(K, P, P - K - Q));
+                    operator()(K, P, P - K - Q) = -operator()(K, P, Q);
+                }
+            }
+        }
     }
 
     void clear_noise() noexcept {
         for (auto& val : _data) {
-            if (is_zero(val)) val = 0.;
+            if (is_zero(val))
+                val = 0.;
         }
     }
 
@@ -186,9 +169,7 @@ public:
         return val;
     };
 
-    inline std::size_t size() const noexcept {
-        return _data.size();
-    }
+    inline std::size_t size() const noexcept { return _data.size(); }
 
     inline double abs_total() const noexcept {  ///< the L2 norm
         return std::sqrt(abs_squared_total());
@@ -214,7 +195,7 @@ public:
 
     inline InteractionDataFrame& operator+=(const InteractionDataFrame& other) noexcept {
 #pragma omp parallel for
-        for (int i=0; i < stored_size; ++i) {
+        for (int i = 0; i < stored_size; ++i) {
             _data[i] += other._data[i];
         }
         return *this;
@@ -222,7 +203,7 @@ public:
 
     inline InteractionDataFrame& operator-=(const InteractionDataFrame& other) noexcept {
 #pragma omp parallel for
-        for (int i=0; i < stored_size; ++i) {
+        for (int i = 0; i < stored_size; ++i) {
             _data[i] -= other._data[i];
         }
         return *this;
@@ -230,7 +211,7 @@ public:
 
     inline InteractionDataFrame& operator*=(const InteractionDataFrame& other) noexcept {
 #pragma omp parallel for
-        for (int i=0; i < stored_size; ++i) {
+        for (int i = 0; i < stored_size; ++i) {
             _data[i] *= other._data[i];
         }
         return *this;
@@ -238,7 +219,7 @@ public:
 
     inline InteractionDataFrame& operator/=(const InteractionDataFrame& other) noexcept {
 #pragma omp parallel for
-        for (int i=0; i < stored_size; ++i) {
+        for (int i = 0; i < stored_size; ++i) {
             _data[i] /= other._data[i];
         }
         return *this;
@@ -246,7 +227,7 @@ public:
 
     inline InteractionDataFrame& operator*=(const double other) noexcept {
 #pragma omp parallel for
-        for (int i=0; i < stored_size; ++i) {
+        for (int i = 0; i < stored_size; ++i) {
             _data[i] *= other;
         }
         return *this;
@@ -254,7 +235,7 @@ public:
 
     inline InteractionDataFrame& operator/=(const double other) noexcept {
 #pragma omp parallel for
-        for (int i=0; i < stored_size; ++i) {
+        for (int i = 0; i < stored_size; ++i) {
             _data[i] /= other;
         }
         return *this;
@@ -262,26 +243,23 @@ public:
 
     inline InteractionDataFrame& operator+=(const double other) noexcept {
 #pragma omp parallel for
-        for (int i=0; i < stored_size; ++i) {
+        for (int i = 0; i < stored_size; ++i) {
             _data[i] += other;
         }
         return *this;
     }
 
-    inline std::vector<double>& get_data() noexcept {
-        return _data;
-    }
+    inline std::vector<double>& get_data() noexcept { return _data; }
 
-    inline const std::vector<double>& get_data() const noexcept {
-        return _data;
-    }
+    inline const std::vector<double>& get_data() const noexcept { return _data; }
 
     inline std::vector<std::vector<std::vector<double>>> as_3D_array() const noexcept {
-        std::vector<std::vector<std::vector<double>>> result(N, std::vector<std::vector<double>>(N, std::vector<double>(N)));
+        std::vector<std::vector<std::vector<double>>> result(
+            N, std::vector<std::vector<double>>(N, std::vector<double>(N)));
 
-        for (std::size_t x=0U; x < N; ++x) {
-            for (std::size_t y=0U; y < N; ++y) {
-                for (std::size_t z=0U; z < N; ++z) {
+        for (std::size_t x = 0U; x < N; ++x) {
+            for (std::size_t y = 0U; y < N; ++y) {
+                for (std::size_t z = 0U; z < N; ++z) {
                     result[x][y][z] = (*this)(x, y, z);
                 }
             }
@@ -291,23 +269,41 @@ public:
 };
 
 template <int N>
-inline InteractionDataFrame operator+(InteractionDataFrame lhs, const InteractionDataFrame& rhs) { return (lhs += rhs); }
+inline InteractionDataFrame operator+(InteractionDataFrame lhs, const InteractionDataFrame& rhs) {
+    return (lhs += rhs);
+}
 template <int N>
-inline InteractionDataFrame operator-(InteractionDataFrame lhs, const InteractionDataFrame& rhs) { return (lhs -= rhs); }
+inline InteractionDataFrame operator-(InteractionDataFrame lhs, const InteractionDataFrame& rhs) {
+    return (lhs -= rhs);
+}
 template <int N>
-inline InteractionDataFrame operator*(InteractionDataFrame lhs, const InteractionDataFrame& rhs) { return (lhs *= rhs); }
+inline InteractionDataFrame operator*(InteractionDataFrame lhs, const InteractionDataFrame& rhs) {
+    return (lhs *= rhs);
+}
 template <int N>
-inline InteractionDataFrame operator/(InteractionDataFrame lhs, const InteractionDataFrame& rhs) { return (lhs /= rhs); }
+inline InteractionDataFrame operator/(InteractionDataFrame lhs, const InteractionDataFrame& rhs) {
+    return (lhs /= rhs);
+}
 
 template <int N>
-inline InteractionDataFrame operator*(InteractionDataFrame lhs, const double rhs) { return (lhs *= rhs); }
+inline InteractionDataFrame operator*(InteractionDataFrame lhs, const double rhs) {
+    return (lhs *= rhs);
+}
 template <int N>
-inline InteractionDataFrame operator*(const double lhs, InteractionDataFrame rhs) { return (rhs *= lhs); }
+inline InteractionDataFrame operator*(const double lhs, InteractionDataFrame rhs) {
+    return (rhs *= lhs);
+}
 template <int N>
-inline InteractionDataFrame operator/(InteractionDataFrame lhs, const double rhs) { return (lhs /= rhs); }
+inline InteractionDataFrame operator/(InteractionDataFrame lhs, const double rhs) {
+    return (lhs /= rhs);
+}
 template <int N>
-inline InteractionDataFrame operator+(InteractionDataFrame lhs, const double rhs) { return (lhs += rhs); }
+inline InteractionDataFrame operator+(InteractionDataFrame lhs, const double rhs) {
+    return (lhs += rhs);
+}
 template <int N>
-inline InteractionDataFrame operator+(const double lhs, InteractionDataFrame rhs) { return (rhs += lhs); }
+inline InteractionDataFrame operator+(const double lhs, InteractionDataFrame rhs) {
+    return (rhs += lhs);
+}
 
-} // namespace NickelCut::flow
+}  // namespace NickelCUT::flow

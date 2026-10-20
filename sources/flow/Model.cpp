@@ -1,50 +1,43 @@
 #include "Model.hpp"
+
+#include "../L.hpp"
+#include "../helper_functions.hpp"
 #include "momentum_iterator.hpp"
 #include "occupation_numbers.hpp"
-#include "../helper_functions.hpp"
-#include "../L.hpp"
 
-#include <mrock/utility/better_to_string.hpp>
 #include <mrock/utility/InputFileReader.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
+#include <mrock/utility/better_to_string.hpp>
 #include <nlohmann/json.hpp>
 
 #include <cmath>
-#include <string>
 #include <sstream>
+#include <string>
 
-namespace NickelCUT::flow
-{
-Model::Model(mrock::utility::InputFileReader& input) 
+namespace NickelCUT::flow {
+Model::Model(mrock::utility::InputFileReader& input)
     : U_0{input.getDouble("U_0")},
-    tprime{input.getDouble("tprime")},
-    E_F{input.getDouble("E_F")},
-    temperature{input.getDouble("T")},
-    beta{temperature > 0.0 ? 1. / temperature : -1.}
-{
+      tprime{input.getDouble("tprime")},
+      E_F{input.getDouble("E_F")},
+      temperature{input.getDouble("T")},
+      beta{temperature > 0.0 ? 1. / temperature : -1.} {
     filling = compute_occupation_numbers(*this);
 }
 
-double Model::epsilon_0(double kx, double ky) const noexcept
-{
-    return -2. * (
-                std::cos(kx) + std::cos(ky) 
-                + 2. * tprime * std::cos(kx) * std::cos(ky) 
-            ) - E_F;
+double Model::epsilon_0(double kx, double ky) const noexcept {
+    return -2. * (std::cos(kx) + std::cos(ky) + 2. * tprime * std::cos(kx) * std::cos(ky)) - E_F;
 }
 
-double Model::fermi_function_zero_temperature(double energy) const noexcept 
-{
+double Model::fermi_function_zero_temperature(double energy) const noexcept {
     if (is_zero(energy)) {
         return 0.5;
     }
     return energy < 0.0 ? 1.0 : 0.0;
 }
 
-double Model::fermi_function(double energy) const noexcept
-{
+double Model::fermi_function(double energy) const noexcept {
     if (this->beta >= 0.0) {
-        return 1. / (1. + std::exp(beta*energy));
+        return 1. / (1. + std::exp(beta * energy));
     }
     return fermi_function_zero_temperature(energy);
 }
@@ -55,23 +48,22 @@ double Model::band_width() const noexcept {
     for (const auto& kx : momentum_iterator<L>::momentum_cache) {
         for (const auto& ky : momentum_iterator<L>::momentum_cache) {
             const double E = epsilon_0(kx, ky);
-            if (E < min) min = E;
-            if (E > max) max = E;
+            if (E < min)
+                min = E;
+            if (E > max)
+                max = E;
         }
     }
     return max - min;
 }
 
-std::string Model::info() const
-{
-    return "NickelCUT Model (L=" + std::to_string(L) + "): U_0=" + std::to_string(U_0)
-        + "   tprime=" + std::to_string(tprime)
-        + "   E_F=" + std::to_string(E_F)
-        + "   temperature=" + std::to_string(temperature); 
+std::string Model::info() const {
+    return "NickelCUT Model (L=" + std::to_string(L) + "): U_0=" + std::to_string(U_0) +
+           "   tprime=" + std::to_string(tprime) + "   E_F=" + std::to_string(E_F) +
+           "   temperature=" + std::to_string(temperature);
 }
 
-std::string Model::data_dir_name() const
-{
+std::string Model::data_dir_name() const {
     auto improved_string = [](double number) -> std::string {
         if (std::floor(number) == number) {
             // If the number is a whole number, format it with one decimal place
@@ -88,24 +80,19 @@ std::string Model::data_dir_name() const
         }
     };
 
-    return "L=" + std::to_string(L) + "/"
-        + "T=" + improved_string(temperature) + "/"
-        + "U_0=" + improved_string(U_0) + "/"
-        + "tprime=" + improved_string(tprime) + "/"
-        + "E_F=" + improved_string(E_F) + "/"; 
+    return "L=" + std::to_string(L) + "/" + "T=" + improved_string(temperature) + "/" + "U_0=" + improved_string(U_0) +
+           "/" + "tprime=" + improved_string(tprime) + "/" + "E_F=" + improved_string(E_F) + "/";
 }
 
 nlohmann::json Model::generate_meta_data_json() const {
-    return nlohmann::json{
-        { "time", mrock::utility::time_stamp() },
-        { "L", L },
-        { "T", temperature },
-        { "U_0", U_0 },
-        { "tprime", tprime },
-        { "E_F", E_F },
-        { "beta", beta },
-        { "filling", filling }
-    };
+    return nlohmann::json{{"time", mrock::utility::time_stamp()},
+                          {"L", L},
+                          {"T", temperature},
+                          {"U_0", U_0},
+                          {"tprime", tprime},
+                          {"E_F", E_F},
+                          {"beta", beta},
+                          {"filling", filling}};
 }
 
-} // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow

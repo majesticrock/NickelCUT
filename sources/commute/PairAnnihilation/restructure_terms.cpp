@@ -1,4 +1,5 @@
 #include "restructure_terms.hpp"
+
 #include <mrock/symbolic_operators/experimental/WickOrderedCollector.hpp>
 
 #include <algorithm>
@@ -6,21 +7,18 @@
 namespace NickelCUT::commute::PairAnnihilation {
 using namespace mrock::symbolic_operators;
 
-void restructure_bilinear_term(experimental::WickOrderedTerm& term)
-{
+void restructure_bilinear_term(experimental::WickOrderedTerm& term) {
     term.redistribute_momenta(term.wick_expression.back().momentum, 'q');
 }
 
-void restructure_quartic_term(experimental::WickOrderedTerm& term)
-{
+void restructure_quartic_term(experimental::WickOrderedTerm& term) {
     term.redistribute_momenta(term.wick_expression.front().momentum, 'p');
     term.redistribute_momenta(term.wick_expression[2].momentum, 'q', {'p'});
- 
+
     std::sort(term.sums.momenta.begin(), term.sums.momenta.end());
 }
 
-void advanced_clean_up(experimental::WickOrderedCollector& terms)
-{
+void advanced_clean_up(experimental::WickOrderedCollector& terms) {
     for (auto& term : terms) {
         if (term.wick_expression.size() == 2U) {
             restructure_bilinear_term(term);
@@ -31,4 +29,4 @@ void advanced_clean_up(experimental::WickOrderedCollector& terms)
     }
 }
 
-} // namespace NickelCUT::commute
+}  // namespace NickelCUT::commute::PairAnnihilation

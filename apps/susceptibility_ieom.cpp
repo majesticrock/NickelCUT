@@ -1,13 +1,11 @@
 #include "../sources/L.hpp"
-#include "../sources/flow/Model.hpp"
-
 #include "../sources/flow/FlowContainer.hpp"
-#include "../sources/flow/flow_state_serialization.hpp"
+#include "../sources/flow/Model.hpp"
 #include "../sources/flow/data_file_names.hpp"
-
+#include "../sources/flow/flow_state_serialization.hpp"
+#include "../sources/susceptibility/Charge.hpp"
 #include "../sources/susceptibility/SC.hpp"
 #include "../sources/susceptibility/Spin.hpp"
-#include "../sources/susceptibility/Charge.hpp"
 
 #include <Eigen/Dense>
 #include <mrock/utility/InputFileReader.hpp>
@@ -18,7 +16,7 @@
 #include <iostream>
 
 #ifndef OUTPUT_DATA_DIR
-#define OUTPUT_DATA_DIR "build/" //"../../data/nickel_cut/"
+#define OUTPUT_DATA_DIR "build/"  //"../../data/nickel_cut/"
 #endif
 
 using namespace NickelCUT;
@@ -32,16 +30,17 @@ int main(int argc, char** argv) {
     mrock::utility::InputFileReader input(argv[1]);
     const flow::Model model(input);
 
-    const std::string load_binary_dir = std::string(OUTPUT_DATA_DIR) 
-        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
-        + input.getString("output_dir") + "/"
-        + "binaries/";
-    const flow::FlowContainer final_flow_state = flow::deserialize_flow_state(load_binary_dir + model.data_dir_name(), flow::data_file_names::FINAL_FLOW_STATE_BIN);
+    const std::string load_binary_dir =
+        std::string(OUTPUT_DATA_DIR) +
+        (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/")  // ensures that OUTPUT_DATA_DIR ends in "/"
+        + input.getString("output_dir") + "/" + "binaries/";
+    const flow::FlowContainer final_flow_state = flow::deserialize_flow_state(
+        load_binary_dir + model.data_dir_name(), flow::data_file_names::FINAL_FLOW_STATE_BIN);
 
-    const std::string output_dir = std::string(OUTPUT_DATA_DIR) 
-        + (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") // ensures that OUTPUT_DATA_DIR ends in "/"
-        + input.getString("output_dir") + "/"
-        + model.data_dir_name();
+    const std::string output_dir =
+        std::string(OUTPUT_DATA_DIR) +
+        (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/")  // ensures that OUTPUT_DATA_DIR ends in "/"
+        + input.getString("output_dir") + "/" + model.data_dir_name();
 
     const nlohmann::json j_metadata = model.generate_meta_data_json();
 
@@ -55,15 +54,13 @@ int main(int argc, char** argv) {
     const auto spin_result = ieom_spin.static_susceptibility_at_high_symmetry(states);
     const auto charge_result = ieom_charge.static_susceptibility_at_high_symmetry(states);
 
-    nlohmann::json jData = {
-        {"SC", sc_result },
-        {"spin", spin_result },
-        {"charge", charge_result },
-        {"dispersion", ieom_sc.get_dispersion() },
-        {"negative_excitation_sc", ieom_sc.found_negative_excitation() },
-        {"negative_excitation_spin", ieom_spin.found_negative_excitation() },
-        {"negative_excitation_charge", ieom_charge.found_negative_excitation() }
-    };
+    nlohmann::json jData = {{"SC", sc_result},
+                            {"spin", spin_result},
+                            {"charge", charge_result},
+                            {"dispersion", ieom_sc.get_dispersion()},
+                            {"negative_excitation_sc", ieom_sc.found_negative_excitation()},
+                            {"negative_excitation_spin", ieom_spin.found_negative_excitation()},
+                            {"negative_excitation_charge", ieom_charge.found_negative_excitation()}};
     jData.update(j_metadata);
 
     mrock::utility::save_string(jData.dump(4), output_dir + "ieom_susceptibility.json.gz");

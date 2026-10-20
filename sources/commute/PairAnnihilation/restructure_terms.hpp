@@ -11,4 +11,4 @@ void restructure_quartic_term(experimental::WickOrderedTerm& term);
 
 void advanced_clean_up(experimental::WickOrderedCollector& terms);
 
-} // namespace NickelCUT::commute
+}  // namespace NickelCUT::commute::PairAnnihilation

@@ -7,20 +7,15 @@
 namespace NickelCUT::commute::Hamiltonian {
 using namespace mrock::symbolic_operators;
 
-std::array<experimental::WickOrderedCollector, 3> extract_flow_coefficients(const experimental::WickOrderedCollector& terms) {
+std::array<experimental::WickOrderedCollector, 3> extract_flow_coefficients(
+    const experimental::WickOrderedCollector& terms) {
     std::array<experimental::WickOrderedCollector, 3> flow_coefficients;
-    flow_coefficients[0].reserve(std::count_if(terms.begin(), terms.end(), 
-        [](const experimental::WickOrderedTerm& term){
-            return term.is_bilinear();
-    }));
-    flow_coefficients[1].reserve(std::count_if(terms.begin(), terms.end(), 
-        [](const experimental::WickOrderedTerm& term){
-            return term.is_quartic();
-    }));
-    flow_coefficients[2].reserve(std::count_if(terms.begin(), terms.end(), 
-        [](const experimental::WickOrderedTerm& term){
-            return term.is_quartic();
-    }));
+    flow_coefficients[0].reserve(std::count_if(
+        terms.begin(), terms.end(), [](const experimental::WickOrderedTerm& term) { return term.is_bilinear(); }));
+    flow_coefficients[1].reserve(std::count_if(
+        terms.begin(), terms.end(), [](const experimental::WickOrderedTerm& term) { return term.is_quartic(); }));
+    flow_coefficients[2].reserve(std::count_if(
+        terms.begin(), terms.end(), [](const experimental::WickOrderedTerm& term) { return term.is_quartic(); }));
 
     const std::vector<Index> removeable_indices_bilinear = {Index::Sigma};
     const std::vector<Index> removeable_indices_quartic = {Index::Sigma, Index::SigmaPrime};
@@ -28,24 +23,19 @@ std::array<experimental::WickOrderedCollector, 3> extract_flow_coefficients(cons
     const std::vector<MomentumSymbol::name_type> removeable_momenta_bilinear = {'K'};
     const std::vector<MomentumSymbol::name_type> removeable_momenta_quartic = {'K', 'P', 'Q'};
 
-    auto remove_sums = [](experimental::WickOrderedTerm& term, 
-                          const std::vector<Index>& indices, 
+    auto remove_sums = [](experimental::WickOrderedTerm& term, const std::vector<Index>& indices,
                           const std::vector<MomentumSymbol::name_type>& momenta) {
-        std::erase_if(term.sums.spins.summations, [&indices](Index index) {
-            return exists_in(indices, index);
-        });
+        std::erase_if(term.sums.spins.summations, [&indices](Index index) { return exists_in(indices, index); });
 
-        std::erase_if(term.sums.momenta.summations, [&momenta](MomentumSymbol::name_type momentum) {
-            return exists_in(momenta, momentum);
-        });
+        std::erase_if(term.sums.momenta.summations,
+                      [&momenta](MomentumSymbol::name_type momentum) { return exists_in(momenta, momentum); });
     };
 
     for (const auto& term : terms) {
-        if(term.is_bilinear()) {
+        if (term.is_bilinear()) {
             flow_coefficients[0].push_back(term);
             remove_sums(flow_coefficients[0].back(), removeable_indices_bilinear, removeable_momenta_bilinear);
-        }
-        else if (term.is_quartic()) {
+        } else if (term.is_quartic()) {
             flow_coefficients[1].push_back(term);
             remove_sums(flow_coefficients[1].back(), removeable_indices_quartic, removeable_momenta_quartic);
         }
@@ -67,6 +57,6 @@ std::array<experimental::WickOrderedCollector, 3> extract_flow_coefficients(cons
     }
 
     return flow_coefficients;
-} 
+}
 
-} // namespace NickelCUT::commute
+}  // namespace NickelCUT::commute::Hamiltonian

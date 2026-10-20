@@ -1,18 +1,19 @@
 #include "export_as_flow_equation.hpp"
-#include <mrock/symbolic_operators/experimental/WickOrderedCollector.hpp>
 
+#include <mrock/symbolic_operators/experimental/WickOrderedCollector.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <cassert>
-#include <string>
+#include <cmath>
 #include <iostream>
+#include <string>
 
 namespace NickelCUT::commute::Hamiltonian {
 using namespace mrock::symbolic_operators;
 
-const std::string outer_K_loop = "#pragma omp parallel for\nfor (int K_pos=0; K_pos < N; ++K_pos) {\nmomentum_iterator<L> K(K_pos);\n";
+const std::string outer_K_loop =
+    "#pragma omp parallel for\nfor (int K_pos=0; K_pos < N; ++K_pos) {\nmomentum_iterator<L> K(K_pos);\n";
 
 const std::string independent_interaction_loop =
     "#pragma omp parallel for\n"
@@ -23,15 +24,15 @@ const std::string independent_interaction_loop =
     "momentum_iterator<L> Q(static_cast<int>(tuple_index % N));\n";
 
 std::string momentum_for_loop(std::string const& it_name) {
-    return "for (momentum_iterator<L> " + it_name + " = momentum_iterator<L>::begin(); " 
-        + it_name + " != momentum_iterator<L>::end(); ++" + it_name + ") {\n";
+    return "for (momentum_iterator<L> " + it_name + " = momentum_iterator<L>::begin(); " + it_name +
+           " != momentum_iterator<L>::end(); ++" + it_name + ") {\n";
 }
 
 std::string sign_to_string(int factor) {
     return (factor < 0 ? "-" : "+");
 }
 
-std::string momentum_to_code(Momentum momentum, bool make_positive=false) {
+std::string momentum_to_code(Momentum momentum, bool make_positive = false) {
     if (momentum.is_zero()) {
         return "Gamma<L>";
     }
@@ -43,9 +44,9 @@ std::string momentum_to_code(Momentum momentum, bool make_positive=false) {
     for (const auto& symbol : momentum) {
         assert(symbol.factor == 1 || symbol.factor == -1);
         if (code == "") {
-            if (symbol.factor == -1) code += "-";
-        }
-        else {
+            if (symbol.factor == -1)
+                code += "-";
+        } else {
             code += sign_to_string(symbol.factor);
         }
         code += symbol.name._n;
@@ -57,11 +58,9 @@ std::string access_expectation_value(const WickOperator& symbol) {
     std::string code;
     if (symbol.type == OperatorType::Number) {
         code += "occupation_numbers";
-    }
-    else if (symbol.type == OperatorType::HoleNumber) {
+    } else if (symbol.type == OperatorType::HoleNumber) {
         code += "hole_numbers";
-    }
-    else {
+    } else {
         throw std::invalid_argument("Got an unexpected expectation value.");
     }
     code += "[";
@@ -74,20 +73,21 @@ std::string access_coefficient(const Coefficient& coeff) {
     std::string code = "";
     if (coeff.name == "\\alpha") {
         code += "alpha_sign_cache(";
-        code += momentum_to_code(coeff.momenta[0]) + ", " + momentum_to_code(coeff.momenta[1]) + ", " + momentum_to_code(coeff.momenta[2]);
+        code += momentum_to_code(coeff.momenta[0]) + ", " + momentum_to_code(coeff.momenta[1]) + ", " +
+                momentum_to_code(coeff.momenta[2]);
         code += ")\n\t* ";
     }
     if (coeff.name == "U" || coeff.name == "\\alpha") {
         if (coeff.indices[0] == Index::Parallel) {
             code += "current.interactions_same_spin";
-        }
-        else {
+        } else {
             code += "current.interactions_differing_spin";
         }
         code += "(";
         for (auto it = coeff.momenta.begin(); it != coeff.momenta.end(); ++it) {
             code += momentum_to_code(*it);
-            if (it != coeff.momenta.end() - 1) code += ", ";
+            if (it != coeff.momenta.end() - 1)
+                code += ", ";
         }
         code += ")";
     }
@@ -102,21 +102,21 @@ std::string access_coefficient(const Coefficient& coeff) {
 
 IntFractional get_smallest_factor(const experimental::WickOrderedCollector& terms) {
     IntFractional smallest_factor = std::min_element(terms.begin(), terms.end(), [](const auto& l, const auto& r) {
-        return std::abs((double)l.multiplicity) < std::abs((double)r.multiplicity);
-    })->multiplicity;
-    if (smallest_factor.numerator < 0) smallest_factor.numerator *= -1;
+                                        return std::abs((double)l.multiplicity) < std::abs((double)r.multiplicity);
+                                    })->multiplicity;
+    if (smallest_factor.numerator < 0)
+        smallest_factor.numerator *= -1;
     return smallest_factor;
 }
 
-std::string generate_bilinear(const experimental::WickOrderedCollector& bilinears) 
-{
+std::string generate_bilinear(const experimental::WickOrderedCollector& bilinears) {
     const std::string accessor = "dHdl.dispersion[K] ";
 
     std::string code = outer_K_loop;
     code += momentum_for_loop("P");
     code += "double Q_sum_value{};\n";
     code += momentum_for_loop("Q");
-    
+
     const IntFractional smallest_factor = get_smallest_factor(bilinears);
 
     for (const auto& term : bilinears) {
@@ -132,7 +132,7 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
             code += std::to_string(std::abs(static_cast<double>(mult)));
             code += " * ";
         }
-        
+
         code += access_coefficient(term.coefficients[0]);
         code += "\n\t* ";
         code += access_coefficient(term.coefficients[1]);
@@ -146,17 +146,18 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
     }
 
     code += "} // Q-loop\n";
-    code += accessor + "+= " + std::to_string(static_cast<double>(smallest_factor)) 
-        + " * Q_sum_value * occupation_numbers[P];\n";
+    code += accessor + "+= " + std::to_string(static_cast<double>(smallest_factor)) +
+            " * Q_sum_value * occupation_numbers[P];\n";
     code += "} // P-loop\n";
     code += "} // K-loop\n";
     return code;
 }
 
 std::string generate_quartic(const experimental::WickOrderedCollector& quartics, bool parallel) {
-    const std::string accessor = std::string("dHdl.") 
-        + (parallel ? std::string("interactions_same_spin") : std::string("interactions_differing_spin"))
-        + std::string("(K, P, Q) ");
+    const std::string accessor =
+        std::string("dHdl.") +
+        (parallel ? std::string("interactions_same_spin") : std::string("interactions_differing_spin")) +
+        std::string("(K, P, Q) ");
 
     std::string code = independent_interaction_loop;
     if (parallel) {
@@ -169,7 +170,8 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
     const IntFractional smallest_factor = get_smallest_factor(quartics);
 
     for (auto it = quartics.begin(); it != quartics.end(); ++it) {
-        if (!(it->sums.momenta.empty())) continue;
+        if (!(it->sums.momenta.empty()))
+            continue;
         const auto mult = it->multiplicity / smallest_factor;
         code += accessor + (mult > 0 ? "+= " : "-= ");
         if (mult != 1 && mult != -1) {
@@ -189,14 +191,16 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
     code += "double nR_hQR_value{};\n";
 
     const auto is_nR_hQR = [](const std::vector<WickOperator>& expecs) {
-        if (expecs.size() != 2U) return false;
-        if (expecs[0].type != OperatorType::Number || expecs[0].momentum != Momentum('R')) return false;
+        if (expecs.size() != 2U)
+            return false;
+        if (expecs[0].type != OperatorType::Number || expecs[0].momentum != Momentum('R'))
+            return false;
         return (expecs[1].type == OperatorType::HoleNumber && expecs[1].momentum == Momentum("Q+R"));
     };
 
-
     for (auto& term : quartics) {
-        if (term.sums.momenta.empty()) continue;
+        if (term.sums.momenta.empty())
+            continue;
         const bool nr_hQR = is_nR_hQR(term.operators);
 
         code += nr_hQR ? "nR_hQR_value " : accessor;
@@ -231,9 +235,8 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
     return code;
 }
 
-void export_as_flow_equation(const std::array<experimental::WickOrderedCollector, 3> flow_coeffs) 
-{
-    const std::string file_header = 
+void export_as_flow_equation(const std::array<experimental::WickOrderedCollector, 3> flow_coeffs) {
+    const std::string file_header =
         "#include \"FlowEquation.hpp\"\n\n"
         "#include \"momentum_iterator.hpp\"\n"
         "#include \"FlowContainer.hpp\"\n"
@@ -245,16 +248,18 @@ void export_as_flow_equation(const std::array<experimental::WickOrderedCollector
         "namespace NickelCUT::flow {\n\n"
         "void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/) {\n"
         "dHdl.reset();\n"
-        "static InteractionDataFrame alpha_sign_cache;\n"
-        + independent_interaction_loop +
+        "static InteractionDataFrame alpha_sign_cache;\n" +
+        independent_interaction_loop +
         "#ifdef USE_LW_GENERATOR\n"
-        "alpha_sign_cache(K,P,Q) = current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q];\n"
+        "alpha_sign_cache(K,P,Q) = current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - "
+        "current.dispersion[K+Q];\n"
         "#else\n"
-        "alpha_sign_cache(K,P,Q) = sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - current.dispersion[K+Q]);\n"
+        "alpha_sign_cache(K,P,Q) = sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P-Q] - "
+        "current.dispersion[K+Q]);\n"
         "#endif\n"
         "}\n\n";
 
-    const std::string file_footer = 
+    const std::string file_footer =
         "dHdl.interactions_same_spin.antisymmetrize();\n"
         "dHdl.interactions_same_spin.symmetrize();\n"
         "dHdl.interactions_differing_spin.symmetrize();\n"
@@ -262,13 +267,14 @@ void export_as_flow_equation(const std::array<experimental::WickOrderedCollector
         "dHdl.interactions_differing_spin.clear_noise();\n"
         "}\n} // namespace NickelCUT::flow";
 
-    const std::string bilinear_code = generate_bilinear(flow_coeffs[0]) 
-        + "\n//--------------------------------------------------------------//\n";
-    const std::string u_anti_code = generate_quartic(flow_coeffs[1], false)
-        + "\n//--------------------------------------------------------------//\n";
+    const std::string bilinear_code =
+        generate_bilinear(flow_coeffs[0]) + "\n//--------------------------------------------------------------//\n";
+    const std::string u_anti_code = generate_quartic(flow_coeffs[1], false) +
+                                    "\n//--------------------------------------------------------------//\n";
     const std::string u_para_code = generate_quartic(flow_coeffs[2], true);
 
-    mrock::utility::save_string_raw(file_header + bilinear_code + u_anti_code + u_para_code + file_footer, "sources/flow/FlowEquation.cpp");
+    mrock::utility::save_string_raw(file_header + bilinear_code + u_anti_code + u_para_code + file_footer,
+                                    "sources/flow/FlowEquation.cpp");
 }
 
-}
+}  // namespace NickelCUT::commute::Hamiltonian

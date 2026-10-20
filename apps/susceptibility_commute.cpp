@@ -16,21 +16,18 @@ const Operator c_minus_k = Operator{-base_k, Index::SpinDown, false};
 const Operator c_k_dagger = Operator{base_k, Index::SpinUp, true};
 const Operator c_minus_k_dagger = Operator{-base_k, Index::SpinDown, true};
 
-std::vector<TermCollector> get_basis_operators() 
-{
-    std::vector<TermCollector> ret = {// 0/1: f, f^+
-            TermCollector({Term(1, std::vector<Operator>({c_minus_k, c_k}))}),
-            TermCollector({Term(1, std::vector<Operator>({c_k_dagger, c_minus_k_dagger}))}),
-            // 2/3: n_up/down
-            TermCollector({
-                Term(1, std::vector<Operator>({c_k_dagger, c_k})),
-                Term(1, std::vector<Operator>({c_minus_k_dagger.with_momentum(Momentum('k',-1)), c_minus_k.with_momentum(Momentum('k',-1))}))
-            }),
-            TermCollector({
-                Term(1, std::vector<Operator>({c_k_dagger, c_k})),
-                Term(-1, std::vector<Operator>({c_minus_k_dagger.with_momentum(Momentum('k',-1)), c_minus_k.with_momentum(Momentum('k',-1))}))
-            })
-    };
+std::vector<TermCollector> get_basis_operators() {
+    std::vector<TermCollector> ret = {
+        // 0/1: f, f^+
+        TermCollector({Term(1, std::vector<Operator>({c_minus_k, c_k}))}),
+        TermCollector({Term(1, std::vector<Operator>({c_k_dagger, c_minus_k_dagger}))}),
+        // 2/3: n_up/down
+        TermCollector({Term(1, std::vector<Operator>({c_k_dagger, c_k})),
+                       Term(1, std::vector<Operator>({c_minus_k_dagger.with_momentum(Momentum('k', -1)),
+                                                      c_minus_k.with_momentum(Momentum('k', -1))}))}),
+        TermCollector({Term(1, std::vector<Operator>({c_k_dagger, c_k})),
+                       Term(-1, std::vector<Operator>({c_minus_k_dagger.with_momentum(Momentum('k', -1)),
+                                                       c_minus_k.with_momentum(Momentum('k', -1))}))})};
 
     for (auto& _v : ret) {
         for (auto& v : _v) {
@@ -46,26 +43,28 @@ std::vector<TermCollector> get_basis_operators()
 
 void carry_out_spin_summations(WickTermCollector& terms) {
     const std::size_t size = terms.size();
-    for (std::size_t i=0U; i < size; ++i) {
-        if (terms[i].sums.spins.empty()) continue;
-        if (terms[i].sums.spins.size() > 1U) throw std::invalid_argument("Expected no more than 1 spin summation!");
+    for (std::size_t i = 0U; i < size; ++i) {
+        if (terms[i].sums.spins.empty())
+            continue;
+        if (terms[i].sums.spins.size() > 1U)
+            throw std::invalid_argument("Expected no more than 1 spin summation!");
 
         terms[i].sums.spins.clear();
         terms.push_back(terms[i]);
-        
+
         terms[i].replace_each_index(Index::Sigma, Index::SpinDown);
         terms.back().replace_each_index(Index::Sigma, Index::SpinUp);
     }
 
     for (auto& term : terms) {
         IndexWrapper& coeff_indices = term.coefficients.front().indices;
-        if (coeff_indices.size() != 2U) continue;
+        if (coeff_indices.size() != 2U)
+            continue;
 
         if (coeff_indices[0] == coeff_indices[1]) {
             coeff_indices.clear();
             coeff_indices.push_back(Index::Parallel);
-        }
-        else {
+        } else {
             coeff_indices.clear();
             coeff_indices.push_back(Index::AntiParallel);
         }
@@ -76,9 +75,11 @@ void carry_out_spin_summations(WickTermCollector& terms) {
 
 void help_not_summed(WickTermCollector& terms) {
     for (auto& term : terms) {
-        if (term.coefficients.empty()) continue;
+        if (term.coefficients.empty())
+            continue;
         Coefficient& coeff = term.coefficients.front();
-        if (coeff.momenta.size() != 3U) continue;
+        if (coeff.momenta.size() != 3U)
+            continue;
         if (coeff.momenta.front() == Momentum('l') || coeff.momenta.front() == Momentum('k', -1)) {
             coeff.use_symmetric_interaction_exchange();
             coeff.use_symmetric_interaction_inversion();
@@ -86,8 +87,7 @@ void help_not_summed(WickTermCollector& terms) {
     }
 }
 
-int main(int, char**)
-{
+int main(int, char**) {
     const auto H = NickelCUT::commute::get_Hamiltonian();
     const auto wick_templates = NickelCUT::commute::get_wick_templates();
     const auto symmetries = NickelCUT::commute::get_symmetries();
@@ -105,8 +105,6 @@ int main(int, char**)
 
     std::cout << "\\begin{align*}\n\t H =" << H << "\\end{align*}\n" << std::endl;
 
-    
-
     for (std::size_t i = 0U; i < basis.size(); ++i) {
         TermCollector commute_with_H = commutator(H, basis[i]);
         commute_with_H.clean_up();
@@ -122,9 +120,9 @@ int main(int, char**)
             help_not_summed(wicks);
             wicks.clean_up(symmetries);
 
-            std::cout << "\\begin{align*}\n\t\\langle [ " << basis_daggered[j].to_string_without_prefactor()
-                        << ", [H, " << basis[i].to_string_without_prefactor() << " ]] \\rangle =" << wicks
-                        << "\\end{align*}" << std::endl;
+            std::cout << "\\begin{align*}\n\t\\langle [ " << basis_daggered[j].to_string_without_prefactor() << ", [H, "
+                      << basis[i].to_string_without_prefactor() << " ]] \\rangle =" << wicks << "\\end{align*}"
+                      << std::endl;
 
             terms.clear();
             wicks.clear();
@@ -134,7 +132,7 @@ int main(int, char**)
             wicks.clean_up(symmetries);
 
             std::cout << "\\begin{align*}\n\t[ " << basis_daggered[j].to_string_without_prefactor() << ", "
-                        << basis[i].to_string_without_prefactor() << " ] =" << wicks << "\\end{align*}" << std::endl;
+                      << basis[i].to_string_without_prefactor() << " ] =" << wicks << "\\end{align*}" << std::endl;
         }
     }
 

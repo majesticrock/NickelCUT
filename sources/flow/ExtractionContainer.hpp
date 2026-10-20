@@ -1,7 +1,7 @@
 #pragma once
 
-#include "FlowContainer.hpp"
 #include "DecouplingChannel.hpp"
+#include "FlowContainer.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -21,7 +21,7 @@ struct ExtractionContainer {
 
     FlowContainer::coeff_array epsilon_tilde;
 
-    template<class Archive>
+    template <class Archive>
     void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
         ar & single_particle_energy;
         ar & density_wave;
@@ -37,4 +37,4 @@ struct ExtractionContainer {
 void to_json(nlohmann::json& j, const ExtractionContainer& extracted_channels) noexcept;
 void from_json(const nlohmann::json& j, ExtractionContainer& extracted_channels);
 
-} // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow

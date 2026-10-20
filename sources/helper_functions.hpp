@@ -1,10 +1,10 @@
 #pragma once
 
-#include <limits>
+#include <bit>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <bit>
+#include <limits>
 
 namespace NickelCUT {
 
@@ -24,14 +24,13 @@ constexpr bool is_finite(double number) noexcept {
     return !is_zero(number);
 }
 constexpr double exponent_to_double(std::uint16_t exponent) noexcept {
-    return std::bit_cast<double>(
-        static_cast<std::uint64_t>(exponent) << 52
-    );
+    return std::bit_cast<double>(static_cast<std::uint64_t>(exponent) << 52);
 }
 constexpr double PRECISION = exponent_to_double(EXPONENT_OF_THRESHOLD);
 
 constexpr double sign(double x) noexcept {
-    if (is_zero(x)) return 0.0;
+    if (is_zero(x))
+        return 0.0;
     return (x < 0.0 ? -1. : 1.);
 }
 
@@ -42,19 +41,21 @@ constexpr bool float_equal(double l, double r) noexcept {
 struct LessThanAbs {
     constexpr bool operator()(const double lhs, const double rhs) const noexcept {
         return std::abs(lhs) < std::abs(rhs);
-    }  
+    }
 };
 
 struct LessOrAlmostEqual {
     constexpr bool operator()(const double lhs, const double rhs) const noexcept {
-        if (lhs < rhs) return true;
+        if (lhs < rhs)
+            return true;
         return is_zero(lhs - rhs);
     }
 };
 
 struct GreaterOrAlmostEqual {
     constexpr bool operator()(const double lhs, const double rhs) const noexcept {
-        if (lhs > rhs) return true;
+        if (lhs > rhs)
+            return true;
         return is_zero(lhs - rhs);
     }
 };
@@ -67,5 +68,4 @@ constexpr bool greater_or_almost_equal(const double lhs, const double rhs) noexc
     return GreaterOrAlmostEqual()(lhs, rhs);
 }
 
-
-}
+}  // namespace NickelCUT

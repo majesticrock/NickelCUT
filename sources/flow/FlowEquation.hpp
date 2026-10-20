@@ -4,6 +4,6 @@ namespace NickelCUT::flow {
 struct FlowContainer;
 
 struct FlowEquation {
-	void operator() (const FlowContainer& current, FlowContainer& dHdl, const double /*l*/);
+    void operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/);
 };
-} // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow

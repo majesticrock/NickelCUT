@@ -1,14 +1,14 @@
 #pragma once
 
-#include "../flow/Model.hpp"
-#include "../flow/ExtractionContainer.hpp"
-#include "../flow/momentum_iterator.hpp"
 #include "../L.hpp"
+#include "../flow/ExtractionContainer.hpp"
+#include "../flow/Model.hpp"
+#include "../flow/momentum_iterator.hpp"
 #include "ModelAttributes.hpp"
 #include "OrderType.hpp"
 
-#include <mrock/utility/InputFileReader.hpp>
 #include <Eigen/Dense>
+#include <mrock/utility/InputFileReader.hpp>
 #include <nlohmann/json.hpp>
 
 #include <cassert>
@@ -45,44 +45,55 @@ struct Model : public flow::Model {
 
     // Accessor convenience functions
     inline double Delta_SC(std::size_t i) const noexcept {
-        assert(i < N); return deltas[i];
+        assert(i < N);
+        return deltas[i];
     }
     inline double Delta_DW_up(std::size_t i) const noexcept {
-        assert(i < N); return deltas[i + N];
+        assert(i < N);
+        return deltas[i + N];
     }
     inline double Delta_DW_down(std::size_t i) const noexcept {
-        assert(i < N); return deltas[i + 2*N];
+        assert(i < N);
+        return deltas[i + 2 * N];
     }
     inline double Sigma_up(std::size_t i) const noexcept {
-        assert(i < N); return deltas[i + 3*N];
+        assert(i < N);
+        return deltas[i + 3 * N];
     }
     inline double Sigma_down(std::size_t i) const noexcept {
-        assert(i < N); return deltas[i + 4*N];
+        assert(i < N);
+        return deltas[i + 4 * N];
     }
     // return reference
     inline double& Delta_SC(std::size_t i) noexcept {
-        assert(i < N); return deltas[i];
+        assert(i < N);
+        return deltas[i];
     }
     inline double& Delta_DW_up(std::size_t i) noexcept {
-        assert(i < N); return deltas[i + N];
+        assert(i < N);
+        return deltas[i + N];
     }
     inline double& Delta_DW_down(std::size_t i) noexcept {
-        assert(i < N); return deltas[i + 2*N];
+        assert(i < N);
+        return deltas[i + 2 * N];
     }
     inline double& Sigma_up(std::size_t i) noexcept {
-        assert(i < N); return deltas[i + 3*N];
+        assert(i < N);
+        return deltas[i + 3 * N];
     }
     inline double& Sigma_down(std::size_t i) noexcept {
-        assert(i < N); return deltas[i + 4*N];
+        assert(i < N);
+        return deltas[i + 4 * N];
     }
-    
+
     inline double dispersion_up(std::size_t p) const noexcept {
         return extracted_channels.epsilon_tilde[p] + Sigma_up(p) - chemical_potential;
     }
     inline double dispersion_down(std::size_t p) const noexcept {
         return extracted_channels.epsilon_tilde[p] + Sigma_down(p) - chemical_potential;
     }
-private:  
+
+private:
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> eigensolver;
     Eigen::Matrix4d hamiltonian;
     Eigen::Matrix4d rho;
@@ -92,4 +103,4 @@ private:
     void compute_chemical_potential();
 };
 
-} // namespace NickelCUT::mean_field
+}  // namespace NickelCUT::mean_field

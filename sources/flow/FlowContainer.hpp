@@ -20,7 +20,7 @@ struct FlowContainer {
     InteractionDataFrame interactions_differing_spin;
     coeff_array dispersion;
 
-    template<class Archive>
+    template <class Archive>
     void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
         ar & interactions_same_spin;
         ar & interactions_differing_spin;
@@ -44,9 +44,8 @@ struct FlowContainer {
     double band_width() const noexcept;
     double max_interaction() const noexcept;
 
-    inline double delta_epsilon(const mom_it& k, const mom_it& p, const mom_it& q) const noexcept
-    {
-        return dispersion[k] + dispersion[p] - dispersion[k+q] - dispersion[p-q];
+    inline double delta_epsilon(const mom_it& k, const mom_it& p, const mom_it& q) const noexcept {
+        return dispersion[k] + dispersion[p] - dispersion[k + q] - dispersion[p - q];
     }
 
     coeff_array epsilon_tilde() const noexcept;
@@ -60,8 +59,8 @@ struct FlowContainer {
     bool is_hermitian() const noexcept;
     bool is_particle_hole_invariant() const noexcept;
 
-    double abs_total() const noexcept; ///< the L2 norm
-    double norm_inf() const noexcept; ///< the L_infinity norm
+    double abs_total() const noexcept;  ///< the L2 norm
+    double norm_inf() const noexcept;   ///< the L_infinity norm
 
     // Required for boost odeint
     FlowContainer& operator+=(const FlowContainer& other) noexcept;
@@ -77,19 +76,37 @@ private:
     void print_memory_allocation() const;
 };
 
-inline FlowContainer operator+(FlowContainer lhs, const FlowContainer& rhs) noexcept { return (lhs += rhs); }
-inline FlowContainer operator-(FlowContainer lhs, const FlowContainer& rhs) noexcept { return (lhs -= rhs); }
-inline FlowContainer operator*(FlowContainer lhs, const FlowContainer& rhs) noexcept { return (lhs *= rhs); }
-inline FlowContainer operator/(FlowContainer lhs, const FlowContainer& rhs) noexcept { return (lhs /= rhs); }
+inline FlowContainer operator+(FlowContainer lhs, const FlowContainer& rhs) noexcept {
+    return (lhs += rhs);
+}
+inline FlowContainer operator-(FlowContainer lhs, const FlowContainer& rhs) noexcept {
+    return (lhs -= rhs);
+}
+inline FlowContainer operator*(FlowContainer lhs, const FlowContainer& rhs) noexcept {
+    return (lhs *= rhs);
+}
+inline FlowContainer operator/(FlowContainer lhs, const FlowContainer& rhs) noexcept {
+    return (lhs /= rhs);
+}
 
-inline FlowContainer operator*(FlowContainer lhs, const double rhs) noexcept { return (lhs *= rhs); }
-inline FlowContainer operator*(const double lhs, FlowContainer rhs) noexcept { return (rhs *= lhs); }
-inline FlowContainer operator/(FlowContainer lhs, const double rhs) noexcept { return (lhs /= rhs); }
-inline FlowContainer operator+(FlowContainer lhs, const double rhs) noexcept { return (lhs += rhs); }
-inline FlowContainer operator+(const double lhs, FlowContainer rhs) noexcept { return (rhs += lhs); }
+inline FlowContainer operator*(FlowContainer lhs, const double rhs) noexcept {
+    return (lhs *= rhs);
+}
+inline FlowContainer operator*(const double lhs, FlowContainer rhs) noexcept {
+    return (rhs *= lhs);
+}
+inline FlowContainer operator/(FlowContainer lhs, const double rhs) noexcept {
+    return (lhs /= rhs);
+}
+inline FlowContainer operator+(FlowContainer lhs, const double rhs) noexcept {
+    return (lhs += rhs);
+}
+inline FlowContainer operator+(const double lhs, FlowContainer rhs) noexcept {
+    return (rhs += lhs);
+}
 
-FlowContainer abs(FlowContainer input) noexcept; ///< elementwise L2 norm
+FlowContainer abs(FlowContainer input) noexcept;  ///< elementwise L2 norm
 
 void to_json(nlohmann::json& j, const FlowContainer& container) noexcept;
 
-} // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow

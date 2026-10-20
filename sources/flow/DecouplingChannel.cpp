@@ -1,51 +1,43 @@
 #include "DecouplingChannel.hpp"
-#include "FlowContainer.hpp"
 
 #include "../L.hpp"
+#include "FlowContainer.hpp"
 
-namespace NickelCUT::flow
-{
+namespace NickelCUT::flow {
 
-DecouplingChannel::DecouplingChannel(int N) 
-    : _N(N), total_size(_N*_N), _data(total_size)
-{}
+DecouplingChannel::DecouplingChannel(int N) : _N(N), total_size(_N * _N), _data(total_size) {}
 
-std::pair<DecouplingChannel, DecouplingChannel> DecouplingChannel::SingleParticleEnergy(const FlowContainer& base)
-{
+std::pair<DecouplingChannel, DecouplingChannel> DecouplingChannel::SingleParticleEnergy(const FlowContainer& base) {
     using mom_it = FlowContainer::mom_it;
 
-    std::pair<DecouplingChannel, DecouplingChannel> ret = { DecouplingChannel(N), DecouplingChannel(N) };
+    std::pair<DecouplingChannel, DecouplingChannel> ret = {DecouplingChannel(N), DecouplingChannel(N)};
 
     for (mom_it p = mom_it::begin(); p != mom_it::end(); ++p) {
         for (mom_it q = mom_it::begin(); q != mom_it::end(); ++q) {
-            ret.first(p, q)  = 2. * base.interactions_differing_spin(p, q, Gamma<L>);
-            ret.second(p, q) = 2. * (
-                base.interactions_same_spin(p, q, Gamma<L>) - base.interactions_same_spin(p, q, q - p)
-            );
+            ret.first(p, q) = 2. * base.interactions_differing_spin(p, q, Gamma<L>);
+            ret.second(p, q) =
+                2. * (base.interactions_same_spin(p, q, Gamma<L>) - base.interactions_same_spin(p, q, q - p));
         }
     }
     return ret;
 }
 
-std::pair<DecouplingChannel, DecouplingChannel> DecouplingChannel::DensityWave(const FlowContainer& base)
-{
+std::pair<DecouplingChannel, DecouplingChannel> DecouplingChannel::DensityWave(const FlowContainer& base) {
     using mom_it = FlowContainer::mom_it;
 
-    std::pair<DecouplingChannel, DecouplingChannel> ret = { DecouplingChannel(N), DecouplingChannel(N) };
+    std::pair<DecouplingChannel, DecouplingChannel> ret = {DecouplingChannel(N), DecouplingChannel(N)};
 
     for (mom_it p = mom_it::begin(); p != mom_it::end(); ++p) {
         for (mom_it q = mom_it::begin(); q != mom_it::end(); ++q) {
-            ret.first(p, q)  = 2. * base.interactions_differing_spin(p, q, PI<L>);
-            ret.second(p, q) = 2. * (
-                base.interactions_same_spin(p, q, PI<L>) - base.interactions_same_spin(p, q, q - p + PI<L>)
-            );
+            ret.first(p, q) = 2. * base.interactions_differing_spin(p, q, PI<L>);
+            ret.second(p, q) =
+                2. * (base.interactions_same_spin(p, q, PI<L>) - base.interactions_same_spin(p, q, q - p + PI<L>));
         }
     }
     return ret;
 }
 
-DecouplingChannel DecouplingChannel::Superconductivity(const FlowContainer& base)
-{
+DecouplingChannel DecouplingChannel::Superconductivity(const FlowContainer& base) {
     using mom_it = FlowContainer::mom_it;
 
     DecouplingChannel ret(N);
@@ -68,4 +60,4 @@ std::vector<std::vector<double>> DecouplingChannel::as_2D_array() const noexcept
     return ret;
 }
 
-} // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow

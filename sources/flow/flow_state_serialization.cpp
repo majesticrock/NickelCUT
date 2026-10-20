@@ -1,36 +1,35 @@
 #include "flow_state_serialization.hpp"
-#include "FlowContainer.hpp"
+
 #include "ExtractionContainer.hpp"
+#include "FlowContainer.hpp"
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/utility.hpp>
+#include <boost/serialization/vector.hpp>
 
-#include <string>
 #include <fstream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
-namespace NickelCUT::flow
-{
+namespace NickelCUT::flow {
 
-void serialize_flow_state(const FlowContainer& state, const std::string& output_dir, const std::string& output_filename)
-{
+void serialize_flow_state(const FlowContainer& state,
+                          const std::string& output_dir,
+                          const std::string& output_filename) {
     const std::string file = output_dir + output_filename;
     std::ofstream ofs(file, std::ios::binary);
     if (ofs.good()) {
         boost::archive::binary_oarchive oa(ofs);
         oa << state;
-    }
-    else {
+    } else {
         throw std::runtime_error("Outputstream for " + file + " is bad!");
     }
 }
 
-FlowContainer deserialize_flow_state(const std::string& input_dir, const std::string& input_filename)
-{
+FlowContainer deserialize_flow_state(const std::string& input_dir, const std::string& input_filename) {
     const std::string file = input_dir + input_filename;
     std::ifstream ifs(file, std::ios::binary);
     if (ifs.good()) {
@@ -40,27 +39,25 @@ FlowContainer deserialize_flow_state(const std::string& input_dir, const std::st
         ia >> state;
 
         return state;
-    }
-    else {
+    } else {
         throw std::runtime_error("Inputstream for " + file + " is bad!");
     }
 }
 
-void serialize_extracted_channels(const ExtractionContainer& state, const std::string& output_dir, const std::string& output_filename)
-{
+void serialize_extracted_channels(const ExtractionContainer& state,
+                                  const std::string& output_dir,
+                                  const std::string& output_filename) {
     const std::string file = output_dir + output_filename;
     std::ofstream ofs(file, std::ios::binary);
     if (ofs.good()) {
         boost::archive::binary_oarchive oa(ofs);
         oa << state;
-    }
-    else {
+    } else {
         throw std::runtime_error("Outputstream for " + file + " is bad!");
     }
 }
 
-ExtractionContainer deserialize_extracted_channels(const std::string& input_dir, const std::string& input_filename)
-{
+ExtractionContainer deserialize_extracted_channels(const std::string& input_dir, const std::string& input_filename) {
     const std::string file = input_dir + input_filename;
     std::ifstream ifs(file, std::ios::binary);
     if (ifs.good()) {
@@ -70,11 +67,9 @@ ExtractionContainer deserialize_extracted_channels(const std::string& input_dir,
         ia >> extracted;
 
         return extracted;
-    }
-    else {
+    } else {
         throw std::runtime_error("Inputstream for " + file + " is bad!");
     }
 }
 
-
-} // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow

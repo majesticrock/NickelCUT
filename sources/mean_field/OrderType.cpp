@@ -1,10 +1,8 @@
 #include "OrderType.hpp"
 
-namespace NickelCUT::mean_field
-{
+namespace NickelCUT::mean_field {
 
-std::string to_string(OrderType order)
-{
+std::string to_string(OrderType order) {
     const auto value = static_cast<unsigned char>(order);
 
     if (value == static_cast<unsigned char>(OrderType::NormalMetal)) {
@@ -38,4 +36,4 @@ std::string to_string(OrderType order)
     return result.empty() ? "UNRECOGNIZED" : result;
 }
 
-} // namespace NickelCUT::mean_field
+}  // namespace NickelCUT::mean_field

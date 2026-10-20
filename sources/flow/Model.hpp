@@ -5,15 +5,14 @@
 
 #include <string>
 
-namespace NickelCUT::flow
-{
+namespace NickelCUT::flow {
 
 struct Model {
     const double U_0{};
     const double tprime{};
     const double E_F{};
     double temperature{};
-    
+
     double beta{};
     double filling{};
 
@@ -34,4 +33,4 @@ struct Model {
     nlohmann::json generate_meta_data_json() const;
 };
 
-} // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow

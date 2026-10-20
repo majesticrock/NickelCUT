@@ -45,4 +45,4 @@ public:
     explicit BrokenSymmetriesException(double end_time);
 };
 
-} // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow

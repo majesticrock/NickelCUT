@@ -4,15 +4,15 @@
 
 #include <nlohmann/json.hpp>
 
-#include <deque>
-#include <cstddef>
 #include <chrono>
+#include <cstddef>
+#include <deque>
 
 namespace NickelCUT::flow {
 
 struct FlowEquation;
 
-struct BookKeeper {    
+struct BookKeeper {
     std::deque<double> l_times;
     std::deque<double> residual_offdiagonalities;
     std::deque<double> derivative_residual_offdiagonalities;
@@ -24,7 +24,11 @@ struct BookKeeper {
 
     /////////////////////////////////////////////////////////
 
-    BookKeeper(const FlowContainer& initial_flow_state, FlowEquation& flow_equation, double _band_width, double _dl, std::chrono::minutes::rep _max_runtime_duration);
+    BookKeeper(const FlowContainer& initial_flow_state,
+               FlowEquation& flow_equation,
+               double _band_width,
+               double _dl,
+               std::chrono::minutes::rep _max_runtime_duration);
 
     void print_final(const FlowContainer& x, double l);
 
@@ -48,4 +52,4 @@ private:
 
 void to_json(nlohmann::json& j, const BookKeeper& book_keeper) noexcept;
 
-} // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow

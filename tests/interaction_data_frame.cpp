@@ -36,19 +36,19 @@ void fill_distinct(InteractionDataFrame& frame) {
         frame.get_data()[index] = static_cast<double>(index + 1);
     }
 }
-}
+}  // namespace
 
 int main() {
     InteractionDataFrame frame;
     constexpr std::size_t full_size = N * N * N;
     constexpr std::size_t fixed_axis_reflection_size = 2 * L;
     constexpr std::size_t expected_stored_size =
-        (full_size + 2 * fixed_axis_reflection_size * fixed_axis_reflection_size * fixed_axis_reflection_size
-            + 4 * 4 * 4) / 4;
+        (full_size + 2 * fixed_axis_reflection_size * fixed_axis_reflection_size * fixed_axis_reflection_size +
+         4 * 4 * 4) /
+        4;
 
     if (frame.size() != expected_stored_size) {
-        std::cerr << "Unexpected compact size: " << frame.size()
-                  << " != " << expected_stored_size << '\n';
+        std::cerr << "Unexpected compact size: " << frame.size() << " != " << expected_stored_size << '\n';
         return 1;
     }
 
@@ -64,8 +64,8 @@ int main() {
                 seen[stored_index] = true;
                 expected_norm_squared += value * value;
 
-                if (value != frame(reflect_kx(k), reflect_kx(p), reflect_kx(q))
-                    || value != frame(reflect_ky(k), reflect_ky(p), reflect_ky(q))) {
+                if (value != frame(reflect_kx(k), reflect_kx(p), reflect_kx(q)) ||
+                    value != frame(reflect_ky(k), reflect_ky(p), reflect_ky(q))) {
                     std::cerr << "A reflected tuple did not share its stored value\n";
                     return 1;
                 }
@@ -86,8 +86,8 @@ int main() {
     }
 
     frame(1, 3, 5) = -7.0;
-    if (frame(reflect_kx(1), reflect_kx(3), reflect_kx(5)) != -7.0
-        || frame(reflect_ky(1), reflect_ky(3), reflect_ky(5)) != -7.0) {
+    if (frame(reflect_kx(1), reflect_kx(3), reflect_kx(5)) != -7.0 ||
+        frame(reflect_ky(1), reflect_ky(3), reflect_ky(5)) != -7.0) {
         std::cerr << "Writing through a reflected tuple did not update its representative\n";
         return 1;
     }
@@ -102,10 +102,8 @@ int main() {
                 const momentum_iterator<L> K(static_cast<int>(k));
                 const momentum_iterator<L> P(static_cast<int>(p));
                 const momentum_iterator<L> Q(static_cast<int>(q));
-                const double expected = 0.5 * (
-                    before_symmetrize[full_index(k, p, q)]
-                    + before_symmetrize[full_index(P, K, -Q)]
-                );
+                const double expected =
+                    0.5 * (before_symmetrize[full_index(k, p, q)] + before_symmetrize[full_index(P, K, -Q)]);
                 if (symmetrized(k, p, q) != expected) {
                     std::cerr << "symmetrize produced an unexpected value\n";
                     return 1;
@@ -124,10 +122,8 @@ int main() {
                 const momentum_iterator<L> K(static_cast<int>(k));
                 const momentum_iterator<L> P(static_cast<int>(p));
                 const momentum_iterator<L> Q(static_cast<int>(q));
-                const double expected = 0.5 * (
-                    before_antisymmetrize[full_index(k, p, q)]
-                    - before_antisymmetrize[full_index(K, P, P - K - Q)]
-                );
+                const double expected = 0.5 * (before_antisymmetrize[full_index(k, p, q)] -
+                                               before_antisymmetrize[full_index(K, P, P - K - Q)]);
                 if (antisymmetrized(k, p, q) != expected) {
                     std::cerr << "antisymmetrize produced an unexpected value\n";
                     return 1;
