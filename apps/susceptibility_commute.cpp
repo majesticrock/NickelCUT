@@ -108,6 +108,7 @@ int main(int, char**) {
     for (std::size_t i = 0U; i < basis.size(); ++i) {
         TermCollector commute_with_H = commutator(H, basis[i]);
         commute_with_H.clean_up();
+        //std::cout << "\\begin{align*}\n\t [H, " << basis[i] << "] = " << commute_with_H << "\\end{align*}" << std::endl;
 
         for (std::size_t j = 0U; j < basis.size(); ++j) {
             std::cout << "\\subsection{" << i << "." << j << "}" << std::endl;

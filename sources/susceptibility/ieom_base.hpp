@@ -62,6 +62,8 @@ protected:
     const flow::FlowContainer& flow_result;
     const std::array<double, N> epsilon_tilde;
 
+    const double beta;
+
     bool _found_negative_excitation = false;
 
 private:

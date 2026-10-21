@@ -24,7 +24,8 @@ ieom_base::ieom_base(const flow::FlowContainer& _flow_result, const flow::Model&
     : dynamical_matrix{Matrix::Zero(N, N)},
       norm_matrix{Matrix::Zero(N, N)},
       flow_result{_flow_result},
-      epsilon_tilde{flow_result.epsilon_tilde()} {
+      epsilon_tilde{flow_result.epsilon_tilde()},
+      beta{model.beta} {
     solve_hartree_fock(model);
 }
 
@@ -34,7 +35,8 @@ ieom_base::ieom_base(const ieom_base* const other_instance)
       occupation_numbers{other_instance->occupation_numbers},
       dispersion{other_instance->dispersion},
       flow_result{other_instance->flow_result},
-      epsilon_tilde{other_instance->epsilon_tilde} {};
+      epsilon_tilde{other_instance->epsilon_tilde},
+      beta{other_instance->beta} {};
 
 void ieom_base::fill_matrices(const momentum& x) {
     fill_M(x);

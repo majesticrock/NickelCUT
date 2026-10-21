@@ -11,6 +11,9 @@ public:
 
     void fill_M(const momentum& x) final;
     void fill_N(const momentum& x) final;
+
+private:
+    double difference_quotient(const momentum& k, const momentum& kx) const noexcept;
 };
 
 }  // namespace NickelCUT::susceptibility
