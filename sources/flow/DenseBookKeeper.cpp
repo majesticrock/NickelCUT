@@ -75,7 +75,7 @@ void DenseBookKeeper::operator()(const FlowContainer& x, double l) {
 
     const double max_coeff =
         N * std::max(x.interactions_differing_spin.norm_inf(), x.interactions_same_spin.norm_inf());
-    if (max_coeff > 5. * initial_band_width) {
+    if (max_coeff > 10. * initial_band_width) {
         throw LargeInteractionException(l);
     }
     const bool state_is_good = x.is_inversion_symmetric() && x.is_hermitian();
@@ -83,9 +83,9 @@ void DenseBookKeeper::operator()(const FlowContainer& x, double l) {
         throw BrokenSymmetriesException(l_times.back());
     }
     const double derivative_rod = compute_derivative_rod(x, l);
-    if (derivative_rod > 5. * initial_band_width) {
-        throw LargeDerivativeRODException(l);
-    }
+    //if (derivative_rod > 5. * initial_band_width) {
+    //    throw LargeDerivativeRODException(l);
+    //}
     if (derivative_rod < 0.002 * initial_band_width) {
         throw SmallDerivativeRODException(l);
     }

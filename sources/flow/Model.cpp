@@ -20,7 +20,7 @@ Model::Model(mrock::utility::InputFileReader& input)
       tprime{input.getDouble("tprime")},
       E_F{input.getDouble("E_F")},
       temperature{input.getDouble("T")},
-      beta{temperature > 0.0 ? 1. / temperature : -1.} {
+      beta{temperature > 0.0 ? 1. / temperature : 50.} {
     filling = compute_occupation_numbers(*this);
 }
 

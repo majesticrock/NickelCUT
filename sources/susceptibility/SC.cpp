@@ -7,38 +7,30 @@ SC::SC(const flow::FlowContainer& _flow_result, const flow::Model& model) : ieom
 
 SC::SC(const ieom_base* const other_instance) : ieom_base(other_instance) {}
 
-void SC::fill_M(const momentum& x) {
-    dynamical_matrix.setZero(N, N);
+void SC::fill_U_matrix(const momentum& x) {
     for (momentum k = momentum::begin(); k != momentum::end(); ++k) {
-        const momentum kx = k + x;
-        double row_factor = 2. * (1. - occupation_numbers[k] - occupation_numbers[kx]);
-
-        dynamical_matrix(k.get_position(), k.get_position()) = 0.5 * (epsilon_tilde[k] + epsilon_tilde[kx]);
-        for (momentum P = momentum::begin(); P != momentum::end(); ++P) {
-            dynamical_matrix(k.get_position(), k.get_position()) +=
-                (flow_result.interactions_differing_spin(kx, P, flow::Gamma<L>) +
-                 flow_result.interactions_differing_spin(k, P, flow::Gamma<L>) -
-                 flow_result.interactions_same_spin(kx, P, P - kx) +
-                 flow_result.interactions_same_spin(kx, P, flow::Gamma<L>) -
-                 flow_result.interactions_same_spin(k, P, P - k) +
-                 flow_result.interactions_same_spin(k, P, flow::Gamma<L>)) *
-                occupation_numbers[P];
-        }
-        dynamical_matrix(k.get_position(), k.get_position()) *= row_factor;
-
         for (momentum l = momentum::begin(); l != momentum::end(); ++l) {
-            double col_factor = (1. - occupation_numbers[l] - occupation_numbers[l + x]);
-            dynamical_matrix(k.get_position(), l.get_position()) +=
-                flow_result.interactions_differing_spin(-kx, k, k - l) * col_factor * row_factor;
+            const momentum lx = l + x;
+            U_matrix(k.get_position(), l.get_position()) = 2. * flow_result.interactions_differing_spin(k, lx, x);
         }
     }
 }
 
-void SC::fill_N(const momentum& x) {
-    norm_matrix.setZero(N);
+void SC::fill_chi_matrix(const momentum& x) {
     for (momentum k = momentum::begin(); k != momentum::end(); ++k) {
-        const momentum kx = k + x;
-        norm_matrix(k.get_position()) = -(1. - occupation_numbers[k] - occupation_numbers[kx]);
+        chi_matrix(k.get_position()) = chi_pair(k, k + x);
+
+        if(chi_matrix(k.get_position()) < 0.) {
+            std::cerr << "SC: Negative chi_number!\n"
+                << "Ek       = " << dispersion[k] << '\n'
+                << "Ekx      = " << dispersion[k+x] << '\n'
+                << "dE       = " << dispersion[k] - dispersion[k+x] << '\n'
+                << "fk       = " << occupation_numbers[k] << '\n'
+                << "fkx      = " << occupation_numbers[k+x] << '\n'
+                << "df       = " << occupation_numbers[k+x] - occupation_numbers[k] << '\n'
+                << "chi      = " << chi_matrix(k.get_position()) << '\n'
+                << "beta     = " << beta << '\n';
+        }
     }
 }
 

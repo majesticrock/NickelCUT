@@ -34,8 +34,8 @@ public:
 
     virtual ~ieom_base() = default;
 
-    virtual void fill_M(const momentum& x) = 0;
-    virtual void fill_N(const momentum& x) = 0;
+    virtual void fill_chi_matrix(const momentum& x) = 0;
+    virtual void fill_U_matrix(const momentum& x) = 0;
 
     void fill_matrices(const momentum& x);
 
@@ -52,8 +52,8 @@ public:
     bool found_negative_excitation() const noexcept;
 
 protected:
-    Matrix dynamical_matrix;
-    Vector norm_matrix;  // Represent the diagonal matrix as a vector
+    Matrix U_matrix;
+    Vector chi_matrix; // This is diagonal in k, and we represent it as a vector
     Eigen::SelfAdjointEigenSolver<Matrix> eigen_solver;
 
     std::array<double, N> occupation_numbers;
@@ -66,9 +66,14 @@ protected:
 
     bool _found_negative_excitation = false;
 
+    // This is positive definite!
+    double chi_number(const momentum& k, const momentum& kx) const noexcept;
+    // This is positive definite!
+    double chi_pair(const momentum&k, const momentum& kx) const noexcept;
+
 private:
     void solve_hartree_fock(const flow::Model& model);
-    // Computes M and N and diagonalizes M, storing the result in eigen_solver
+    // Computes the Kernel K and diagoanlizes it, storing the result in eigen_solver
     void prepare_static(const momentum& x);
 };
 

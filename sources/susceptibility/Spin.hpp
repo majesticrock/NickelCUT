@@ -9,11 +9,8 @@ public:
     Spin(const flow::FlowContainer& _flow_result, const flow::Model& model);
     Spin(const ieom_base* const other_instance);
 
-    void fill_M(const momentum& x) final;
-    void fill_N(const momentum& x) final;
-
-private:
-    double difference_quotient(const momentum& k, const momentum& kx) const noexcept;
+    void fill_chi_matrix(const momentum& x) final;
+    void fill_U_matrix(const momentum& x) final;
 };
 
 }  // namespace NickelCUT::susceptibility

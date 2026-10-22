@@ -64,6 +64,6 @@ int main(int argc, char** argv) {
     jData.update(j_metadata);
 
     mrock::utility::save_string(jData.dump(4), output_dir + "ieom_susceptibility.json.gz");
-
+    
     return 0;
 }

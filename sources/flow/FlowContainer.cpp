@@ -69,7 +69,7 @@ double FlowContainer::residual_offdiagonality() const noexcept {
         momentum_iterator<L> P(static_cast<int>((i / N) % N));
         momentum_iterator<L> Q(static_cast<int>(i % N));
 
-        if (is_finite(delta_epsilon(K, P, Q))) {
+        if (is_non_zero(delta_epsilon(K, P, Q))) {
             val += interactions_differing_spin(K, P, Q) * interactions_differing_spin(K, P, Q) +
                    interactions_same_spin(K, P, Q) * interactions_same_spin(K, P, Q);
         }

@@ -19,6 +19,52 @@ NUMERIC_PARAMETERS = ("U_0", "T", "tprime", "E_F")
 REQUIRED_PARAMETERS = (*NUMERIC_PARAMETERS, "output_dir")
 
 
+def run_with_red_stderr(command, cwd):
+    """Run a process with stderr printed in red and stdout unchanged."""
+    import os
+    import sys
+    import threading
+
+    use_color = sys.stderr.isatty() and "NO_COLOR" not in os.environ
+
+    def forward_stderr(pipe):
+        try:
+            while True:
+                chunk = pipe.read(4096)
+                if not chunk:
+                    break
+
+                if use_color:
+                    sys.stderr.write("\033[31m")
+                    sys.stderr.flush()
+                    sys.stderr.buffer.write(chunk)
+                    sys.stderr.buffer.write(b"\033[0m")
+                    sys.stderr.buffer.flush()
+                else:
+                    sys.stderr.buffer.write(chunk)
+                    sys.stderr.buffer.flush()
+        finally:
+            pipe.close()
+
+    process = subprocess.Popen(
+        command,
+        cwd=cwd,
+        stdout=None,  # Inherit stdout directly; preserve its normal appearance.
+        stderr=subprocess.PIPE,
+        bufsize=0,
+    )
+
+    stderr_thread = threading.Thread(
+        target=forward_stderr,
+        args=(process.stderr,),
+    )
+    stderr_thread.start()
+
+    returncode = process.wait()
+    stderr_thread.join()
+    return returncode
+
+
 def read_config(path):
     values = {}
     lines = path.read_text().splitlines(keepends=True)
@@ -271,18 +317,18 @@ def main():
                 config_for_parameters(lines, varied_values)
             )
 
-            completed = subprocess.run(
+            returncode = run_with_red_stderr(
                 [str(executable), str(run_config)],
                 cwd=PROJECT_ROOT,
-                check=False,
             )
 
-            if completed.returncode != 0:
+            if returncode != 0:
                 print(
                     f"susceptibility_ieom failed for {description} "
-                    f"(exit {completed.returncode})"
+                    f"(exit {returncode})"
                 )
                 failures += 1
+
 
     return 1 if failures else 0
 

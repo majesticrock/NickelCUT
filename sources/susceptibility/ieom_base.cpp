@@ -5,6 +5,8 @@
 
 #include <mrock/utility/Selfconsistency/BroydenSolver.hpp>
 
+#include <algorithm>
+#include <cmath>
 #include <functional>
 #include <utility>
 
@@ -18,11 +20,36 @@ struct selfconsistency_solver_interface {
     void iteration_step(const ieom_base::Vector& init, ieom_base::Vector& result) { compute(init, result); }
 };
 
+constexpr double log2 = 0.693147180559945309417232121458;
+
+// Stable log(cosh(x)) for real x.
+double log_cosh(double x) noexcept
+{
+    const double ax = std::abs(x);
+    return ax + std::log1p(std::exp(-2.0 * ax)) - log2;
+}
+
+// Stable log(sinh(x) / x), for real x.
+double log_sinhc(double x) noexcept
+{
+    const double ax = std::abs(x);
+    if (ax < 1e-3) {
+        // log(sinh(x)/x) = x²/6 - x⁴/180 + x⁶/2835 + O(x⁸)
+        const double x2 = x * x;
+        return x2 * (1.0 / 6.0
+               + x2 * (-1.0 / 180.0
+               + x2 / 2835.0));
+    }
+    // log(sinh(ax)/ax), written to avoid sinh overflow.
+    return ax + std::log1p(-std::exp(-2.0 * ax))
+               - std::log(2.0 * ax);
+}
+
 //--------------------------------------------------------------------------------//
 
 ieom_base::ieom_base(const flow::FlowContainer& _flow_result, const flow::Model& model)
-    : dynamical_matrix{Matrix::Zero(N, N)},
-      norm_matrix{Matrix::Zero(N, N)},
+    : U_matrix{Matrix::Zero(N, N)},
+      chi_matrix{Vector::Zero(N)},
       flow_result{_flow_result},
       epsilon_tilde{flow_result.epsilon_tilde()},
       beta{model.beta} {
@@ -30,8 +57,8 @@ ieom_base::ieom_base(const flow::FlowContainer& _flow_result, const flow::Model&
 }
 
 ieom_base::ieom_base(const ieom_base* const other_instance)
-    : dynamical_matrix{Matrix::Zero(N, N)},
-      norm_matrix{Matrix::Zero(N, N)},
+    : U_matrix{Matrix::Zero(N, N)},
+      chi_matrix{Vector::Zero(N)},
       occupation_numbers{other_instance->occupation_numbers},
       dispersion{other_instance->dispersion},
       flow_result{other_instance->flow_result},
@@ -39,8 +66,8 @@ ieom_base::ieom_base(const ieom_base* const other_instance)
       beta{other_instance->beta} {};
 
 void ieom_base::fill_matrices(const momentum& x) {
-    fill_M(x);
-    fill_N(x);
+    fill_U_matrix(x);
+    fill_chi_matrix(x);
 }
 
 std::vector<double> ieom_base::compute_static_susceptibility(const momentum& x, const std::vector<Vector>& states) {
@@ -49,16 +76,19 @@ std::vector<double> ieom_base::compute_static_susceptibility(const momentum& x, 
     std::vector<double> result;
     result.reserve(states.size());
     for (const auto& state : states) {
-        const Vector tmp = eigen_solver.eigenvectors().adjoint() * norm_matrix.asDiagonal() * state;
+        const Vector tmp = eigen_solver.eigenvectors().adjoint() * chi_matrix.asDiagonal() * state;
         Vector inverse_eigenvalues = eigen_solver.eigenvalues();
         for (auto& ev : inverse_eigenvalues) {
-            if (is_finite(ev)) {
+            ev += 1.; // The matrix to invert is 1+K
+            if (is_non_zero(ev)) {
                 ev = 1. / ev;
                 if (ev < 0.0) {
                     _found_negative_excitation = true;
                 }
-            } else {
-                ev = 0.;
+            } 
+            else {
+                std::cerr << "Warning: Inversion fallback was used!" << std::endl;
+                ev = PRECISION;
             }
         }
 
@@ -73,7 +103,7 @@ ieom_base::static_susceptibility_at_high_symmetry(const std::vector<Vector>& sta
     const auto momenta = flow::square_lattice_high_symmetry_path<L>();
     std::array<std::vector<double>, flow::number_of_high_symmtry_momenta<L>> result;
 
-    for (std::size_t i = 0; i < flow::number_of_high_symmtry_momenta<L>; ++i) {
+    for (std::size_t i = 0U; i < flow::number_of_high_symmtry_momenta<L>; ++i) {
         result[i] = compute_static_susceptibility(momenta[i], states);
     }
 
@@ -100,6 +130,47 @@ const std::array<double, N>& ieom_base::get_dispersion() const noexcept {
 bool ieom_base::found_negative_excitation() const noexcept {
     return _found_negative_excitation;
 }
+
+double ieom_base::chi_number(
+    const momentum& k,
+    const momentum& kx) const noexcept
+{
+    const double E  = dispersion[k];
+    const double Ex = dispersion[kx];
+
+    const double a = 0.5 * beta * E;
+    const double b = 0.5 * beta * Ex;
+    const double x = a - b;
+
+    const double log_chi =
+        std::log(0.5 * beta)
+        + log_sinhc(x)
+        - log_cosh(a)
+        - log_cosh(b);
+
+    return std::exp(log_chi);
+}
+
+double ieom_base::chi_pair(
+    const momentum& k,
+    const momentum& kx) const noexcept
+{
+    const double E  = dispersion[k];
+    const double Ex = dispersion[kx];
+
+    const double a = 0.5 * beta * E;
+    const double b = 0.5 * beta * Ex;
+    const double x = a + b;
+
+    const double log_chi =
+        std::log(0.25 * beta)
+        + log_sinhc(x)
+        - log_cosh(a)
+        - log_cosh(b);
+
+    return std::exp(log_chi);
+}
+
 
 //-----------------------------------------------------//
 // Private methods
@@ -151,7 +222,14 @@ void ieom_base::solve_hartree_fock(const flow::Model& model) {
 
 void ieom_base::prepare_static(const momentum& x) {
     fill_matrices(x);
-    eigen_solver.compute(dynamical_matrix);
+    const double hermiticity_error = (U_matrix - U_matrix.adjoint()).norm();
+    if (is_non_zero(hermiticity_error)) {
+        throw std::runtime_error("U_matrix is not Hermitian! ||U-U^+|| = " + std::to_string(hermiticity_error));
+    }
+    for (auto& chi : chi_matrix) {
+        chi = std::sqrt(chi);
+    }
+    eigen_solver.compute(chi_matrix.asDiagonal() * U_matrix * chi_matrix.asDiagonal());
 }
 
 ChiContainer::ChiContainer(const Eigen::VectorXd& eigen_energies, std::size_t n_states)
