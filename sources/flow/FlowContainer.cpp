@@ -64,6 +64,7 @@ double FlowContainer::residual_offdiagonality() const noexcept {
     // so -> abs_squared is 1/N^2, there a 3 sums of N elements -> scales as N
     // sqrt(N) = L -> dividing by L makes ROD independent of the system size
     double val{};
+#pragma omp parallel for reduction(+ : val) schedule(static)
     for (std::size_t i = 0U; i < N * N * N; ++i) {
         momentum_iterator<L> K(static_cast<int>(i / (N * N)));
         momentum_iterator<L> P(static_cast<int>((i / N) % N));

@@ -3,11 +3,13 @@
 #include "../L.hpp"
 #include "../flow/DecouplingChannel.hpp"
 
+#include <boost/math/tools/toms748_solve.hpp>
 #include <mrock/utility/Selfconsistency/BroydenSolver.hpp>
 
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <numeric>
 #include <utility>
 
 namespace NickelCUT::susceptibility {
@@ -131,6 +133,11 @@ bool ieom_base::found_negative_excitation() const noexcept {
     return _found_negative_excitation;
 }
 
+double ieom_base::hartree_fock_filling() const noexcept 
+{
+    return 2. * std::accumulate(this->occupation_numbers.begin(), this->occupation_numbers.end(), double{}) / N;
+}
+
 double ieom_base::chi_number(
     const momentum& k,
     const momentum& kx) const noexcept
@@ -175,15 +182,93 @@ double ieom_base::chi_pair(
 //-----------------------------------------------------//
 // Private methods
 
+double ieom_base::compute_chemical_potential(const flow::Model& model, const double target_filling) {
+    constexpr double MU_STEP = 0.1;
+
+    auto fit_occupation = [&model, &target_filling, this](double x) {
+        double filling{};
+        for (const auto& energy : dispersion) {
+            filling += model.fermi_function(energy - x);
+        }
+        filling *= 2. / N;
+        return target_filling - filling;
+    };
+
+    double definitly_too_small = chemical_potential;
+    double definitly_too_large = chemical_potential;
+
+    double current_deviation = fit_occupation(chemical_potential);
+    // In the unlikely case we have a perfect hit, we don't need to work.
+    if (is_zero(current_deviation)) return chemical_potential;
+
+    // We are in a non-symmetry-broken state, so the filling is a monotone function of mu 
+    if (current_deviation < 0.0) {
+        // filling > target_filling => mu must be lowered
+        definitly_too_large = chemical_potential;
+        do {
+            definitly_too_small -= MU_STEP;
+            current_deviation = fit_occupation(definitly_too_small);
+            if (definitly_too_small < -16.) {
+                throw std::runtime_error("definitly_too_small ran below -2 * band width!");
+            }
+        } while (current_deviation < 0.0);
+        if (is_zero(current_deviation)) {
+            chemical_potential = definitly_too_small;
+            return definitly_too_small;
+        }
+    }
+    else {
+        // filling < target_filling => mu must be increased
+        definitly_too_small = chemical_potential;
+        do {
+            definitly_too_large += MU_STEP;
+            current_deviation = fit_occupation(definitly_too_large);
+            if (definitly_too_large > 16.) {
+                throw std::runtime_error("definitly_too_large ran above 2 * band width!");
+            }
+        } while (current_deviation > 0.0);
+        if (is_zero(current_deviation)) {
+            chemical_potential = definitly_too_large;
+            return definitly_too_large;
+        }
+    }
+
+    std::uintmax_t boost_max_it{100U};
+    // boost::math::tools::eps_tolerance<double>(36) corresponds to about 2.91e-11
+    const auto best_mu =
+         boost::math::tools::toms748_solve(fit_occupation, definitly_too_small, definitly_too_large,
+                                              boost::math::tools::eps_tolerance<double>(36), boost_max_it);
+
+    const double low  = std::abs(fit_occupation(best_mu.first));
+    const double mid  = std::abs(fit_occupation(0.5 * (best_mu.first + best_mu.second)));
+    const double high = std::abs(fit_occupation(best_mu.second));
+
+    double mu = best_mu.first;
+    double min_deviation = low;
+            
+    if (mid < min_deviation) {
+        mu = 0.5 * (best_mu.first + best_mu.second);
+        min_deviation = mid;
+    }
+    
+    if (high < min_deviation) {
+        mu = best_mu.second;
+    }
+    
+    chemical_potential = mu;
+    return mu;
+}
+
 void ieom_base::solve_hartree_fock(const flow::Model& model) {
     const auto compute_occupation_numbers = [this, &model](const Vector& dispersion) {
         for (int i = 0; i < N; ++i) {
-            occupation_numbers[i] = model.fermi_function(dispersion[i]);
+            occupation_numbers[i] = model.fermi_function(dispersion[i] - chemical_potential);
         }
     };
 
     Eigen::Map<const Vector> epsilon_tilde_map(epsilon_tilde.data(), N);
-    Vector self_energy = Eigen::Map<const Vector>(flow_result.dispersion.data(), N) - epsilon_tilde_map;
+    Vector self_energy = Eigen::Map<const Vector>(flow_result.dispersion.data(), N) 
+        - epsilon_tilde_map;
 
     const auto [differing, same] = flow::DecouplingChannel::SingleParticleEnergy(flow_result);
 
@@ -197,6 +282,10 @@ void ieom_base::solve_hartree_fock(const flow::Model& model) {
             }
         }
         self_energy = 0.5 * (self_energy + result);
+        for (int i = 0; i < N; ++i) {
+            dispersion[i] = epsilon_tilde[i] + self_energy(i);
+        }
+        chemical_potential = compute_chemical_potential(model, model.filling);
         result -= self_energy;
     };
     selfconsistency_solver_interface interface(compute_self_energy);
@@ -214,9 +303,13 @@ void ieom_base::solve_hartree_fock(const flow::Model& model) {
             throw std::runtime_error("Hartree-Fock calculations did not converge even after retry.");
         }
     }
-    compute_occupation_numbers(epsilon_tilde_map + self_energy);
+    
     for (int i = 0; i < N; ++i) {
         dispersion[i] = epsilon_tilde[i] + self_energy(i);
+    }
+    compute_occupation_numbers(epsilon_tilde_map + self_energy);
+    for (int i = 0; i < N; ++i) {
+        dispersion[i] = epsilon_tilde[i] + self_energy(i) - chemical_potential;
     }
 }
 

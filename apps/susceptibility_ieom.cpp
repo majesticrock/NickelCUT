@@ -54,13 +54,16 @@ int main(int argc, char** argv) {
     const auto spin_result = ieom_spin.static_susceptibility_at_high_symmetry(states);
     const auto charge_result = ieom_charge.static_susceptibility_at_high_symmetry(states);
 
-    nlohmann::json jData = {{"SC", sc_result},
-                            {"spin", spin_result},
-                            {"charge", charge_result},
-                            {"dispersion", ieom_sc.get_dispersion()},
-                            {"negative_excitation_sc", ieom_sc.found_negative_excitation()},
-                            {"negative_excitation_spin", ieom_spin.found_negative_excitation()},
-                            {"negative_excitation_charge", ieom_charge.found_negative_excitation()}};
+    nlohmann::json jData = {
+        {"SC", sc_result},
+        {"spin", spin_result},
+        {"charge", charge_result},
+        {"dispersion", ieom_sc.get_dispersion()},
+        {"negative_excitation_sc", ieom_sc.found_negative_excitation()},
+        {"negative_excitation_spin", ieom_spin.found_negative_excitation()},
+        {"negative_excitation_charge", ieom_charge.found_negative_excitation()},
+        {"hartree_fock_filling", ieom_sc.hartree_fock_filling()}
+    };
     jData.update(j_metadata);
 
     mrock::utility::save_string(jData.dump(4), output_dir + "ieom_susceptibility.json.gz");

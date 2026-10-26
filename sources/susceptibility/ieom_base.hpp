@@ -51,6 +51,8 @@ public:
     const std::array<double, N>& get_dispersion() const noexcept;
     bool found_negative_excitation() const noexcept;
 
+    double hartree_fock_filling() const noexcept;
+
 protected:
     Matrix U_matrix;
     Vector chi_matrix; // This is diagonal in k, and we represent it as a vector
@@ -63,6 +65,7 @@ protected:
     const std::array<double, N> epsilon_tilde;
 
     const double beta;
+    double chemical_potential = 0.0;
 
     bool _found_negative_excitation = false;
 
@@ -72,6 +75,7 @@ protected:
     double chi_pair(const momentum&k, const momentum& kx) const noexcept;
 
 private:
+    double compute_chemical_potential(const flow::Model& model, const double target_filling);
     void solve_hartree_fock(const flow::Model& model);
     // Computes the Kernel K and diagoanlizes it, storing the result in eigen_solver
     void prepare_static(const momentum& x);

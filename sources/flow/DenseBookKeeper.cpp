@@ -37,9 +37,24 @@ DenseBookKeeper::DenseBookKeeper(const FlowContainer& initial_flow_state,
 };
 
 double DenseBookKeeper::compute_derivative_rod(const FlowContainer& state, double l) {
-    FlowContainer derivative;
+    static FlowContainer derivative;
     flow_equation(state, derivative, l);
-    return derivative.residual_offdiagonality();
+    // A factor of 1/N is contained in the values of the interactions
+    // so -> abs_squared is 1/N^2, there a 3 sums of N elements -> scales as N
+    // sqrt(N) = L -> dividing by L makes ROD independent of the system size
+    double val{};
+#pragma omp parallel for reduction(+ : val) schedule(static)
+    for (std::size_t i = 0U; i < N * N * N; ++i) {
+        momentum_iterator<L> K(static_cast<int>(i / (N * N)));
+        momentum_iterator<L> P(static_cast<int>((i / N) % N));
+        momentum_iterator<L> Q(static_cast<int>(i % N));
+
+        if (is_non_zero(state.delta_epsilon(K, P, Q))) {
+            val += derivative.interactions_differing_spin(K, P, Q) * derivative.interactions_differing_spin(K, P, Q) +
+                   derivative.interactions_same_spin(K, P, Q) * derivative.interactions_same_spin(K, P, Q);
+        }
+    }
+    return std::sqrt(val) / L;
 }
 
 void DenseBookKeeper::print_final(const FlowContainer& x, double l) {
@@ -75,7 +90,7 @@ void DenseBookKeeper::operator()(const FlowContainer& x, double l) {
 
     const double max_coeff =
         N * std::max(x.interactions_differing_spin.norm_inf(), x.interactions_same_spin.norm_inf());
-    if (max_coeff > 10. * initial_band_width) {
+    if (max_coeff > 20. * initial_band_width) {
         throw LargeInteractionException(l);
     }
     const bool state_is_good = x.is_inversion_symmetric() && x.is_hermitian();
@@ -89,6 +104,7 @@ void DenseBookKeeper::operator()(const FlowContainer& x, double l) {
     if (derivative_rod < 0.002 * initial_band_width) {
         throw SmallDerivativeRODException(l);
     }
+    const double ROD = x.residual_offdiagonality();
 
     const_cast<FlowContainer&>(x).interactions_differing_spin.clear_noise();
     const_cast<FlowContainer&>(x).interactions_same_spin.clear_noise();
@@ -97,13 +113,15 @@ void DenseBookKeeper::operator()(const FlowContainer& x, double l) {
     clock::time_point now = clock::now();
     std::cout << "//------------------------------------------------------//\n"
               << "Step #" << current_idx << "\t" << mrock::utility::time_stamp() << "\n"
-              << "l = " << l << "\t\tmax(U) = " << max_coeff << "\t\tROD(dH/dl) = " << derivative_rod << "\n"
+              << "l = " << l << "\t\tmax(U) = " << max_coeff 
+              << "\t\tROD = " << ROD 
+              << "\t\tROD(dH/dl) = " << derivative_rod << "\n"
               << "Step took " << std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count()
               << "ms to execute." << std::endl;
     last = now;
 
     l_times.push_back(l);
-    residual_offdiagonalities.push_back(x.residual_offdiagonality());
+    residual_offdiagonalities.push_back(ROD);
     derivative_residual_offdiagonalities.push_back(derivative_rod);
     max_interactions.push_back(max_coeff);
     extracted_channels.push_back(ExtractionContainer(x));
