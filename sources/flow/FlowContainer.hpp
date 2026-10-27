@@ -56,6 +56,7 @@ struct FlowContainer {
     void reset() noexcept;
     bool contains_nan_or_inf() const noexcept;
     double residual_offdiagonality() const noexcept;
+    double max_generator_element() const noexcept;
 
     bool is_inversion_symmetric() const noexcept;
     bool is_hermitian() const noexcept;

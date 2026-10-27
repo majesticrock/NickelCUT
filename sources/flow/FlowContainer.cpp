@@ -79,6 +79,22 @@ double FlowContainer::residual_offdiagonality() const noexcept {
     return std::sqrt(val) / L;
 }
 
+double FlowContainer::max_generator_element() const noexcept {
+    double max = 0.;
+    for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {
+        const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];
+        momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));
+        momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
+        momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
+        double val = alpha_factor(K, P, Q) * std::max(
+            std::abs(interactions_differing_spin(K,P,Q)),
+            std::abs(interactions_same_spin(K,P,Q))
+        );
+        if (val > max) max = val;
+    }
+    return max;
+}
+
 bool FlowContainer::is_inversion_symmetric() const noexcept {
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
         if (!float_equal(dispersion[K], dispersion[-K])) {
@@ -191,12 +207,12 @@ double FlowContainer::alpha_factor(const momentum_iterator<L>& K,
 #ifdef USE_LW_GENERATOR
         return delta_epsilon(K, P, Q);
 #else
-        if (K == -P || Q == PI<L> || Q == Gamma<L>) {
-            return 0.;
-        }
-        else {
+        //if (K == -P || Q == PI<L> || Q == Gamma<L>) {
+        //    return 0.;
+        //}
+        //else {
             return sign(delta_epsilon(K, P, Q));
-        }
+        //}
 #endif
 }
 
