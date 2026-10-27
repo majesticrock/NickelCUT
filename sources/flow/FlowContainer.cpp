@@ -4,6 +4,7 @@
 #include "Model.hpp"
 #include "momentum_iterator.hpp"
 #include "occupation_numbers.hpp"
+#include "FlowEquation.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -70,10 +71,10 @@ double FlowContainer::residual_offdiagonality() const noexcept {
         momentum_iterator<L> P(static_cast<int>((i / N) % N));
         momentum_iterator<L> Q(static_cast<int>(i % N));
 
-        if (is_non_zero(delta_epsilon(K, P, Q))) {
-            val += interactions_differing_spin(K, P, Q) * interactions_differing_spin(K, P, Q) +
-                   interactions_same_spin(K, P, Q) * interactions_same_spin(K, P, Q);
-        }
+        val += alpha_factor(K, P, Q) * alpha_factor(K, P, Q) * (
+            interactions_differing_spin(K, P, Q) * interactions_differing_spin(K, P, Q) 
+            + interactions_same_spin(K, P, Q) * interactions_same_spin(K, P, Q)
+        );
     }
     return std::sqrt(val) / L;
 }
@@ -182,6 +183,21 @@ double FlowContainer::band_width() const noexcept {
 
 double FlowContainer::max_interaction() const noexcept {
     return std::max(interactions_same_spin.norm_inf(), interactions_differing_spin.norm_inf());
+}
+
+double FlowContainer::alpha_factor(const momentum_iterator<L>& K,
+                                   const momentum_iterator<L>& P,
+                                   const momentum_iterator<L>& Q) const noexcept {
+#ifdef USE_LW_GENERATOR
+        return delta_epsilon(K, P, Q);
+#else
+        if (K == -P || Q == PI<L> || Q == Gamma<L>) {
+            return 0.;
+        }
+        else {
+            return sign(delta_epsilon(K, P, Q));
+        }
+#endif
 }
 
 FlowContainer::coeff_array FlowContainer::epsilon_tilde() const noexcept {

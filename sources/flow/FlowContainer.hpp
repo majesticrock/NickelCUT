@@ -48,6 +48,8 @@ struct FlowContainer {
         return dispersion[k] + dispersion[p] - dispersion[k + q] - dispersion[p - q];
     }
 
+    double alpha_factor(const mom_it& K, const mom_it& P, const mom_it& Q) const noexcept;
+
     coeff_array epsilon_tilde() const noexcept;
 
     void fill(double value) noexcept;

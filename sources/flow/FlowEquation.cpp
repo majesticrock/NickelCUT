@@ -18,18 +18,7 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
         momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));
         momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
         momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
-#ifdef USE_LW_GENERATOR
-        alpha_sign_cache(K, P, Q) =
-            current.dispersion[K] + current.dispersion[P] - current.dispersion[P - Q] - current.dispersion[K + Q];
-#else
-        if (K == -P || Q == PI<L> || Q == Gamma<L>) {
-            alpha_sign_cache(K,P,Q) = 0.;
-        }
-        else {
-            alpha_sign_cache(K, P, Q) =
-                sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P - Q] - current.dispersion[K + Q]);
-        }
-#endif
+        alpha_sign_cache(K, P, Q) = current.alpha_factor(K, P, Q);
     }
 
 #pragma omp parallel for
