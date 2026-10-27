@@ -62,6 +62,7 @@ int main(int argc, char** argv) {
         {"negative_excitation_sc", ieom_sc.found_negative_excitation()},
         {"negative_excitation_spin", ieom_spin.found_negative_excitation()},
         {"negative_excitation_charge", ieom_charge.found_negative_excitation()},
+        {"pomeranchuk_instability", ieom_sc.found_pomeranchuk_instability()},
         {"hartree_fock_filling", ieom_sc.hartree_fock_filling()}
     };
     jData.update(j_metadata);

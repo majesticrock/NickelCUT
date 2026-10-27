@@ -22,8 +22,13 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
         alpha_sign_cache(K, P, Q) =
             current.dispersion[K] + current.dispersion[P] - current.dispersion[P - Q] - current.dispersion[K + Q];
 #else
-        alpha_sign_cache(K, P, Q) =
-            sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P - Q] - current.dispersion[K + Q]);
+        if (K == -P || Q == PI<L> || Q == Gamma<L>) {
+            alpha_sign_cache(K,P,Q) = 0.;
+        }
+        else {
+            alpha_sign_cache(K, P, Q) =
+                sign(current.dispersion[K] + current.dispersion[P] - current.dispersion[P - Q] - current.dispersion[K + Q]);
+        }
 #endif
     }
 

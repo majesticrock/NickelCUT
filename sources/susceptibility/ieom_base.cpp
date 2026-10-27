@@ -133,6 +133,10 @@ bool ieom_base::found_negative_excitation() const noexcept {
     return _found_negative_excitation;
 }
 
+bool ieom_base::found_pomeranchuk_instability() const noexcept {
+    return _found_pomeranchuk;
+}
+
 double ieom_base::hartree_fock_filling() const noexcept 
 {
     return 2. * std::accumulate(this->occupation_numbers.begin(), this->occupation_numbers.end(), double{}) / N;
@@ -310,6 +314,14 @@ void ieom_base::solve_hartree_fock(const flow::Model& model) {
     compute_occupation_numbers(epsilon_tilde_map + self_energy);
     for (int i = 0; i < N; ++i) {
         dispersion[i] = epsilon_tilde[i] + self_energy(i) - chemical_potential;
+    }
+
+    for (momentum k = momentum::begin(); k != momentum::end(); ++k) {
+        const momentum kprime = k.rotate_90();
+        if (!float_equal(dispersion[k], dispersion[kprime])) {
+            _found_pomeranchuk = true;
+            break;
+        }
     }
 }
 

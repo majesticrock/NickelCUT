@@ -260,6 +260,14 @@ def main():
         action="store_true",
         help="list matching flow results without launching susceptibility_ieom",
     )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help=(
+            "skip evaluations whose ieom_susceptibility.json.gz "
+            "result already exists"
+        ),
+    )
     args = parser.parse_args()
 
     # Reject duplicate parameter names to avoid ambiguous output/config handling.
@@ -304,7 +312,12 @@ def main():
 
             if args.dry_run:
                 continue
+            result_file = state_file.parent / "ieom_susceptibility.json.gz"
 
+            if args.skip_existing and result_file.is_file():
+                print(f"Skipping existing result: {result_file}")
+                continue
+            
             # Include all varied values in the filename to prevent collisions.
             filename_parts = [
                 f"{key}_{varied_values[key]:.17g}" for key in args.vary

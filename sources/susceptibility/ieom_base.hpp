@@ -50,6 +50,7 @@ public:
 
     const std::array<double, N>& get_dispersion() const noexcept;
     bool found_negative_excitation() const noexcept;
+    bool found_pomeranchuk_instability() const noexcept;
 
     double hartree_fock_filling() const noexcept;
 
@@ -68,6 +69,7 @@ protected:
     double chemical_potential = 0.0;
 
     bool _found_negative_excitation = false;
+    bool _found_pomeranchuk = false;
 
     // This is positive definite!
     double chi_number(const momentum& k, const momentum& kx) const noexcept;
