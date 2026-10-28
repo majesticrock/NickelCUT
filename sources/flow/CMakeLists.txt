@@ -21,14 +21,16 @@ if(NICKELCUT_RUN_COMMUTE OR NICKELCUT_FORCE_FLOW_EQUATION_REGEN OR NOT EXISTS "$
 endif()
 
 add_library(flow_lib STATIC
-    BookKeeper.cpp
-    DenseBookKeeper.cpp
     FlowExceptions.cpp
     DecouplingChannel.cpp
     ExtractionContainer.cpp
     FlowContainer.cpp
     flow_state_serialization.cpp
     "${FLOW_EQUATION_SOURCE}"
+
+    BookKeeper/base.cpp
+    BookKeeper/Dense.cpp
+    BookKeeper/Sparse.cpp
 )
 
 if(TARGET generate_flow_equation)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "FlowContainer.hpp"
+#include "../FlowContainer.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -9,10 +9,11 @@
 #include <deque>
 
 namespace NickelCUT::flow {
-
 struct FlowEquation;
+namespace BookKeeper {
 
-struct BookKeeper {
+class base {
+protected:
     std::deque<double> l_times;
     std::deque<double> residual_offdiagonalities;
     std::deque<double> derivative_residual_offdiagonalities;
@@ -24,20 +25,22 @@ struct BookKeeper {
 
     /////////////////////////////////////////////////////////
 
-    BookKeeper(const FlowContainer& initial_flow_state,
+    base(const FlowContainer& initial_flow_state,
                FlowEquation& flow_equation,
                double _band_width,
                double _dl,
                std::chrono::minutes::rep _max_runtime_duration);
 
-    void print_final(const FlowContainer& x, double l);
-
-    void operator()(const FlowContainer& x, double l);
+    nlohmann::json convert_to_json() const noexcept;
+    // Throws FlowExceptions to interrupt the flow if necessary and pushes the general data
+    void basic_processing(const FlowContainer& x, const double l);
+    // Returns true if the last step was accepted
+    bool basic_wrap_up(const FlowContainer& x, const double l);
 
 private:
     using clock = std::chrono::high_resolution_clock;
 
-    double compute_derivative_rod(const FlowContainer& state, double l);
+    double compute_derivative_rod(const FlowContainer& state, double l) const;
 
     FlowEquation& flow_equation;
     const double dl;
@@ -50,6 +53,5 @@ private:
     std::size_t current_idx;
 };
 
-void to_json(nlohmann::json& j, const BookKeeper& book_keeper) noexcept;
-
-}  // namespace NickelCUT::flow
+} // namespace BookKeeper
+} // namespace NickelCUT::flow

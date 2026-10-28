@@ -9,30 +9,20 @@
  */
 #include "ExtractionContainer.hpp"
 #include "FlowContainer.hpp"
+#include "base.hpp"
 
 #include <nlohmann/json.hpp>
 
 #include <chrono>
-#include <cstddef>
 #include <deque>
 
-namespace NickelCUT::flow {
-
-struct FlowEquation;
-
-struct DenseBookKeeper {
-    std::deque<double> l_times;
-    std::deque<double> residual_offdiagonalities;
-    std::deque<double> derivative_residual_offdiagonalities;
-    std::deque<double> max_interactions;
-
+namespace NickelCUT::flow::BookKeeper {
+struct Dense : private base {
     std::deque<ExtractionContainer> extracted_channels;
-
-    FlowContainer last_good_state;
 
     /////////////////////////////////////////////////////////
 
-    DenseBookKeeper(const FlowContainer& initial_flow_state,
+    Dense(const FlowContainer& initial_flow_state,
                     FlowEquation& flow_equation,
                     double _band_width,
                     double _dl,
@@ -42,22 +32,11 @@ struct DenseBookKeeper {
 
     void operator()(const FlowContainer& x, double l);
 
-private:
-    using clock = std::chrono::high_resolution_clock;
+    inline const FlowContainer& get_last_good_state() const noexcept {
+        return last_good_state;
+    }
 
-    double compute_derivative_rod(const FlowContainer& state, double l);
-
-    FlowEquation& flow_equation;
-    const double dl;
-    const double initial_band_width;
-    const std::chrono::minutes::rep max_runtime_duration;
-
-    const clock::time_point begin;
-    clock::time_point last;
-
-    std::size_t current_idx;
+    friend void to_json(nlohmann::json& j, const Dense& book_keeper) noexcept;
 };
-
-void to_json(nlohmann::json& j, const DenseBookKeeper& book_keeper) noexcept;
 
 }  // namespace NickelCUT::flow

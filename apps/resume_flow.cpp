@@ -10,11 +10,11 @@
 
 #define DENSE_BOOK_KEEPING
 #ifdef DENSE_BOOK_KEEPING
-#include "../sources/flow/DenseBookKeeper.hpp"
-typedef NickelCUT::flow::DenseBookKeeper _book_keeper;
+#include "../sources/flow/BookKeeper/Dense.hpp"
+typedef NickelCUT::flow::BookKeeper::Dense _book_keeper;
 #else
-#include "../sources/flow/BookKeeper.hpp"
-typedef NickelCUT::flow::BookKeeper _book_keeper;
+#include "../sources/flow/BookKeeper/Sparse.hpp"
+typedef NickelCUT::flow::BookKeeper::Sparse _book_keeper;
 #endif
 
 #include <mrock/utility/InputFileReader.hpp>
@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 
     nlohmann::json j_flow_data = book_keeper;
     j_flow_data.update(j_metadata);
-    nlohmann::json j_final_flow_state = book_keeper.last_good_state;
+    nlohmann::json j_final_flow_state = book_keeper.get_last_good_state();
     j_final_flow_state.update(j_metadata);
 
 #ifdef DENSE_BOOK_KEEPING
@@ -109,8 +109,8 @@ int main(int argc, char** argv) {
 
     mrock::utility::save_string(j_final_flow_state.dump(4), output_dir + data_file_names::FINAL_FLOW_STATE_JSON);
 
-    serialize_flow_state(book_keeper.last_good_state, binary_ouput_dir, data_file_names::FINAL_FLOW_STATE_BIN);
-    serialize_extracted_channels(ExtractionContainer(book_keeper.last_good_state), binary_ouput_dir,
+    serialize_flow_state(book_keeper.get_last_good_state(), binary_ouput_dir, data_file_names::FINAL_FLOW_STATE_BIN);
+    serialize_extracted_channels(ExtractionContainer(book_keeper.get_last_good_state()), binary_ouput_dir,
                                  data_file_names::FINAL_EXTRACTED_CHANNELS);
 
     return 0;
