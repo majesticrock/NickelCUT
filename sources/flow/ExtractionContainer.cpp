@@ -15,7 +15,8 @@ ExtractionContainer::ExtractionContainer(const FlowContainer& x)
       density_wave(DecouplingChannel::DensityWave(x)),
       superconductivity(DecouplingChannel::Superconductivity(x)),
       dispersion(x.dispersion),
-      epsilon_tilde(x.epsilon_tilde()) {}
+      epsilon_tilde(x.epsilon_tilde()),
+      occupation_numbers(x.occupation_numbers) {}
 
 void to_json(nlohmann::json& j, const ExtractionContainer& extracted_channels) noexcept {
     j = nlohmann::json{
@@ -25,7 +26,8 @@ void to_json(nlohmann::json& j, const ExtractionContainer& extracted_channels) n
         {"density_wave_same", extracted_channels.density_wave.second.as_2D_array()},
         {"superconductivity", extracted_channels.superconductivity.as_2D_array()},
         {"epsilon_tilde", extracted_channels.epsilon_tilde},
-        {"dispersion", extracted_channels.dispersion}};
+        {"dispersion", extracted_channels.dispersion},
+        {"occupation_numbers", extracted_channels.occupation_numbers}};
 }
 
 void from_json(const nlohmann::json& j, ExtractionContainer& extracted_channels) {

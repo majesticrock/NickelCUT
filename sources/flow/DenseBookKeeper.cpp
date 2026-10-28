@@ -90,7 +90,7 @@ void DenseBookKeeper::operator()(const FlowContainer& x, double l) {
 
     const double max_coeff =
         N * std::max(x.interactions_differing_spin.norm_inf(), x.interactions_same_spin.norm_inf());
-    if (max_coeff > 5. * initial_band_width) {
+    if (max_coeff > 10. * initial_band_width) {
         throw LargeInteractionException(l);
     }
     const bool state_is_good = x.is_inversion_symmetric() && x.is_hermitian();
@@ -109,6 +109,12 @@ void DenseBookKeeper::operator()(const FlowContainer& x, double l) {
     const_cast<FlowContainer&>(x).interactions_differing_spin.clear_noise();
     const_cast<FlowContainer&>(x).interactions_same_spin.clear_noise();
 
+    double auxillary_difference = 0.;
+    for (int i=0; i<N; ++i) {
+        auxillary_difference += (x.dispersion[i] - x.auxillary_dispersion[i]) * (x.dispersion[i] - x.auxillary_dispersion[i]);
+    }
+    auxillary_difference = std::sqrt(auxillary_difference) / N;
+
     ++current_idx;
     clock::time_point now = clock::now();
     std::cout << "//------------------------------------------------------//\n"
@@ -116,6 +122,7 @@ void DenseBookKeeper::operator()(const FlowContainer& x, double l) {
               << "l = " << l << "\t\tmax(U) = " << max_coeff 
               << "\t\tROD = " << ROD 
               << "\t\tROD(dH/dl) = " << derivative_rod << "\n"
+              << "||epsilon - epsilon_aux|| / N = " << auxillary_difference << "\n"
               << "Step took " << std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count()
               << "ms to execute." << std::endl;
     last = now;

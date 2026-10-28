@@ -21,6 +21,9 @@ struct ExtractionContainer {
 
     FlowContainer::coeff_array epsilon_tilde;
 
+    FlowContainer::coeff_array occupation_numbers;
+
+
     template <class Archive>
     void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
         ar & single_particle_energy;

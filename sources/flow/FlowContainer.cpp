@@ -3,7 +3,7 @@
 #include "../helper_functions.hpp"
 #include "Model.hpp"
 #include "momentum_iterator.hpp"
-#include "occupation_numbers.hpp"
+//#include "occupation_numbers.hpp"
 #include "FlowEquation.hpp"
 
 #include <nlohmann/json.hpp>
@@ -13,17 +13,26 @@
 
 namespace NickelCUT::flow {
 
+Model const * FlowContainer::model_ptr = nullptr;
+
 FlowContainer::FlowContainer() noexcept : interactions_same_spin(), interactions_differing_spin() {
     dispersion.fill(double{});
+    auxillary_dispersion.fill(double{});
+    occupation_numbers.fill(0.5);
 }
 
 FlowContainer::FlowContainer(const Model& model) noexcept
     : interactions_same_spin(),
       // Factor 1/2 to account for the extra spin summation compared to the standard Hubbard model
       interactions_differing_spin(0.5 * model.U_0 / N) {
+    if (model_ptr != &model) {
+        model_ptr = &model;
+    } 
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
         dispersion[K] = model.epsilon_0(K.get_kx(), K.get_ky());
     }
+    auxillary_dispersion = dispersion;
+    update_occupation_numbers();
 }
 
 void FlowContainer::print_memory_allocation() const {
@@ -34,10 +43,18 @@ void FlowContainer::print_memory_allocation() const {
     std::cout << "FlowContainer constructed, allocated memory: " << allocated_bytes / (1024) << " kb" << std::endl;
 }
 
+void FlowContainer::update_occupation_numbers() {
+    for (int i=0; i<N; ++i) {
+        occupation_numbers[i] = model_ptr->fermi_function(auxillary_dispersion[i]);
+    }
+}
+
 void FlowContainer::fill(double value) noexcept {
     interactions_same_spin.fill(value);
     interactions_differing_spin.fill(value);
     dispersion.fill(value);
+    auxillary_dispersion.fill(value);
+    update_occupation_numbers();
 }
 
 void FlowContainer::reset() noexcept {
@@ -216,6 +233,11 @@ double FlowContainer::alpha_factor(const momentum_iterator<L>& K,
 #endif
 }
 
+double FlowContainer::Gamma_factor(const std::size_t i) const {
+    const double ch = std::cosh(0.5 * model_ptr->beta * auxillary_dispersion[i]);
+    return model_ptr->beta / (4. * ch * ch);
+}
+
 FlowContainer::coeff_array FlowContainer::epsilon_tilde() const noexcept {
     coeff_array ret;
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
@@ -258,7 +280,9 @@ FlowContainer& FlowContainer::operator+=(const FlowContainer& other) noexcept {
     interactions_differing_spin += other.interactions_differing_spin;
     for (int i = 0; i < N; ++i) {
         dispersion[i] += other.dispersion[i];
+        auxillary_dispersion[i] += other.auxillary_dispersion[i];
     }
+    update_occupation_numbers();
 
     return *this;
 }
@@ -267,7 +291,9 @@ FlowContainer& FlowContainer::operator-=(const FlowContainer& other) noexcept {
     interactions_differing_spin -= other.interactions_differing_spin;
     for (int i = 0; i < N; ++i) {
         dispersion[i] -= other.dispersion[i];
+        auxillary_dispersion[i] -= other.auxillary_dispersion[i];
     }
+    update_occupation_numbers();
 
     return *this;
 }
@@ -277,7 +303,9 @@ FlowContainer& FlowContainer::operator*=(const FlowContainer& other) noexcept {
     interactions_differing_spin *= other.interactions_differing_spin;
     for (int i = 0; i < N; ++i) {
         dispersion[i] *= other.dispersion[i];
+        auxillary_dispersion[i] -= other.auxillary_dispersion[i];
     }
+    update_occupation_numbers();
 
     return *this;
 }
@@ -286,7 +314,9 @@ FlowContainer& FlowContainer::operator/=(const FlowContainer& other) noexcept {
     interactions_differing_spin /= other.interactions_differing_spin;
     for (int i = 0; i < N; ++i) {
         dispersion[i] /= other.dispersion[i];
+        auxillary_dispersion[i] /= other.auxillary_dispersion[i];
     }
+    update_occupation_numbers();
 
     return *this;
 }
@@ -296,7 +326,9 @@ FlowContainer& FlowContainer::operator*=(const double other) noexcept {
     interactions_differing_spin *= other;
     for (int i = 0; i < N; ++i) {
         dispersion[i] *= other;
+        auxillary_dispersion[i] *= other;
     }
+    update_occupation_numbers();
 
     return *this;
 }
@@ -305,7 +337,9 @@ FlowContainer& FlowContainer::operator/=(const double other) noexcept {
     interactions_differing_spin /= other;
     for (int i = 0; i < N; ++i) {
         dispersion[i] /= other;
+        auxillary_dispersion[i] /= other;
     }
+    update_occupation_numbers();
 
     return *this;
 }
@@ -315,7 +349,9 @@ FlowContainer& FlowContainer::operator+=(const double other) noexcept {
     interactions_differing_spin += other;
     for (int i = 0; i < N; ++i) {
         dispersion[i] += other;
+        auxillary_dispersion[i] -= other;
     }
+    update_occupation_numbers();
 
     return *this;
 }

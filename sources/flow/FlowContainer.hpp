@@ -19,6 +19,8 @@ struct FlowContainer {
     InteractionDataFrame interactions_same_spin;
     InteractionDataFrame interactions_differing_spin;
     coeff_array dispersion;
+    coeff_array auxillary_dispersion;
+    coeff_array occupation_numbers;
 
     template <class Archive>
     void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
@@ -49,6 +51,7 @@ struct FlowContainer {
     }
 
     double alpha_factor(const mom_it& K, const mom_it& P, const mom_it& Q) const noexcept;
+    double Gamma_factor(const std::size_t i) const;
 
     coeff_array epsilon_tilde() const noexcept;
 
@@ -77,6 +80,9 @@ struct FlowContainer {
 
 private:
     void print_memory_allocation() const;
+    void update_occupation_numbers();
+
+    static Model const*  model_ptr;
 };
 
 inline FlowContainer operator+(FlowContainer lhs, const FlowContainer& rhs) noexcept {

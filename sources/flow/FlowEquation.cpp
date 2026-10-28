@@ -3,15 +3,25 @@
 #include "../helper_functions.hpp"
 #include "FlowContainer.hpp"
 #include "momentum_iterator.hpp"
-#include "occupation_numbers.hpp"
+//#include "occupation_numbers.hpp"
 
 #include <omp.h>
 
 namespace NickelCUT::flow {
 
+constexpr double auxillary_decay = 1.;
+
 void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/) {
     dHdl.reset();
     static InteractionDataFrame alpha_sign_cache;
+    const std::array<double, N>& occupation_numbers = current.occupation_numbers;
+    static std::array<double, N> hole_numbers;
+    static std::array<double, N> normal_ordering_factors;
+
+    for (int i=0;i<N;++i){
+        hole_numbers[i] = 1 - occupation_numbers[i];
+    }
+
 #pragma omp parallel for
     for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {
         const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];
@@ -22,11 +32,22 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
     }
 
 #pragma omp parallel for
+    for (int i = 0; i < N; ++i) {
+        dHdl.auxillary_dispersion[i] = auxillary_decay * (current.dispersion[i] - current.auxillary_dispersion[i]);
+        normal_ordering_factors[i] = -0.5 * current.Gamma_factor(i) * dHdl.auxillary_dispersion[i];
+    }
+
+#pragma omp parallel for
     for (int K_pos = 0; K_pos < N; ++K_pos) {
         momentum_iterator<L> K(K_pos);
         for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
             double Q_sum_value{};
+            double total_normal_ordering{};
             for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
+                total_normal_ordering += 2. * normal_ordering_factors[Q] * (
+                    current.interactions_differing_spin(K, P, Gamma<L>) + current.interactions_same_spin(K, P, Gamma<L>)
+                    - current.interactions_same_spin(K, P, P-K)
+                );
                 Q_sum_value -= current.interactions_same_spin(-K, -P, K + Q) * alpha_sign_cache(-Q, K + P + Q, K + Q) *
                                current.interactions_same_spin(-Q, K + P + Q, K + Q) * hole_numbers[Q] *
                                hole_numbers[K + P + Q];
@@ -66,7 +87,7 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
                                alpha_sign_cache(-K, -P, K + Q) * current.interactions_differing_spin(-K, -P, K + Q) *
                                hole_numbers[Q] * hole_numbers[K + P + Q];
             }  // Q-loop
-            dHdl.dispersion[K] += 8.000000 * Q_sum_value * occupation_numbers[P];
+            dHdl.dispersion[K] += 8.000000 * Q_sum_value * occupation_numbers[P] + total_normal_ordering;
         }  // P-loop
     }  // K-loop
 
