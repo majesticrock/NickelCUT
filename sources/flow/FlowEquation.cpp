@@ -1,9 +1,9 @@
 #include "FlowEquation.hpp"
 
-#include "../helper_functions.hpp"
+#include "../shared/helper_functions.hpp"
 #include "FlowContainer.hpp"
-#include "momentum_iterator.hpp"
-#include "occupation_numbers.hpp"
+#include "../shared/momentum_iterator.hpp"
+#include "../shared/occupation_numbers.hpp"
 
 #include <omp.h>
 

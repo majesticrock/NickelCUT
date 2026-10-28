@@ -1,14 +1,5 @@
 #pragma once
 
-#include "../L.hpp"
-#include "../flow/ExtractionContainer.hpp"
-#include "../flow/Model.hpp"
-#include "../flow/momentum_iterator.hpp"
-#include "ModelAttributes.hpp"
-
-#include <Eigen/Dense>
-
-#include <cassert>
 #include <string>
 
 namespace NickelCUT::mean_field {

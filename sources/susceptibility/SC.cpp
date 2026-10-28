@@ -1,9 +1,9 @@
 #include "SC.hpp"
 
-#include "../flow/momentum_iterator.hpp"
+#include "../shared/momentum_iterator.hpp"
 
 namespace NickelCUT::susceptibility {
-SC::SC(const flow::FlowContainer& _flow_result, const flow::Model& model) : ieom_base(_flow_result, model) {}
+SC::SC(const flow::FlowContainer& _flow_result, const Model& model) : ieom_base(_flow_result, model) {}
 
 SC::SC(const ieom_base* const other_instance) : ieom_base(other_instance) {}
 

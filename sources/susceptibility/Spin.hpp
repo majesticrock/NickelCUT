@@ -6,7 +6,7 @@ namespace NickelCUT::susceptibility {
 
 class Spin : public ieom_base {
 public:
-    Spin(const flow::FlowContainer& _flow_result, const flow::Model& model);
+    Spin(const flow::FlowContainer& _flow_result, const Model& model);
     Spin(const ieom_base* const other_instance);
 
     void fill_chi_matrix(const momentum& x) final;

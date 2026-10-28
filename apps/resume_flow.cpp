@@ -1,13 +1,12 @@
-#include "../sources/L.hpp"
+#include "../sources/shared/L.hpp"
 #include "../sources/flow/ExtractionContainer.hpp"
 #include "../sources/flow/FlowContainer.hpp"
 #include "../sources/flow/FlowEquation.hpp"
 #include "../sources/flow/FlowExceptions.hpp"
-#include "../sources/flow/Model.hpp"
+#include "../sources/shared/Model.hpp"
 #include "../sources/flow/data_file_names.hpp"
 #include "../sources/flow/flow_state_serialization.hpp"
 #include "../sources/flow/numerical_setup.hpp"
-#include "../sources/helper_functions.hpp"
 
 #define DENSE_BOOK_KEEPING
 #ifdef DENSE_BOOK_KEEPING
@@ -22,7 +21,6 @@ typedef NickelCUT::flow::BookKeeper _book_keeper;
 #include <mrock/utility/OutputConvenience.hpp>
 #include <nlohmann/json.hpp>
 
-#include <cmath>
 #include <filesystem>
 #include <iostream>
 
@@ -45,7 +43,7 @@ int main(int argc, char** argv) {
     (void)resume_step;
 
     mrock::utility::InputFileReader input(argv[1]);
-    Model model(input);
+    NickelCUT::Model model(input);
 
     const std::string output_dir = std::string(OUTPUT_DATA_DIR) +
                                    (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") +

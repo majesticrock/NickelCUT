@@ -1,6 +1,6 @@
 #include "ieom_base.hpp"
 
-#include "../L.hpp"
+#include "../shared/L.hpp"
 #include "../flow/DecouplingChannel.hpp"
 
 #include <boost/math/tools/toms748_solve.hpp>
@@ -49,7 +49,7 @@ double log_sinhc(double x) noexcept
 
 //--------------------------------------------------------------------------------//
 
-ieom_base::ieom_base(const flow::FlowContainer& _flow_result, const flow::Model& model)
+ieom_base::ieom_base(const flow::FlowContainer& _flow_result, const Model& model)
     : U_matrix{Matrix::Zero(N, N)},
       chi_matrix{Vector::Zero(N)},
       flow_result{_flow_result},
@@ -100,12 +100,12 @@ std::vector<double> ieom_base::compute_static_susceptibility(const momentum& x, 
     return result;
 }
 
-std::array<std::vector<double>, flow::number_of_high_symmtry_momenta<L>>
+std::array<std::vector<double>, number_of_high_symmtry_momenta<L>>
 ieom_base::static_susceptibility_at_high_symmetry(const std::vector<Vector>& states) {
-    const auto momenta = flow::square_lattice_high_symmetry_path<L>();
-    std::array<std::vector<double>, flow::number_of_high_symmtry_momenta<L>> result;
+    const auto momenta = square_lattice_high_symmetry_path<L>();
+    std::array<std::vector<double>, number_of_high_symmtry_momenta<L>> result;
 
-    for (std::size_t i = 0U; i < flow::number_of_high_symmtry_momenta<L>; ++i) {
+    for (std::size_t i = 0U; i < number_of_high_symmtry_momenta<L>; ++i) {
         result[i] = compute_static_susceptibility(momenta[i], states);
     }
 
@@ -186,7 +186,7 @@ double ieom_base::chi_pair(
 //-----------------------------------------------------//
 // Private methods
 
-double ieom_base::compute_chemical_potential(const flow::Model& model, const double target_filling) {
+double ieom_base::compute_chemical_potential(const Model& model, const double target_filling) {
     constexpr double MU_STEP = 0.1;
 
     auto fit_occupation = [&model, &target_filling, this](double x) {
@@ -263,7 +263,7 @@ double ieom_base::compute_chemical_potential(const flow::Model& model, const dou
     return mu;
 }
 
-void ieom_base::solve_hartree_fock(const flow::Model& model) {
+void ieom_base::solve_hartree_fock(const Model& model) {
     const auto compute_occupation_numbers = [this, &model](const Vector& dispersion) {
         for (int i = 0; i < N; ++i) {
             occupation_numbers[i] = model.fermi_function(dispersion[i] - chemical_potential);
@@ -327,9 +327,9 @@ void ieom_base::solve_hartree_fock(const flow::Model& model) {
 
 void ieom_base::prepare_static(const momentum& x) {
     fill_matrices(x);
-    const double hermiticity_error = (U_matrix - U_matrix.adjoint()).norm();
+    const double hermiticity_error = std::sqrt((U_matrix - U_matrix.adjoint()).squaredNorm() / U_matrix.squaredNorm());
     if (is_non_zero(hermiticity_error)) {
-        throw std::runtime_error("U_matrix is not Hermitian! ||U-U^+|| = " + std::to_string(hermiticity_error));
+        throw std::runtime_error("U_matrix is not Hermitian! ||U-U^+|| / ||U|| = " + std::to_string(hermiticity_error));
     }
     for (auto& chi : chi_matrix) {
         chi = std::sqrt(chi);

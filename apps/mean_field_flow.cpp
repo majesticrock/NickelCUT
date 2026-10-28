@@ -1,8 +1,8 @@
-#include "../sources/L.hpp"
+#include "../sources/shared/L.hpp"
 #include "../sources/flow/ExtractionContainer.hpp"
-#include "../sources/flow/Model.hpp"
+#include "../sources/shared/Model.hpp"
 #include "../sources/flow/data_file_names.hpp"
-#include "../sources/mean_field/Model.hpp"
+#include "../sources/mean_field/MFModel.hpp"
 #include "../sources/mean_field/OrderType.hpp"
 
 #include <boost/iostreams/filter/gzip.hpp>
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 
     try {
         mrock::utility::InputFileReader input(argv[1]);
-        const flow::Model model_parameters(input);
+        const Model model_parameters(input);
         const std::filesystem::path output_root =
             std::filesystem::path(OUTPUT_DATA_DIR) / input.getString("output_dir");
         const std::filesystem::path flow_file =
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
         const std::vector<double> l_times = l_times_json.get<std::vector<double>>();
         const std::vector<double> rods = rods_json.get<std::vector<double>>();
         const double flow_temperature = flow_data.at("T").get<double>();
-        mean_field::Model model(extracted_json.at(0).get<flow::ExtractionContainer>(), input);
+        mean_field::MFModel model(extracted_json.at(0).get<flow::ExtractionContainer>(), input);
 
         nlohmann::json output = {{"time", mrock::utility::time_stamp()},
                                  {"source_flow_file", flow_file.string()},

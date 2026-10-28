@@ -56,10 +56,12 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/nickelcut_options.cmake)
 # Sets include dir for the generated metadata header file
 target_include_directories(nickelcut_options INTERFACE ${MROCK_GENERATED_INCLUDE_DIR})
 
+add_subdirectory(sources/shared)
 add_subdirectory(sources/commute)
 add_subdirectory(sources/flow)
 add_subdirectory(sources/mean_field)
 add_subdirectory(sources/susceptibility)
+
 
 add_subdirectory(apps)
 

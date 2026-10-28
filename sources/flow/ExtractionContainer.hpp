@@ -5,8 +5,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include <utility>
-
 namespace NickelCUT::flow {
 
 struct ExtractionContainer {

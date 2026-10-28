@@ -21,6 +21,7 @@ target_link_libraries(flow
     PRIVATE 
         nickelcut_options
         flow_lib
+        shared_lib
         mrock::utility
 )
 
@@ -29,6 +30,7 @@ target_link_libraries(resume_flow
     PRIVATE 
         nickelcut_options
         flow_lib
+        shared_lib
         mrock::utility
 )
 
@@ -36,16 +38,18 @@ add_executable(mean_field mean_field.cpp)
 target_link_libraries(mean_field
     PRIVATE
         nickelcut_options
-        mrock::utility
         mean_field_lib
+        shared_lib
+        mrock::utility
 )
 
 add_executable(mean_field_flow mean_field_flow.cpp)
 target_link_libraries(mean_field_flow
     PRIVATE
         nickelcut_options
-        mrock::utility
         mean_field_lib
+        shared_lib
+        mrock::utility
         Boost::iostreams
     )
 
@@ -53,16 +57,19 @@ add_executable(susceptibility_commute susceptibility_commute.cpp)
 target_link_libraries(susceptibility_commute
     PRIVATE
         nickelcut_options
+        commute_lib
+        shared_lib
         mrock::utility
         mrock::symbolic_operators
-        commute_lib
+        
 )
 
 add_executable(susceptibility_ieom susceptibility_ieom.cpp)
 target_link_libraries(susceptibility_ieom
     PRIVATE
         nickelcut_options
-        mrock::utility
         susceptibility_lib
         flow_lib
+        shared_lib
+        mrock::utility
 )

@@ -1,20 +1,21 @@
 #pragma once
 
-#include "../L.hpp"
+#include "../shared/L.hpp"
 #include "InteractionDataFrame.hpp"
-#include "momentum_iterator.hpp"
+#include "../shared/momentum_iterator.hpp"
 
 #include <nlohmann/json.hpp>
 
 #include <array>
 
-namespace NickelCUT::flow {
-
+namespace NickelCUT {
 struct Model;
+
+namespace flow {
 
 struct FlowContainer {
     using coeff_array = std::array<double, N>;
-    using mom_it = NickelCUT::flow::momentum_iterator<L>;
+    using mom_it = momentum_iterator<L>;
 
     InteractionDataFrame interactions_same_spin;
     InteractionDataFrame interactions_differing_spin;
@@ -112,4 +113,5 @@ FlowContainer abs(FlowContainer input) noexcept;  ///< elementwise L2 norm
 
 void to_json(nlohmann::json& j, const FlowContainer& container) noexcept;
 
-}  // namespace NickelCUT::flow
+} // namespace NickelCUT
+} // namespace flow

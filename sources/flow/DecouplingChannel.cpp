@@ -1,6 +1,6 @@
 #include "DecouplingChannel.hpp"
 
-#include "../L.hpp"
+#include "../shared/L.hpp"
 #include "FlowContainer.hpp"
 
 namespace NickelCUT::flow {

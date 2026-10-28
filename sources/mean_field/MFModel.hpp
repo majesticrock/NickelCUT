@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../L.hpp"
+#include "../shared/L.hpp"
 #include "../flow/ExtractionContainer.hpp"
-#include "../flow/Model.hpp"
-#include "../flow/momentum_iterator.hpp"
+#include "../shared/Model.hpp"
+#include "../shared/momentum_iterator.hpp"
 #include "ModelAttributes.hpp"
 #include "OrderType.hpp"
 
@@ -16,9 +16,9 @@
 
 namespace NickelCUT::mean_field {
 
-struct Model : public flow::Model {
+struct MFModel : public NickelCUT::Model {
     typedef Eigen::VectorXd ParameterVector;
-    typedef flow::momentum_iterator<L> momentum_t;
+    typedef momentum_iterator<L> momentum_t;
 
     flow::ExtractionContainer extracted_channels;
     ModelAttributes<double> deltas;
@@ -26,8 +26,8 @@ struct Model : public flow::Model {
     double chemical_potential;
     double target_filling;
 
-    Model(const std::string& binary_data_dir, mrock::utility::InputFileReader& input);
-    Model(flow::ExtractionContainer extracted_channels, mrock::utility::InputFileReader& input);
+    MFModel(const std::string& binary_data_dir, mrock::utility::InputFileReader& input);
+    MFModel(flow::ExtractionContainer extracted_channels, mrock::utility::InputFileReader& input);
 
     void reset_self_consistency_values() noexcept;
 

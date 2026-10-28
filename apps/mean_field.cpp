@@ -1,6 +1,6 @@
-#include "../sources/L.hpp"
+#include "../sources/shared/L.hpp"
 #include "../sources/flow/numerical_setup.hpp"
-#include "../sources/mean_field/Model.hpp"
+#include "../sources/mean_field/MFModel.hpp"
 #include "../sources/mean_field/TCFinder.hpp"
 
 #include <mrock/utility/OutputConvenience.hpp>
@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
         std::string(OUTPUT_DATA_DIR) +
         (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/")  // ensures that OUTPUT_DATA_DIR ends in "/"
         + input.getString("output_dir") + "/" + "binaries/";
-    mean_field::Model model(load_binary_dir, input);
+    mean_field::MFModel model(load_binary_dir, input);
 
     const std::string output_dir =
         std::string(OUTPUT_DATA_DIR) +

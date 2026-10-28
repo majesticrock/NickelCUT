@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Model.hpp"
+#include "MFModel.hpp"
 #include "OrderType.hpp"
 
 #include <mrock/utility/Selfconsistency/BroydenSolver.hpp>
@@ -26,12 +26,12 @@ struct TransitionData {
 void to_json(nlohmann::json& j, const TransitionData& transition) noexcept;
 
 class TCFinder {
-    Model& model;
+    MFModel& model;
     decltype(model.deltas) initial_sc_values;
     double dT;
 
     typedef mrock::utility::Selfconsistency::
-        BroydenSolver<double, Model, decltype(model.deltas), mrock::utility::Selfconsistency::NoWarning>
+        BroydenSolver<double, MFModel, decltype(model.deltas), mrock::utility::Selfconsistency::NoWarning>
             sc_solver_t;
     sc_solver_t sc_solver;
 
@@ -40,7 +40,7 @@ class TCFinder {
     void reset_model();
 
 public:
-    TCFinder(Model& _model, double _dT);
+    TCFinder(MFModel& _model, double _dT);
 
     // Assumes that the mean-field calculations on model have run before
     std::deque<TransitionData> compute();

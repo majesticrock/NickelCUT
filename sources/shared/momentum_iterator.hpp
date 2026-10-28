@@ -6,7 +6,7 @@
 #include <ostream>
 #include <utility>
 
-namespace NickelCUT::flow {
+namespace NickelCUT {
 
 namespace detail {
 template <int _L>

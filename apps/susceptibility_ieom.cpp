@@ -1,18 +1,15 @@
-#include "../sources/L.hpp"
 #include "../sources/flow/FlowContainer.hpp"
-#include "../sources/flow/Model.hpp"
+#include "../sources/shared/Model.hpp"
 #include "../sources/flow/data_file_names.hpp"
 #include "../sources/flow/flow_state_serialization.hpp"
 #include "../sources/susceptibility/Charge.hpp"
 #include "../sources/susceptibility/SC.hpp"
 #include "../sources/susceptibility/Spin.hpp"
 
-#include <Eigen/Dense>
 #include <mrock/utility/InputFileReader.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
 #include <nlohmann/json.hpp>
 
-#include <array>
 #include <iostream>
 
 #ifndef OUTPUT_DATA_DIR
@@ -28,7 +25,7 @@ int main(int argc, char** argv) {
         return -1;
     }
     mrock::utility::InputFileReader input(argv[1]);
-    const flow::Model model(input);
+    const Model model(input);
 
     const std::string load_binary_dir =
         std::string(OUTPUT_DATA_DIR) +

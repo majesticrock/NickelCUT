@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../L.hpp"
-#include "../helper_functions.hpp"
-#include "momentum_iterator.hpp"
+#include "../shared/L.hpp"
+#include "../shared/helper_functions.hpp"
+#include "../shared/momentum_iterator.hpp"
 
 #include <algorithm>
 #include <array>

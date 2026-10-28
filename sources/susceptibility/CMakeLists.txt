@@ -12,4 +12,5 @@ target_link_libraries(susceptibility_lib
         mrock::utility
     PUBLIC
         flow_lib
+        shared_lib
 )

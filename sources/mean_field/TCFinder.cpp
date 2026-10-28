@@ -1,6 +1,6 @@
 #include "TCFinder.hpp"
 
-#include "../helper_functions.hpp"
+#include "../shared/helper_functions.hpp"
 
 #include <mrock/utility/Selfconsistency/BroydenSolver.hpp>
 
@@ -17,7 +17,7 @@ void to_json(nlohmann::json& j, const TransitionData& transition) noexcept {
     j.update(transition.sc_result);
 }
 
-TCFinder::TCFinder(Model& _model, double _dT)
+TCFinder::TCFinder(MFModel& _model, double _dT)
     : model(_model), initial_sc_values(_model.deltas), dT(_dT), sc_solver(&model, &model.deltas, 200, 1e-6) {}
 
 void TCFinder::bracket_phase_transistion(TransitionData& transition) {

@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace NickelCUT::flow {
+namespace NickelCUT {
 
 struct Model {
     const double U_0{};

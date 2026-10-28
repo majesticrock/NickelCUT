@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../L.hpp"
+#include "L.hpp"
 
 #include <array>
 
-namespace NickelCUT::flow {
+namespace NickelCUT {
 struct Model;
 
 extern std::array<double, N> occupation_numbers;  ///< Cache of the occupation numbers <n>

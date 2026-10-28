@@ -3,7 +3,7 @@
 #include "Model.hpp"
 #include "momentum_iterator.hpp"
 
-namespace NickelCUT::flow {
+namespace NickelCUT {
 
 std::array<double, N> occupation_numbers;
 std::array<double, N> hole_numbers;

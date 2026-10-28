@@ -1,10 +1,9 @@
 #include "FlowContainer.hpp"
 
-#include "../helper_functions.hpp"
-#include "Model.hpp"
-#include "momentum_iterator.hpp"
-#include "occupation_numbers.hpp"
-#include "FlowEquation.hpp"
+#include "../shared/helper_functions.hpp"
+#include "../shared/Model.hpp"
+#include "../shared/momentum_iterator.hpp"
+#include "../shared/occupation_numbers.hpp"
 
 #include <nlohmann/json.hpp>
 

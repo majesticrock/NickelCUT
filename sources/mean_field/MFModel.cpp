@@ -1,12 +1,9 @@
-#include "Model.hpp"
+#include "MFModel.hpp"
 
-#include "../L.hpp"
-#include "../flow/Model.hpp"
+#include "../shared/Model.hpp"
 #include "../flow/data_file_names.hpp"
 #include "../flow/flow_state_serialization.hpp"
-#include "../flow/momentum_iterator.hpp"
-#include "../helper_functions.hpp"
-
+#include "../shared/momentum_iterator.hpp"
 #include <mrock/utility/InputFileReader.hpp>
 
 #include <algorithm>
@@ -15,8 +12,6 @@
 #include <iostream>
 #include <iterator>
 #include <limits>
-#include <utility>
-#include <vector>
 
 #ifdef NICKEL_COMPLEX
 #define __conj(x) std::conj(x)
@@ -29,9 +24,9 @@ constexpr double MU_INITIAL_STEP = 0.1;
 
 namespace NickelCUT::mean_field {
 
-Model::Model(const std::string& binary_data_dir, mrock::utility::InputFileReader& input)
-    : flow::Model(input),
-      extracted_channels(flow::deserialize_extracted_channels(binary_data_dir + flow::Model::data_dir_name(),
+MFModel::MFModel(const std::string& binary_data_dir, mrock::utility::InputFileReader& input)
+    : NickelCUT::Model(input),
+      extracted_channels(flow::deserialize_extracted_channels(binary_data_dir + NickelCUT::Model::data_dir_name(),
                                                               flow::data_file_names::FINAL_EXTRACTED_CHANNELS)),
       deltas(5 * N, 0.0),
       chemical_potential{0.0},
@@ -41,8 +36,8 @@ Model::Model(const std::string& binary_data_dir, mrock::utility::InputFileReader
     std::cout << "Target filling = " << target_filling << "     Filling = " << filling << std::endl;
 }
 
-Model::Model(flow::ExtractionContainer _extracted_channels, mrock::utility::InputFileReader& input)
-    : flow::Model(input),
+MFModel::MFModel(flow::ExtractionContainer _extracted_channels, mrock::utility::InputFileReader& input)
+    : NickelCUT::Model(input),
       extracted_channels{std::move(_extracted_channels)},
       deltas(5 * N, 0.0),
       chemical_potential{0.0},
@@ -52,7 +47,7 @@ Model::Model(flow::ExtractionContainer _extracted_channels, mrock::utility::Inpu
     std::cout << "Target filling = " << target_filling << "     Filling = " << filling << std::endl;
 }
 
-void Model::reset_self_consistency_values() noexcept {
+void MFModel::reset_self_consistency_values() noexcept {
     for (momentum_t p = momentum_t::begin(); p != momentum_t::end(); ++p) {
         Sigma_up(p) = extracted_channels.dispersion[p] - extracted_channels.epsilon_tilde[p];
         Sigma_down(p) = Sigma_up(p);
@@ -68,7 +63,7 @@ void Model::reset_self_consistency_values() noexcept {
     }
 }
 
-void Model::iteration_step(const ParameterVector& initial_values, ParameterVector& result) {
+void MFModel::iteration_step(const ParameterVector& initial_values, ParameterVector& result) {
     result.setZero();
     this->deltas.fill_with(initial_values);
 
@@ -80,32 +75,32 @@ void Model::iteration_step(const ParameterVector& initial_values, ParameterVecto
         for (int k = 0; k < N; ++k) {
             // Delta_SC
             result(k) -= extracted_channels.superconductivity(k, q) * rho(0, 2) +
-                         extracted_channels.superconductivity(k, flow::PI<L> + q) * rho(1, 3);
+                         extracted_channels.superconductivity(k, PI<L> + q) * rho(1, 3);
 
             // Delta_DW_up
             result(k + N) += extracted_channels.density_wave.first(k, -q) * rho(2, 3) +
-                             extracted_channels.density_wave.first(k, flow::PI<L> - q) * rho(3, 2);
+                             extracted_channels.density_wave.first(k, PI<L> - q) * rho(3, 2);
             result(k + N) -= extracted_channels.density_wave.second(k, q) * rho(1, 0) +
-                             extracted_channels.density_wave.second(k, flow::PI<L> + q) * rho(0, 1);
+                             extracted_channels.density_wave.second(k, PI<L> + q) * rho(0, 1);
 
             // Delta_DW_down
             result(k + 2 * N) -= extracted_channels.density_wave.first(k, q) * rho(1, 0) +
-                                 extracted_channels.density_wave.first(k, flow::PI<L> + q) * rho(0, 1);
+                                 extracted_channels.density_wave.first(k, PI<L> + q) * rho(0, 1);
             result(k + 2 * N) += extracted_channels.density_wave.second(k, -q) * rho(2, 3) +
-                                 extracted_channels.density_wave.second(k, flow::PI<L> - q) * rho(3, 2);
+                                 extracted_channels.density_wave.second(k, PI<L> - q) * rho(3, 2);
 
             // Sigma_up
             result(k + 3 * N) += extracted_channels.single_particle_energy.first(k, -q) * rho(2, 2) +
-                                 extracted_channels.single_particle_energy.first(k, flow::PI<L> - q) * rho(3, 3);
+                                 extracted_channels.single_particle_energy.first(k, PI<L> - q) * rho(3, 3);
             result(k + 3 * N) +=
                 extracted_channels.single_particle_energy.second(k, q) * (1. - rho(0, 0)) +
-                extracted_channels.single_particle_energy.second(k, flow::PI<L> + q) * (1. - rho(1, 1));
+                extracted_channels.single_particle_energy.second(k, PI<L> + q) * (1. - rho(1, 1));
 
             // Sigma_down
             result(k + 4 * N) += extracted_channels.single_particle_energy.first(k, q) * (1. - rho(0, 0)) +
-                                 extracted_channels.single_particle_energy.first(k, flow::PI<L> + q) * (1. - rho(1, 1));
+                                 extracted_channels.single_particle_energy.first(k, PI<L> + q) * (1. - rho(1, 1));
             result(k + 4 * N) += extracted_channels.single_particle_energy.second(k, -q) * rho(2, 2) +
-                                 extracted_channels.single_particle_energy.second(k, flow::PI<L> - q) * rho(3, 3);
+                                 extracted_channels.single_particle_energy.second(k, PI<L> - q) * rho(3, 3);
         }
     }
 
@@ -120,7 +115,7 @@ void Model::iteration_step(const ParameterVector& initial_values, ParameterVecto
     //     << "\t" << chemical_potential << "\t" << compute_filling() << std::endl;
 }
 
-double Model::compute_filling() {
+double MFModel::compute_filling() {
     double _filling{};
     for (momentum_t p = momentum_t::begin(); p != momentum_t::half_end(); ++p) {
         compute_rho(p);
@@ -130,7 +125,7 @@ double Model::compute_filling() {
     return _filling;
 }
 
-double Model::max_Delta_SC() const noexcept {
+double MFModel::max_Delta_SC() const noexcept {
     double current{};
     for (std::size_t i = 0U; i < N; ++i) {
         if (std::abs(Delta_SC(i)) > current)
@@ -139,7 +134,7 @@ double Model::max_Delta_SC() const noexcept {
     return current;
 }
 
-double Model::max_Delta_AFM() const noexcept {
+double MFModel::max_Delta_AFM() const noexcept {
     double current{};
     for (std::size_t i = 0U; i < N; ++i) {
         if (std::abs(Delta_DW_up(i) - Delta_DW_down(i)) > current)
@@ -148,7 +143,7 @@ double Model::max_Delta_AFM() const noexcept {
     return 0.5 * current;
 }
 
-double Model::max_Delta_CDW() const noexcept {
+double MFModel::max_Delta_CDW() const noexcept {
     double current{};
     for (std::size_t i = 0U; i < N; ++i) {
         if (std::abs(Delta_DW_up(i) + Delta_DW_down(i)) > current)
@@ -157,7 +152,7 @@ double Model::max_Delta_CDW() const noexcept {
     return 0.5 * current;
 }
 
-OrderType Model::order_type(double mean_field_precision) const noexcept {
+OrderType MFModel::order_type(double mean_field_precision) const noexcept {
     OrderType ret = OrderType::NormalMetal;
     if (max_Delta_SC() > 10. * mean_field_precision) {
         // SC order exists
@@ -187,7 +182,7 @@ OrderType Model::order_type(double mean_field_precision) const noexcept {
     return ret;
 }
 
-nlohmann::json Model::selfconsistency_to_json() const noexcept {
+nlohmann::json MFModel::selfconsistency_to_json() const noexcept {
     std::array<double, N> _Delta_SC;
     std::array<double, N> _Delta_AFM;
     std::array<double, N> _Delta_CDW;
@@ -209,17 +204,17 @@ nlohmann::json Model::selfconsistency_to_json() const noexcept {
                           {"epsilon_down", _epsilon_down}};
 }
 
-void Model::fill_hamiltonian(const momentum_t& p) {
+void MFModel::fill_hamiltonian(const momentum_t& p) {
     // h(row, col)
     hamiltonian(0, 0) = dispersion_up(p);
     hamiltonian(0, 1) = Delta_DW_up(p);
     hamiltonian(0, 2) = __conj(Delta_SC(p));
     hamiltonian(0, 3) = 0.0;
 
-    hamiltonian(1, 0) = Delta_DW_up(p + flow::PI<L>);
-    hamiltonian(1, 1) = dispersion_up(p + flow::PI<L>);
+    hamiltonian(1, 0) = Delta_DW_up(p + PI<L>);
+    hamiltonian(1, 1) = dispersion_up(p + PI<L>);
     hamiltonian(1, 2) = 0.0;
-    hamiltonian(1, 3) = __conj(Delta_SC(p + flow::PI<L>));
+    hamiltonian(1, 3) = __conj(Delta_SC(p + PI<L>));
 
     hamiltonian(2, 0) = Delta_SC(p);
     hamiltonian(2, 1) = 0.0;
@@ -227,12 +222,12 @@ void Model::fill_hamiltonian(const momentum_t& p) {
     hamiltonian(2, 3) = -Delta_DW_down(-p);
 
     hamiltonian(3, 0) = 0.0;
-    hamiltonian(3, 1) = Delta_SC(p + flow::PI<L>);
-    hamiltonian(3, 2) = -Delta_DW_down(flow::PI<L> - p);
-    hamiltonian(3, 3) = -dispersion_down(flow::PI<L> - p);
+    hamiltonian(3, 1) = Delta_SC(p + PI<L>);
+    hamiltonian(3, 2) = -Delta_DW_down(PI<L> - p);
+    hamiltonian(3, 3) = -dispersion_down(PI<L> - p);
 }
 
-void Model::compute_rho(const momentum_t& p) {
+void MFModel::compute_rho(const momentum_t& p) {
     fill_hamiltonian(p);
     eigensolver.compute(hamiltonian);
     rho = eigensolver.eigenvectors() *
@@ -242,7 +237,7 @@ void Model::compute_rho(const momentum_t& p) {
           eigensolver.eigenvectors().adjoint();
 }
 
-void Model::compute_chemical_potential() {
+void MFModel::compute_chemical_potential() {
     std::vector<double> energy_levels;
     for (momentum_t p = momentum_t::begin(); p != momentum_t::end(); ++p) {
         energy_levels.push_back(dispersion_up(p) + chemical_potential);

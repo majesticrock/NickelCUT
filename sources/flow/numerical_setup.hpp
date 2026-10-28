@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../L.hpp"
+#include "../shared/L.hpp"
 #include "FlowContainer.hpp"
 
 #include <boost/numeric/odeint.hpp>

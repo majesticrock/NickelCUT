@@ -1,7 +1,7 @@
 #include "Model.hpp"
 
-#include "../L.hpp"
-#include "../helper_functions.hpp"
+#include "L.hpp"
+#include "helper_functions.hpp"
 #include "momentum_iterator.hpp"
 #include "occupation_numbers.hpp"
 
@@ -14,7 +14,7 @@
 #include <sstream>
 #include <string>
 
-namespace NickelCUT::flow {
+namespace NickelCUT {
 Model::Model(mrock::utility::InputFileReader& input)
     : U_0{input.getDouble("U_0")},
       tprime{input.getDouble("tprime")},

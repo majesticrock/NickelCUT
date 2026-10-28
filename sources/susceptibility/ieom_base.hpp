@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../L.hpp"
+#include "../shared/L.hpp"
 #include "../flow/FlowContainer.hpp"
-#include "../flow/Model.hpp"
-#include "../flow/momentum_iterator.hpp"
+#include "../shared/Model.hpp"
+#include "../shared/momentum_iterator.hpp"
 
 #include <Eigen/Dense>
 #include <nlohmann/json.hpp>
@@ -27,9 +27,9 @@ class ieom_base {
 public:
     using Matrix = Eigen::MatrixXd;
     using Vector = Eigen::VectorXd;
-    using momentum = flow::momentum_iterator<L>;
+    using momentum = momentum_iterator<L>;
 
-    ieom_base(const flow::FlowContainer& _flow_result, const flow::Model& model);
+    ieom_base(const flow::FlowContainer& _flow_result, const Model& model);
     ieom_base(const ieom_base* const other_instance);
 
     virtual ~ieom_base() = default;
@@ -42,7 +42,7 @@ public:
     // Computes the static susceptibility chi(x;0) = <state | N [M]^{-1} N |state> for each state in states
     std::vector<double> compute_static_susceptibility(const momentum& x, const std::vector<Vector>& states);
 
-    std::array<std::vector<double>, flow::number_of_high_symmtry_momenta<L>> static_susceptibility_at_high_symmetry(
+    std::array<std::vector<double>, number_of_high_symmtry_momenta<L>> static_susceptibility_at_high_symmetry(
         const std::vector<Vector>& states);
 
     Vector swave_state() const;
@@ -77,8 +77,8 @@ protected:
     double chi_pair(const momentum&k, const momentum& kx) const noexcept;
 
 private:
-    double compute_chemical_potential(const flow::Model& model, const double target_filling);
-    void solve_hartree_fock(const flow::Model& model);
+    double compute_chemical_potential(const Model& model, const double target_filling);
+    void solve_hartree_fock(const Model& model);
     // Computes the Kernel K and diagoanlizes it, storing the result in eigen_solver
     void prepare_static(const momentum& x);
 };

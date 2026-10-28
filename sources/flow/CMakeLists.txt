@@ -25,10 +25,8 @@ add_library(flow_lib STATIC
     DenseBookKeeper.cpp
     FlowExceptions.cpp
     DecouplingChannel.cpp
-    Model.cpp
     ExtractionContainer.cpp
     FlowContainer.cpp
-    occupation_numbers.cpp
     flow_state_serialization.cpp
     "${FLOW_EQUATION_SOURCE}"
 )
@@ -46,4 +44,5 @@ target_link_libraries(flow_lib
         Boost::iostreams 
     PUBLIC
         OpenMP::OpenMP_CXX 
+        shared_lib
 )
