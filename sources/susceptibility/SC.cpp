@@ -11,7 +11,7 @@ void SC::fill_U_matrix(const momentum& x) {
     for (momentum k = momentum::begin(); k != momentum::end(); ++k) {
         for (momentum l = momentum::begin(); l != momentum::end(); ++l) {
             const momentum lx = l + x;
-            U_matrix(k.get_position(), l.get_position()) = 2. * flow_result.interactions_differing_spin(k, lx, x);
+            U_matrix(k.get_position(), l.get_position()) = 2. * flow_result->interactions_differing_spin(k, lx, x);
         }
     }
 }

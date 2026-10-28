@@ -32,6 +32,9 @@ public:
     ieom_base(const FlowContainer& _flow_result, const Model& model);
     ieom_base(const ieom_base* const other_instance);
 
+    void update(const FlowContainer& _flow_result, const Model& model);
+    void update(const ieom_base* const other_instance);
+
     virtual ~ieom_base() = default;
 
     virtual void fill_chi_matrix(const momentum& x) = 0;
@@ -51,6 +54,7 @@ public:
     const std::array<double, N>& get_dispersion() const noexcept;
     bool found_negative_excitation() const noexcept;
     bool found_pomeranchuk_instability() const noexcept;
+    double get_extremal_eigenvalue() const noexcept;
 
     double hartree_fock_filling() const noexcept;
 
@@ -62,12 +66,13 @@ protected:
     std::array<double, N> occupation_numbers;
     std::array<double, N> dispersion;
 
-    const FlowContainer& flow_result;
-    const std::array<double, N> epsilon_tilde;
+    FlowContainer const * flow_result;
+    std::array<double, N> epsilon_tilde;
 
     const double beta;
     double chemical_potential = 0.0;
 
+    double _extremal_eigenvalue = 10000.;
     bool _found_negative_excitation = false;
     bool _found_pomeranchuk = false;
 

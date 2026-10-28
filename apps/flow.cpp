@@ -8,13 +8,19 @@
 #include "../sources/serialization/ExtractionContainer.hpp"
 #include "../sources/flow/numerical_setup.hpp"
 
-#define DENSE_BOOK_KEEPING
+//#define DENSE_BOOK_KEEPING
 #ifdef DENSE_BOOK_KEEPING
 #include "../sources/flow/BookKeeper/Dense.hpp"
 typedef NickelCUT::flow::BookKeeper::Dense _book_keeper;
 #else
+#define IEOM_BOOK_KEEPING
+#ifdef IEOM_BOOK_KEEPING
+#include "../sources/flow/BookKeeper/Susceptibility.hpp"
+typedef NickelCUT::flow::BookKeeper::Susceptibility _book_keeper;
+#else
 #include "../sources/flow/BookKeeper/Sparse.hpp"
 typedef NickelCUT::flow::BookKeeper::Sparse _book_keeper;
+#endif
 #endif
 
 #include <mrock/utility/InputFileReader.hpp>
@@ -56,8 +62,15 @@ int main(int argc, char** argv) {
     std::filesystem::create_directories(binary_ouput_dir);
 
     FlowEquation flow_equation;
-    _book_keeper book_keeper(flow_state, flow_equation, flow_state.band_width(), target_dl(model.U_0),
-                             input.getInt("max_runtime"));
+    _book_keeper book_keeper(flow_state, 
+        flow_equation, 
+        flow_state.band_width(), 
+        target_dl(model.U_0),
+        input.getInt("max_runtime")
+#ifdef IEOM_BOOK_KEEPING
+        , model
+#endif
+    );
 
     // Default end_reason will probably never be reached.
     std::string end_reason = "Reached l_final";

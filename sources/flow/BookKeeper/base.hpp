@@ -33,7 +33,8 @@ protected:
 
     nlohmann::json convert_to_json() const noexcept;
     // Throws FlowExceptions to interrupt the flow if necessary and pushes the general data
-    void basic_processing(const FlowContainer& x, const double l);
+    // Returns true if the last step was accepted
+    bool basic_processing(const FlowContainer& x, const double l);
     // Returns true if the last step was accepted
     bool basic_wrap_up(const FlowContainer& x, const double l);
 

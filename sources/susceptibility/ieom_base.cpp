@@ -52,8 +52,8 @@ double log_sinhc(double x) noexcept
 ieom_base::ieom_base(const FlowContainer& _flow_result, const Model& model)
     : U_matrix{Matrix::Zero(N, N)},
       chi_matrix{Vector::Zero(N)},
-      flow_result{_flow_result},
-      epsilon_tilde{flow_result.epsilon_tilde()},
+      flow_result{&_flow_result},
+      epsilon_tilde{flow_result->epsilon_tilde()},
       beta{model.beta} {
     solve_hartree_fock(model);
 }
@@ -65,7 +65,26 @@ ieom_base::ieom_base(const ieom_base* const other_instance)
       dispersion{other_instance->dispersion},
       flow_result{other_instance->flow_result},
       epsilon_tilde{other_instance->epsilon_tilde},
-      beta{other_instance->beta} {};
+      beta{other_instance->beta} {}
+
+void ieom_base::update(const FlowContainer& _flow_result, const Model& model) {
+    flow_result = &_flow_result;
+    epsilon_tilde = flow_result->epsilon_tilde();
+    solve_hartree_fock(model);
+    _extremal_eigenvalue = 10000.;
+    _found_negative_excitation = false;
+    _found_pomeranchuk = false;
+}
+
+void ieom_base::update(const ieom_base* const other_instance) {
+    occupation_numbers = other_instance->occupation_numbers;
+    dispersion = other_instance->dispersion;
+    flow_result = other_instance->flow_result;
+    epsilon_tilde = other_instance->epsilon_tilde;
+    _extremal_eigenvalue = 10000.;
+    _found_negative_excitation = false;
+    _found_pomeranchuk = false;
+}
 
 void ieom_base::fill_matrices(const momentum& x) {
     fill_U_matrix(x);
@@ -82,6 +101,7 @@ std::vector<double> ieom_base::compute_static_susceptibility(const momentum& x, 
         Vector inverse_eigenvalues = eigen_solver.eigenvalues();
         for (auto& ev : inverse_eigenvalues) {
             ev += 1.; // The matrix to invert is 1+K
+            if (ev < _extremal_eigenvalue) _extremal_eigenvalue = ev;
             if (is_non_zero(ev)) {
                 ev = 1. / ev;
                 if (ev < 0.0) {
@@ -135,6 +155,10 @@ bool ieom_base::found_negative_excitation() const noexcept {
 
 bool ieom_base::found_pomeranchuk_instability() const noexcept {
     return _found_pomeranchuk;
+}
+
+double ieom_base::get_extremal_eigenvalue() const noexcept {
+    return _extremal_eigenvalue;
 }
 
 double ieom_base::hartree_fock_filling() const noexcept 
@@ -271,10 +295,10 @@ void ieom_base::solve_hartree_fock(const Model& model) {
     };
 
     Eigen::Map<const Vector> epsilon_tilde_map(epsilon_tilde.data(), N);
-    Vector self_energy = Eigen::Map<const Vector>(flow_result.dispersion.data(), N) 
+    Vector self_energy = Eigen::Map<const Vector>(flow_result->dispersion.data(), N) 
         - epsilon_tilde_map;
 
-    const auto [differing, same] = DecouplingChannel::SingleParticleEnergy(flow_result);
+    const auto [differing, same] = DecouplingChannel::SingleParticleEnergy(*flow_result);
 
     const auto compute_self_energy = [&](const Vector& init, Vector& result) {
         result.setZero(N);

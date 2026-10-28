@@ -48,13 +48,13 @@ nlohmann::json base::convert_to_json() const noexcept {
                           {"max_interactions", max_interactions}};
 }
 
-void base::basic_processing(const FlowContainer& x, const double l) {
+bool base::basic_processing(const FlowContainer& x, const double l) {
     const auto total_runtime = std::chrono::duration_cast<std::chrono::minutes>(clock::now() - begin).count();
     if (total_runtime > max_runtime_duration) {
         throw LongRuntimeException(l);
     }
     if (l - l_times.back() < dl)
-        return;
+        return false;
 
     const bool state_is_good = x.is_inversion_symmetric() && x.is_hermitian();
     if (!state_is_good) {
@@ -78,10 +78,10 @@ void base::basic_processing(const FlowContainer& x, const double l) {
     ++current_idx;
     clock::time_point now = clock::now();
     std::cout << "//------------------------------------------------------//\n"
-              << "Step #" << current_idx << "\t" << mrock::utility::time_stamp() << "\n"
+              << "Step #" << current_idx << "\t\t" << "l = " << l << "\t\t" << mrock::utility::time_stamp() << "\n"
               << "Step took " << std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count()
-              << "ms to execute." 
-              << "l = " << l << "\t\tmax(U) = " << max_coeff 
+              << "ms to execute.\n" 
+              << "max(|U|) = " << max_coeff 
               << "\t\tROD = " << ROD 
               << "\t\tROD(dH/dl) = " << derivative_ROD << "\n"
               << std::endl;
@@ -92,6 +92,8 @@ void base::basic_processing(const FlowContainer& x, const double l) {
     derivative_residual_offdiagonalities.push_back(derivative_ROD);
     max_interactions.push_back(max_coeff);
     last_good_state = x;
+
+    return true;
 }
 
 bool base::basic_wrap_up(const FlowContainer& x, const double l) {

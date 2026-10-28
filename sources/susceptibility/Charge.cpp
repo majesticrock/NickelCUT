@@ -12,9 +12,9 @@ void Charge::fill_U_matrix(const momentum& x) {
         for (momentum l = momentum::begin(); l != momentum::end(); ++l) {
             const momentum lx = l + x;
             U_matrix(k.get_position(), l.get_position()) = (
-                    + flow_result.interactions_differing_spin(k, lx, x) 
-                    + flow_result.interactions_same_spin(k, lx, x)
-                    - flow_result.interactions_same_spin(k, lx, l - k)
+                    + flow_result->interactions_differing_spin(k, lx, x) 
+                    + flow_result->interactions_same_spin(k, lx, x)
+                    - flow_result->interactions_same_spin(k, lx, l - k)
                 );
         }
     }
