@@ -33,4 +33,4 @@ struct Model {
     nlohmann::json generate_meta_data_json() const;
 };
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT

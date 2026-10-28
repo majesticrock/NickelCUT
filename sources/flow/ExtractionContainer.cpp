@@ -1,6 +1,6 @@
 #include "ExtractionContainer.hpp"
 
-#include "DecouplingChannel.hpp"
+#include "../shared/DecouplingChannel.hpp"
 
 #include <nlohmann/json.hpp>
 

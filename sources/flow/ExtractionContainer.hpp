@@ -1,7 +1,7 @@
 #pragma once
 
-#include "DecouplingChannel.hpp"
-#include "FlowContainer.hpp"
+#include "../shared/DecouplingChannel.hpp"
+#include "../shared/FlowContainer.hpp"
 
 #include <nlohmann/json.hpp>
 

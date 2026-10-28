@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../FlowContainer.hpp"
+#include "../../shared/FlowContainer.hpp"
 
 #include <nlohmann/json.hpp>
 

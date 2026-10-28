@@ -6,7 +6,7 @@ namespace NickelCUT::susceptibility {
 
 class SC : public ieom_base {
 public:
-    SC(const flow::FlowContainer& _flow_result, const Model& model);
+    SC(const FlowContainer& _flow_result, const Model& model);
     SC(const ieom_base* const other_instance);
 
     void fill_chi_matrix(const momentum& x) final;

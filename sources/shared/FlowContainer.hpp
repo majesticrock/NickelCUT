@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../shared/L.hpp"
+#include "../L.hpp"
 #include "InteractionDataFrame.hpp"
-#include "../shared/momentum_iterator.hpp"
+#include "../momentum_iterator.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -10,8 +10,6 @@
 
 namespace NickelCUT {
 struct Model;
-
-namespace flow {
 
 struct FlowContainer {
     using coeff_array = std::array<double, N>;
@@ -114,4 +112,3 @@ FlowContainer abs(FlowContainer input) noexcept;  ///< elementwise L2 norm
 void to_json(nlohmann::json& j, const FlowContainer& container) noexcept;
 
 } // namespace NickelCUT
-} // namespace flow

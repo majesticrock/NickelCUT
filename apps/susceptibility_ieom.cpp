@@ -1,7 +1,7 @@
-#include "../sources/flow/FlowContainer.hpp"
+#include "../sources/shared/FlowContainer.hpp"
 #include "../sources/shared/Model.hpp"
-#include "../sources/flow/data_file_names.hpp"
-#include "../sources/flow/flow_state_serialization.hpp"
+#include "../sources/data_file_names.hpp"
+#include "../sources/serialization/FlowContainer.hpp"
 #include "../sources/susceptibility/Charge.hpp"
 #include "../sources/susceptibility/SC.hpp"
 #include "../sources/susceptibility/Spin.hpp"
@@ -31,8 +31,8 @@ int main(int argc, char** argv) {
         std::string(OUTPUT_DATA_DIR) +
         (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/")  // ensures that OUTPUT_DATA_DIR ends in "/"
         + input.getString("output_dir") + "/" + "binaries/";
-    const flow::FlowContainer final_flow_state = flow::deserialize_flow_state(
-        load_binary_dir + model.data_dir_name(), flow::data_file_names::FINAL_FLOW_STATE_BIN);
+    const FlowContainer final_flow_state = deserialize_flow_state(
+        load_binary_dir + model.data_dir_name(), data_file_names::FINAL_FLOW_STATE_BIN);
 
     const std::string output_dir =
         std::string(OUTPUT_DATA_DIR) +

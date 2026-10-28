@@ -7,9 +7,8 @@
  *
  * This file is kept in case I do need dense output later down the line.
  */
-#include "ExtractionContainer.hpp"
-#include "FlowContainer.hpp"
 #include "base.hpp"
+#include "ExtractionContainer.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -23,10 +22,10 @@ struct Dense : private base {
     /////////////////////////////////////////////////////////
 
     Dense(const FlowContainer& initial_flow_state,
-                    FlowEquation& flow_equation,
-                    double _band_width,
-                    double _dl,
-                    std::chrono::minutes::rep _max_runtime_duration);
+          FlowEquation& flow_equation,
+          double _band_width,
+          double _dl,
+          std::chrono::minutes::rep _max_runtime_duration);
 
     void print_final(const FlowContainer& x, double l);
 
@@ -39,4 +38,4 @@ struct Dense : private base {
     friend void to_json(nlohmann::json& j, const Dense& book_keeper) noexcept;
 };
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow::BookKeeper

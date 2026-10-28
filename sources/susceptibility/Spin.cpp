@@ -1,9 +1,9 @@
 #include "Spin.hpp"
 
-#include "../shared/momentum_iterator.hpp"
+#include "../momentum_iterator.hpp"
 
 namespace NickelCUT::susceptibility {
-Spin::Spin(const flow::FlowContainer& _flow_result, const Model& model) : ieom_base(_flow_result, model) {}
+Spin::Spin(const FlowContainer& _flow_result, const Model& model) : ieom_base(_flow_result, model) {}
 
 Spin::Spin(const ieom_base* const other_instance) : ieom_base(other_instance) {}
 

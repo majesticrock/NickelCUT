@@ -1,9 +1,10 @@
 #pragma once
-namespace NickelCUT::flow {
-
+namespace NickelCUT {
 struct FlowContainer;
 
+namespace flow {
 struct FlowEquation {
     void operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/);
 };
-}  // namespace NickelCUT::flow
+}  // namespace flow
+}  // namespace NickelCUT

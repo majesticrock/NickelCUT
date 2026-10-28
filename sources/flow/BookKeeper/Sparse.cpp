@@ -1,7 +1,7 @@
 #include "Sparse.hpp"
 
-#include "ExtractionContainer.hpp"
-#include "FlowContainer.hpp"
+#include "../ExtractionContainer.hpp"
+#include "../../shared/FlowContainer.hpp"
 
 namespace NickelCUT::flow::BookKeeper {
 Sparse::Sparse(const FlowContainer& initial_flow_state,
@@ -25,4 +25,4 @@ void to_json(nlohmann::json& j, const Sparse& book_keeper) noexcept {
     j.update({{"extracted_channels", ExtractionContainer(book_keeper.last_good_state)}});
 }
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow::BookKeeper

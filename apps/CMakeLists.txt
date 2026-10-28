@@ -22,6 +22,8 @@ target_link_libraries(flow
         nickelcut_options
         flow_lib
         shared_lib
+        bookkeeper_lib
+        serialization_lib
         mrock::utility
 )
 
@@ -31,6 +33,8 @@ target_link_libraries(resume_flow
         nickelcut_options
         flow_lib
         shared_lib
+        bookkeeper_lib
+        serialization_lib
         mrock::utility
 )
 
@@ -71,5 +75,6 @@ target_link_libraries(susceptibility_ieom
         susceptibility_lib
         flow_lib
         shared_lib
+        serialization_lib
         mrock::utility
 )

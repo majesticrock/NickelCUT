@@ -1,7 +1,6 @@
 #include "Dense.hpp"
 
-#include "FlowContainer.hpp"
-#include "FlowEquation.hpp"
+#include "../FlowEquation.hpp"
 
 #include <deque>
 
@@ -30,4 +29,4 @@ void to_json(nlohmann::json& j, const Dense& book_keeper) noexcept {
     j.update({{"extracted_channels", book_keeper.extracted_channels}});
 }
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow::BookKeeper

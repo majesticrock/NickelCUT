@@ -1,8 +1,8 @@
 #include "Model.hpp"
 
-#include "L.hpp"
-#include "helper_functions.hpp"
-#include "momentum_iterator.hpp"
+#include "../L.hpp"
+#include "../helper_functions.hpp"
+#include "../momentum_iterator.hpp"
 #include "occupation_numbers.hpp"
 
 #include <mrock/utility/InputFileReader.hpp>
@@ -95,4 +95,4 @@ nlohmann::json Model::generate_meta_data_json() const {
                           {"filling", filling}};
 }
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT

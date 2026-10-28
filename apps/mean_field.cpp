@@ -1,4 +1,4 @@
-#include "../sources/shared/L.hpp"
+#include "../sources/L.hpp"
 #include "../sources/flow/numerical_setup.hpp"
 #include "../sources/mean_field/MFModel.hpp"
 #include "../sources/mean_field/TCFinder.hpp"

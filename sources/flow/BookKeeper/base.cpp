@@ -2,8 +2,8 @@
 
 #include "../ExtractionContainer.hpp"
 #include "../FlowEquation.hpp"
-#include "../FlowContainer.hpp"
 #include "../FlowExceptions.hpp"
+#include "../../shared/FlowContainer.hpp"
 
 #include <mrock/utility/OutputConvenience.hpp>
 
@@ -119,4 +119,4 @@ bool base::basic_wrap_up(const FlowContainer& x, const double l) {
     return accept_last_step;
 }
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT::flow::BookKeeper

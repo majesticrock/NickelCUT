@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-namespace NickelCUT::flow {
+namespace NickelCUT {
 
 struct FlowContainer;
 
@@ -54,4 +54,4 @@ public:
     std::vector<std::vector<double>> as_2D_array() const noexcept;
 };
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT

@@ -1,7 +1,7 @@
 #include "ieom_base.hpp"
 
-#include "../shared/L.hpp"
-#include "../flow/DecouplingChannel.hpp"
+#include "../L.hpp"
+#include "../shared/DecouplingChannel.hpp"
 
 #include <boost/math/tools/toms748_solve.hpp>
 #include <mrock/utility/Selfconsistency/BroydenSolver.hpp>
@@ -49,7 +49,7 @@ double log_sinhc(double x) noexcept
 
 //--------------------------------------------------------------------------------//
 
-ieom_base::ieom_base(const flow::FlowContainer& _flow_result, const Model& model)
+ieom_base::ieom_base(const FlowContainer& _flow_result, const Model& model)
     : U_matrix{Matrix::Zero(N, N)},
       chi_matrix{Vector::Zero(N)},
       flow_result{_flow_result},
@@ -274,7 +274,7 @@ void ieom_base::solve_hartree_fock(const Model& model) {
     Vector self_energy = Eigen::Map<const Vector>(flow_result.dispersion.data(), N) 
         - epsilon_tilde_map;
 
-    const auto [differing, same] = flow::DecouplingChannel::SingleParticleEnergy(flow_result);
+    const auto [differing, same] = DecouplingChannel::SingleParticleEnergy(flow_result);
 
     const auto compute_self_energy = [&](const Vector& init, Vector& result) {
         result.setZero(N);

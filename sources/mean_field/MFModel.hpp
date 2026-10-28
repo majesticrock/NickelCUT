@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../shared/L.hpp"
+#include "../L.hpp"
 #include "../flow/ExtractionContainer.hpp"
 #include "../shared/Model.hpp"
-#include "../shared/momentum_iterator.hpp"
+#include "../momentum_iterator.hpp"
 #include "ModelAttributes.hpp"
 #include "OrderType.hpp"
 

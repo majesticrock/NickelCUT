@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../shared/L.hpp"
-#include "../shared/helper_functions.hpp"
-#include "../shared/momentum_iterator.hpp"
+#include "../L.hpp"
+#include "../helper_functions.hpp"
+#include "../momentum_iterator.hpp"
 
 #include <algorithm>
 #include <array>
@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-namespace NickelCUT::flow {
+namespace NickelCUT {
 
 class InteractionDataFrame {
     static constexpr int total_size = N * N * N;
@@ -306,4 +306,4 @@ inline InteractionDataFrame operator+(const double lhs, InteractionDataFrame rhs
     return (rhs += lhs);
 }
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT

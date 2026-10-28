@@ -1,7 +1,7 @@
-#include "../sources/shared/L.hpp"
+#include "../sources/L.hpp"
 #include "../sources/flow/ExtractionContainer.hpp"
 #include "../sources/shared/Model.hpp"
-#include "../sources/flow/data_file_names.hpp"
+#include "../sources/data_file_names.hpp"
 #include "../sources/mean_field/MFModel.hpp"
 #include "../sources/mean_field/OrderType.hpp"
 
@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
         const std::filesystem::path output_root =
             std::filesystem::path(OUTPUT_DATA_DIR) / input.getString("output_dir");
         const std::filesystem::path flow_file =
-            output_root / model_parameters.data_dir_name() / flow::data_file_names::DENSE_FLOW_STEPS;
+            output_root / model_parameters.data_dir_name() / data_file_names::DENSE_FLOW_STEPS;
 
         if (!std::filesystem::is_regular_file(flow_file)) {
             throw std::runtime_error("Flow data file not found: " + flow_file.string());

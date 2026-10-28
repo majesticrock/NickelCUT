@@ -1,9 +1,9 @@
 #include "DecouplingChannel.hpp"
 
-#include "../shared/L.hpp"
+#include "../L.hpp"
 #include "FlowContainer.hpp"
 
-namespace NickelCUT::flow {
+namespace NickelCUT {
 
 DecouplingChannel::DecouplingChannel(int N) : _N(N), total_size(_N * _N), _data(total_size) {}
 
@@ -60,4 +60,4 @@ std::vector<std::vector<double>> DecouplingChannel::as_2D_array() const noexcept
     return ret;
 }
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT

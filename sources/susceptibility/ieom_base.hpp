@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../shared/L.hpp"
-#include "../flow/FlowContainer.hpp"
+#include "../L.hpp"
+#include "../shared/FlowContainer.hpp"
 #include "../shared/Model.hpp"
-#include "../shared/momentum_iterator.hpp"
+#include "../momentum_iterator.hpp"
 
 #include <Eigen/Dense>
 #include <nlohmann/json.hpp>
@@ -29,7 +29,7 @@ public:
     using Vector = Eigen::VectorXd;
     using momentum = momentum_iterator<L>;
 
-    ieom_base(const flow::FlowContainer& _flow_result, const Model& model);
+    ieom_base(const FlowContainer& _flow_result, const Model& model);
     ieom_base(const ieom_base* const other_instance);
 
     virtual ~ieom_base() = default;
@@ -62,7 +62,7 @@ protected:
     std::array<double, N> occupation_numbers;
     std::array<double, N> dispersion;
 
-    const flow::FlowContainer& flow_result;
+    const FlowContainer& flow_result;
     const std::array<double, N> epsilon_tilde;
 
     const double beta;

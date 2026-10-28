@@ -1,7 +1,7 @@
 #include "occupation_numbers.hpp"
 
 #include "Model.hpp"
-#include "momentum_iterator.hpp"
+#include "../momentum_iterator.hpp"
 
 namespace NickelCUT {
 
@@ -24,4 +24,4 @@ double compute_occupation_numbers(const Model& model) {
     return filling;
 }
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT

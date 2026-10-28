@@ -1,6 +1,4 @@
 #pragma once
-
-#include "../FlowContainer.hpp"
 #include "base.hpp"
 
 #include <nlohmann/json.hpp>
@@ -12,10 +10,10 @@ struct Sparse : private base {
     // No additional members
 
     Sparse(const FlowContainer& initial_flow_state,
-               FlowEquation& flow_equation,
-               double _band_width,
-               double _dl,
-               std::chrono::minutes::rep _max_runtime_duration);
+           FlowEquation& flow_equation,
+           double _band_width,
+           double _dl,
+           std::chrono::minutes::rep _max_runtime_duration);
 
     void print_final(const FlowContainer& x, double l);
 

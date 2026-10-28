@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../shared/L.hpp"
-#include "FlowContainer.hpp"
+#include "../L.hpp"
+#include "../shared/FlowContainer.hpp"
 
 #include <boost/numeric/odeint.hpp>
 
@@ -36,9 +36,9 @@ namespace boost {
 namespace numeric {
 namespace odeint {
 template <>
-struct vector_space_norm_inf<NickelCUT::flow::FlowContainer> {
+struct vector_space_norm_inf<NickelCUT::FlowContainer> {
     typedef double result_type;
-    double operator()(const NickelCUT::flow::FlowContainer& p) const { return p.norm_inf(); }
+    double operator()(const NickelCUT::FlowContainer& p) const { return p.norm_inf(); }
 };
 }  // namespace odeint
 }  // namespace numeric

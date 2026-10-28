@@ -1,9 +1,9 @@
 #include "MFModel.hpp"
 
 #include "../shared/Model.hpp"
-#include "../flow/data_file_names.hpp"
-#include "../flow/flow_state_serialization.hpp"
-#include "../shared/momentum_iterator.hpp"
+#include "../data_file_names.hpp"
+#include "../serialization/ExtractionContainer.hpp"
+#include "../momentum_iterator.hpp"
 #include <mrock/utility/InputFileReader.hpp>
 
 #include <algorithm>
@@ -27,7 +27,7 @@ namespace NickelCUT::mean_field {
 MFModel::MFModel(const std::string& binary_data_dir, mrock::utility::InputFileReader& input)
     : NickelCUT::Model(input),
       extracted_channels(flow::deserialize_extracted_channels(binary_data_dir + NickelCUT::Model::data_dir_name(),
-                                                              flow::data_file_names::FINAL_EXTRACTED_CHANNELS)),
+                                                              data_file_names::FINAL_EXTRACTED_CHANNELS)),
       deltas(5 * N, 0.0),
       chemical_potential{0.0},
       target_filling{filling}  // filling is computed by the parent model.

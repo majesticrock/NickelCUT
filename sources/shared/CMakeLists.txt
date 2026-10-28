@@ -1,4 +1,6 @@
 add_library(shared_lib STATIC 
+    DecouplingChannel.cpp
+    FlowContainer.cpp
     Model.cpp
     occupation_numbers.cpp
 )
@@ -8,4 +10,6 @@ target_link_libraries(shared_lib
     PRIVATE 
         nickelcut_options
         mrock::utility
+    PUBLIC
+        OpenMP::OpenMP_CXX 
 )

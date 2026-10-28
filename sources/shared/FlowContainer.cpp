@@ -1,16 +1,16 @@
 #include "FlowContainer.hpp"
 
-#include "../shared/helper_functions.hpp"
-#include "../shared/Model.hpp"
-#include "../shared/momentum_iterator.hpp"
-#include "../shared/occupation_numbers.hpp"
+#include "../helper_functions.hpp"
+#include "Model.hpp"
+#include "../momentum_iterator.hpp"
+#include "occupation_numbers.hpp"
 
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <iostream>
 
-namespace NickelCUT::flow {
+namespace NickelCUT {
 
 FlowContainer::FlowContainer() noexcept : interactions_same_spin(), interactions_differing_spin() {
     dispersion.fill(double{});
@@ -326,4 +326,4 @@ void to_json(nlohmann::json& j, const FlowContainer& container) noexcept {
                        {"interactions_differing_spin", container.interactions_differing_spin.as_3D_array()}};
 }
 
-}  // namespace NickelCUT::flow
+}  // namespace NickelCUT

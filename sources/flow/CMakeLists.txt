@@ -22,15 +22,8 @@ endif()
 
 add_library(flow_lib STATIC
     FlowExceptions.cpp
-    DecouplingChannel.cpp
     ExtractionContainer.cpp
-    FlowContainer.cpp
-    flow_state_serialization.cpp
     "${FLOW_EQUATION_SOURCE}"
-
-    BookKeeper/base.cpp
-    BookKeeper/Dense.cpp
-    BookKeeper/Sparse.cpp
 )
 
 if(TARGET generate_flow_equation)
@@ -42,9 +35,9 @@ target_link_libraries(flow_lib
     PRIVATE 
         nickelcut_options
         mrock::utility
-        Boost::serialization
-        Boost::iostreams 
     PUBLIC
         OpenMP::OpenMP_CXX 
         shared_lib
 )
+
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/BookKeeper)

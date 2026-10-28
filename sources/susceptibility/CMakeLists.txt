@@ -11,6 +11,5 @@ target_link_libraries(susceptibility_lib
         nickelcut_options
         mrock::utility
     PUBLIC
-        flow_lib
         shared_lib
 )

@@ -9,6 +9,7 @@ target_link_libraries(mean_field_lib
     PRIVATE 
         nickelcut_options
         mrock::utility
+        serialization_lib
     PUBLIC
         flow_lib
         shared_lib

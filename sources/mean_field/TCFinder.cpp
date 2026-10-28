@@ -1,6 +1,6 @@
 #include "TCFinder.hpp"
 
-#include "../shared/helper_functions.hpp"
+#include "../helper_functions.hpp"
 
 #include <mrock/utility/Selfconsistency/BroydenSolver.hpp>
 

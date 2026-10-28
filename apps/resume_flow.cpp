@@ -1,11 +1,11 @@
-#include "../sources/shared/L.hpp"
 #include "../sources/flow/ExtractionContainer.hpp"
-#include "../sources/flow/FlowContainer.hpp"
+#include "../sources/shared/FlowContainer.hpp"
 #include "../sources/flow/FlowEquation.hpp"
 #include "../sources/flow/FlowExceptions.hpp"
 #include "../sources/shared/Model.hpp"
-#include "../sources/flow/data_file_names.hpp"
-#include "../sources/flow/flow_state_serialization.hpp"
+#include "../sources/data_file_names.hpp"
+#include "../sources/serialization/FlowContainer.hpp"
+#include "../sources/serialization/ExtractionContainer.hpp"
 #include "../sources/flow/numerical_setup.hpp"
 
 #define DENSE_BOOK_KEEPING
