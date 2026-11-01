@@ -35,6 +35,8 @@ protected:
     // Throws FlowExceptions to interrupt the flow if necessary and pushes the general data
     // Returns true if the last step was accepted
     bool basic_processing(const FlowContainer& x, const double l);
+    // Returns true if the last step was accepted, but does not interrupt the flow unless serious issues arise (e.g. broken symmetries)
+    bool no_throw_basic_processing(const FlowContainer& x, const double l);
     // Returns true if the last step was accepted
     bool basic_wrap_up(const FlowContainer& x, const double l);
 

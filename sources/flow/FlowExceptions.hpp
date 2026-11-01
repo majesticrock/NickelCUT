@@ -45,4 +45,14 @@ public:
     explicit BrokenSymmetriesException(double end_time);
 };
 
+class ConvergedSusceptibilityException : public ControlledFlowInterruption {
+public:
+    explicit ConvergedSusceptibilityException(double end_time);
+};
+
+class UnreliableSusceptibilityException : public ControlledFlowInterruption {
+public:
+    explicit UnreliableSusceptibilityException(double end_time);
+};
+
 }  // namespace NickelCUT::flow

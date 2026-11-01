@@ -4,6 +4,8 @@
 #include "../../shared/Model.hpp"
 #include "../../shared/FlowContainer.hpp"
 
+#include "../FlowExceptions.hpp"
+
 #include <cmath>
 
 namespace NickelCUT::flow::BookKeeper {
@@ -24,20 +26,39 @@ Susceptibility::Susceptibility(const FlowContainer& initial_flow_state,
 }
 
 void Susceptibility::print_final(const FlowContainer& x, double l) {
-    if (basic_wrap_up(x, l)) {
-        ieom_sc.update(x, model);
-        ieom_charge.update(&ieom_sc);
-        ieom_spin.update(&ieom_sc);
-        compute_static_ieom();
+    if (!basic_wrap_up(x, l)) {
+        return;
     }
+    ieom_sc.update(x, model);
+    ieom_charge.update(&ieom_sc);
+    ieom_spin.update(&ieom_sc);
+    compute_static_ieom();
 }
 
 void Susceptibility::operator()(const FlowContainer& x, double l) {
-    if (basic_processing(x, l)) {
-        ieom_sc.update(x, model);
-        ieom_charge.update(&ieom_sc);
-        ieom_spin.update(&ieom_sc);
-        compute_static_ieom();
+    if (!no_throw_basic_processing(x, l)) {
+        return;
+    }
+    ieom_sc.update(x, model);
+    ieom_charge.update(&ieom_sc);
+    ieom_spin.update(&ieom_sc);
+    compute_static_ieom();
+
+    if (extremal_sc_eigenvalues.size() < 2U) return;
+    const double total_ev_shift = std::abs(compute_lambda_ex_derivative());
+    if (extremal_sc_eigenvalues.size() == 2U) {
+        initial_lambda_ex_derivative = total_ev_shift;
+    }
+    const double rel_shift = total_ev_shift / initial_lambda_ex_derivative;
+    std::cout << "d/dl lambda_ex / lambda_ex(0)= " << rel_shift << std::endl;
+
+    // If the shift surpasses the initial shift, we treat it as non-convergent.
+    if (rel_shift > 1.) {
+        throw UnreliableSusceptibilityException(l);
+    }
+    // If the shift is less than 0.1% of the initial shift, we treat it as convergent.
+    if (total_ev_shift < 0.001) {
+        throw ConvergedSusceptibilityException(l);
     }
 }
 
@@ -49,21 +70,22 @@ void Susceptibility::compute_static_ieom() {
     extremal_sc_eigenvalues.push_back(ieom_sc.get_extremal_eigenvalue());
     extremal_charge_eigenvalues.push_back(ieom_charge.get_extremal_eigenvalue());
     extremal_spin_eigenvalues.push_back(ieom_spin.get_extremal_eigenvalue());
+}
 
-    if (extremal_sc_eigenvalues.size() < 2U) return;
+double Susceptibility::compute_lambda_ex_derivative() noexcept {
+    const double new_value = std::sqrt(
+          *(extremal_sc_eigenvalues.rbegin()) * *(extremal_sc_eigenvalues.rbegin())    
+        + *(extremal_charge_eigenvalues.rbegin()) * *(extremal_charge_eigenvalues.rbegin())
+        + *(extremal_spin_eigenvalues.rbegin())   * *(extremal_spin_eigenvalues.rbegin())
+    );
+    const double old_value = std::sqrt(
+          *(extremal_sc_eigenvalues.rbegin() + 1) * *(extremal_sc_eigenvalues.rbegin() + 1)    
+        + *(extremal_charge_eigenvalues.rbegin() + 1) * *(extremal_charge_eigenvalues.rbegin() + 1)
+        + *(extremal_spin_eigenvalues.rbegin() + 1)   * *(extremal_spin_eigenvalues.rbegin() + 1)
+    );
 
-    const double sc_ev_shift = *(extremal_sc_eigenvalues.rbegin()) - *(extremal_sc_eigenvalues.rbegin() + 1);
-    const double charge_ev_shift = *(extremal_charge_eigenvalues.rbegin()) - *(extremal_charge_eigenvalues.rbegin() + 1);
-    const double spin_ev_shift = *(extremal_spin_eigenvalues.rbegin()) - *(extremal_spin_eigenvalues.rbegin() + 1);
-
-    const double total_ev_shift = std::sqrt(
-        sc_ev_shift * sc_ev_shift 
-        + charge_ev_shift * charge_ev_shift 
-        + spin_ev_shift * spin_ev_shift);
+    return (new_value - old_value) / (*(l_times.rbegin()) - *(l_times.rbegin() + 1));
     
-    std::cout << "Total eigenvalue shift is " << total_ev_shift << std::endl;
-
-    // TODO throw exception for convergence or divergence.
 }
 
 void to_json(nlohmann::json& j, const Susceptibility& book_keeper) noexcept {

@@ -54,7 +54,12 @@ private:
 
     const std::vector<susceptibility::ieom_base::Vector> states;
 
+    double initial_lambda_ex_derivative;
+    bool previous_was_stable = false;
+
     void compute_static_ieom();
+
+    double compute_lambda_ex_derivative() noexcept;
 };
 
 }  // namespace flow::BookKeeper

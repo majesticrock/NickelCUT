@@ -13,21 +13,26 @@ double ControlledFlowInterruption::get_end_time() const noexcept {
 }
 
 LargeRODException::LargeRODException(double end_time)
-    : ControlledFlowInterruption("The ROD grew very large...", end_time) {}
+    : ControlledFlowInterruption("The ROD grew very large.", end_time) {}
 
 LargeDerivativeRODException::LargeDerivativeRODException(double end_time)
-    : ControlledFlowInterruption("The derivative ROD grew very large...", end_time) {}
+    : ControlledFlowInterruption("The derivative ROD grew very large.", end_time) {}
 
 SmallDerivativeRODException::SmallDerivativeRODException(double end_time)
-    : ControlledFlowInterruption("The derivative ROD became very small...", end_time) {}
+    : ControlledFlowInterruption("The derivative ROD became very small.", end_time) {}
 
 LongRuntimeException::LongRuntimeException(double end_time)
-    : ControlledFlowInterruption("The program ran for a long time...", end_time) {}
+    : ControlledFlowInterruption("The program ran for a long time.", end_time) {}
 
 LargeInteractionException::LargeInteractionException(double end_time)
-    : ControlledFlowInterruption("One interaction matrix element grew very large...", end_time) {}
+    : ControlledFlowInterruption("One interaction matrix element grew very large.", end_time) {}
 
 BrokenSymmetriesException::BrokenSymmetriesException(double end_time)
     : ControlledFlowInterruption("Numerical errors have acrued and symmetries are broken.", end_time) {}
 
+ConvergedSusceptibilityException::ConvergedSusceptibilityException(double end_time)
+    : ControlledFlowInterruption("The leading susceptibility eigenvalues converged.", end_time) {}
+
+UnreliableSusceptibilityException::UnreliableSusceptibilityException(double end_time)
+    : ControlledFlowInterruption("The leading susceptibility eigenvalues do not converge.", end_time) {};
 }  // namespace NickelCUT::flow

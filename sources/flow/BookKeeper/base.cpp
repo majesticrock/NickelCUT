@@ -96,6 +96,44 @@ bool base::basic_processing(const FlowContainer& x, const double l) {
     return true;
 }
 
+bool base::no_throw_basic_processing(const FlowContainer& x, const double l) {
+    const auto total_runtime = std::chrono::duration_cast<std::chrono::minutes>(clock::now() - begin).count();
+    if (total_runtime > max_runtime_duration) {
+        throw LongRuntimeException(l);
+    }
+    if (l - l_times.back() < dl)
+        return false;
+
+    const bool state_is_good = x.is_inversion_symmetric() && x.is_hermitian();
+    if (!state_is_good) {
+        throw BrokenSymmetriesException(l_times.back());
+    }
+
+    const double max_coeff = N * std::max(x.interactions_differing_spin.norm_inf(), x.interactions_same_spin.norm_inf());
+    const double ROD = x.residual_offdiagonality();
+    const double derivative_ROD = compute_derivative_rod(x, l);
+    
+    ++current_idx;
+    clock::time_point now = clock::now();
+    std::cout << "//------------------------------------------------------//\n"
+              << "Step #" << current_idx << "\t\t" << "l = " << l << "\t\t" << mrock::utility::time_stamp() << "\n"
+              << "Step took " << std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count()
+              << "ms to execute.\n" 
+              << "max(|U|) = " << max_coeff 
+              << "\t\tROD = " << ROD 
+              << "\t\tROD(dH/dl) = " << derivative_ROD << "\n"
+              << std::endl;
+    last = now;
+
+    l_times.push_back(l);
+    residual_offdiagonalities.push_back(ROD);
+    derivative_residual_offdiagonalities.push_back(derivative_ROD);
+    max_interactions.push_back(max_coeff);
+    last_good_state = x;
+
+    return true;
+}
+
 bool base::basic_wrap_up(const FlowContainer& x, const double l) {
     const bool accept_last_step = x.is_inversion_symmetric() && x.is_hermitian()
         && !float_equal(l_times.back(), l);
