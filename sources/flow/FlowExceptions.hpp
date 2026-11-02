@@ -55,4 +55,9 @@ public:
     explicit UnreliableSusceptibilityException(double end_time);
 };
 
+class NegativeSusceptibilitiesException : public ControlledFlowInterruption {
+public:
+    explicit NegativeSusceptibilitiesException(double end_time);
+};
+
 }  // namespace NickelCUT::flow

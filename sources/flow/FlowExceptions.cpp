@@ -35,4 +35,7 @@ ConvergedSusceptibilityException::ConvergedSusceptibilityException(double end_ti
 
 UnreliableSusceptibilityException::UnreliableSusceptibilityException(double end_time)
     : ControlledFlowInterruption("The leading susceptibility eigenvalues do not converge.", end_time) {};
+
+NegativeSusceptibilitiesException::NegativeSusceptibilitiesException(double end_time)
+    : ControlledFlowInterruption("All computed susceptibility eigenvalues are negative.", end_time) {}
 }  // namespace NickelCUT::flow

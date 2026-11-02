@@ -52,6 +52,15 @@ void Susceptibility::operator()(const FlowContainer& x, double l) {
     const double rel_shift = total_ev_shift / initial_lambda_ex_derivative;
     std::cout << "d/dl lambda_ex / lambda_ex(0)= " << rel_shift << std::endl;
 
+    // If all channels display a negative eigenvalue, we assume that we neglect to many high-order fluctuations
+    // and interrupt the flow before acrueing more errors.
+    if (extremal_charge_eigenvalues.back() < 0.0 
+        && extremal_sc_eigenvalues.back() < 0.0
+        && extremal_spin_eigenvalues.back() < 0.0) 
+    {
+        throw NegativeSusceptibilitiesException(l);
+    }
+
     // If the shift surpasses half the initial shift, we treat it as non-convergent.
     // We must also guard against too early interruptions because the shifts in the beginning are fairly large
     // and may easily surpass this threshold. l=0.5 seems to be a good value
