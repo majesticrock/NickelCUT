@@ -22,7 +22,9 @@ void Sparse::operator()(const FlowContainer& x, double l) {
 
 void to_json(nlohmann::json& j, const Sparse& book_keeper) noexcept {
     j = book_keeper.convert_to_json();
-    j.update({{"extracted_channels", ExtractionContainer(book_keeper.last_good_state)}});
+    j.update({
+        {"extracted_channels", std::deque<ExtractionContainer>{ExtractionContainer(book_keeper.last_good_state)}}
+    });
 }
 
 }  // namespace NickelCUT::flow::BookKeeper

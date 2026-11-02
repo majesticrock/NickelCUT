@@ -55,6 +55,7 @@ private:
     const std::vector<susceptibility::ieom_base::Vector> states;
 
     double initial_lambda_ex_derivative;
+    // Guards against accidental 0-derivatives by requiring two adjacent derivatives to be nearly 0
     bool previous_was_stable = false;
 
     void compute_static_ieom();

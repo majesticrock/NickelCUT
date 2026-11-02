@@ -52,13 +52,23 @@ void Susceptibility::operator()(const FlowContainer& x, double l) {
     const double rel_shift = total_ev_shift / initial_lambda_ex_derivative;
     std::cout << "d/dl lambda_ex / lambda_ex(0)= " << rel_shift << std::endl;
 
-    // If the shift surpasses the initial shift, we treat it as non-convergent.
-    if (rel_shift > 1.) {
+    // If the shift surpasses half the initial shift, we treat it as non-convergent.
+    // We must also guard against too early interruptions because the shifts in the beginning are fairly large
+    // and may easily surpass this threshold. l=0.5 seems to be a good value
+    if (rel_shift > 0.4 && l > 0.5) {
         throw UnreliableSusceptibilityException(l);
     }
-    // If the shift is less than 0.1% of the initial shift, we treat it as convergent.
-    if (total_ev_shift < 0.001) {
-        throw ConvergedSusceptibilityException(l);
+    // If the shift is less than 0.5% of the initial shift, we treat it as convergent.
+    if (rel_shift < 0.005) {
+        if (previous_was_stable) {
+            throw ConvergedSusceptibilityException(l);
+        }
+        else {
+            previous_was_stable = true;
+        }
+    }
+    else {
+        previous_was_stable = false;
     }
 }
 
@@ -73,19 +83,12 @@ void Susceptibility::compute_static_ieom() {
 }
 
 double Susceptibility::compute_lambda_ex_derivative() noexcept {
-    const double new_value = std::sqrt(
-          *(extremal_sc_eigenvalues.rbegin()) * *(extremal_sc_eigenvalues.rbegin())    
-        + *(extremal_charge_eigenvalues.rbegin()) * *(extremal_charge_eigenvalues.rbegin())
-        + *(extremal_spin_eigenvalues.rbegin())   * *(extremal_spin_eigenvalues.rbegin())
-    );
-    const double old_value = std::sqrt(
-          *(extremal_sc_eigenvalues.rbegin() + 1) * *(extremal_sc_eigenvalues.rbegin() + 1)    
-        + *(extremal_charge_eigenvalues.rbegin() + 1) * *(extremal_charge_eigenvalues.rbegin() + 1)
-        + *(extremal_spin_eigenvalues.rbegin() + 1)   * *(extremal_spin_eigenvalues.rbegin() + 1)
-    );
-
-    return (new_value - old_value) / (*(l_times.rbegin()) - *(l_times.rbegin() + 1));
+    const double dl = (*(l_times.rbegin()) - *(l_times.rbegin() + 1));
+    const double sc     = (*(extremal_sc_eigenvalues.rbegin()) - *(extremal_sc_eigenvalues.rbegin() + 1)) / dl;
+    const double charge = (*(extremal_charge_eigenvalues.rbegin()) - *(extremal_charge_eigenvalues.rbegin() + 1)) / dl;
+    const double spin   = (*(extremal_spin_eigenvalues.rbegin()) - *(extremal_spin_eigenvalues.rbegin() + 1)) / dl;
     
+    return std::sqrt(sc*sc + charge*charge + spin*spin);
 }
 
 void to_json(nlohmann::json& j, const Susceptibility& book_keeper) noexcept {
@@ -97,7 +100,7 @@ void to_json(nlohmann::json& j, const Susceptibility& book_keeper) noexcept {
         {"extremal_sc_eigenvalues", book_keeper.extremal_sc_eigenvalues},
         {"extremal_charge_eigenvalues", book_keeper.extremal_charge_eigenvalues},
         {"extremal_spin_eigenvalues", book_keeper.extremal_spin_eigenvalues},
-        {"extracted_channels", ExtractionContainer(book_keeper.last_good_state)}
+        {"extracted_channels", std::deque<ExtractionContainer>{ExtractionContainer(book_keeper.last_good_state)}}
     });
 }
 
