@@ -1,10 +1,9 @@
-#include "../sources/flow/InteractionDataFrame.hpp"
+#include "../sources/shared/InteractionDataFrame.hpp"
 
 #include <iostream>
 #include <vector>
 
 using namespace NickelCUT;
-using namespace NickelCUT::flow;
 
 namespace {
 std::size_t reflect_kx(std::size_t momentum) {
@@ -13,6 +12,12 @@ std::size_t reflect_kx(std::size_t momentum) {
 
 std::size_t reflect_ky(std::size_t momentum) {
     return momentum % L + L * ((static_cast<std::size_t>(L) - momentum / L) % L);
+}
+
+std::size_t rotate_90(std::size_t momentum) {
+    const std::size_t kx = momentum % L;
+    const std::size_t ky = momentum / L;
+    return (static_cast<std::size_t>(L) - ky) % L + L * kx;
 }
 
 std::size_t full_index(std::size_t k, std::size_t p, std::size_t q) {
@@ -42,10 +47,15 @@ int main() {
     InteractionDataFrame frame;
     constexpr std::size_t full_size = N * N * N;
     constexpr std::size_t fixed_axis_reflection_size = 2 * L;
+    constexpr std::size_t fixed_diagonal_reflection_size = L;
+    constexpr std::size_t fixed_quarter_rotation_size = 2;
+    constexpr std::size_t fixed_half_rotation_size = 4;
     constexpr std::size_t expected_stored_size =
-        (full_size + 2 * fixed_axis_reflection_size * fixed_axis_reflection_size * fixed_axis_reflection_size +
-         4 * 4 * 4) /
-        4;
+        (full_size + 2 * fixed_quarter_rotation_size * fixed_quarter_rotation_size * fixed_quarter_rotation_size +
+         fixed_half_rotation_size * fixed_half_rotation_size * fixed_half_rotation_size +
+         2 * fixed_axis_reflection_size * fixed_axis_reflection_size * fixed_axis_reflection_size +
+         2 * fixed_diagonal_reflection_size * fixed_diagonal_reflection_size * fixed_diagonal_reflection_size) /
+        8;
 
     if (frame.size() != expected_stored_size) {
         std::cerr << "Unexpected compact size: " << frame.size() << " != " << expected_stored_size << '\n';
@@ -65,8 +75,9 @@ int main() {
                 expected_norm_squared += value * value;
 
                 if (value != frame(reflect_kx(k), reflect_kx(p), reflect_kx(q)) ||
-                    value != frame(reflect_ky(k), reflect_ky(p), reflect_ky(q))) {
-                    std::cerr << "A reflected tuple did not share its stored value\n";
+                    value != frame(reflect_ky(k), reflect_ky(p), reflect_ky(q)) ||
+                    value != frame(rotate_90(k), rotate_90(p), rotate_90(q))) {
+                    std::cerr << "A reflected or rotated tuple did not share its stored value\n";
                     return 1;
                 }
             }
@@ -87,8 +98,9 @@ int main() {
 
     frame(1, 3, 5) = -7.0;
     if (frame(reflect_kx(1), reflect_kx(3), reflect_kx(5)) != -7.0 ||
-        frame(reflect_ky(1), reflect_ky(3), reflect_ky(5)) != -7.0) {
-        std::cerr << "Writing through a reflected tuple did not update its representative\n";
+        frame(reflect_ky(1), reflect_ky(3), reflect_ky(5)) != -7.0 ||
+        frame(rotate_90(1), rotate_90(3), rotate_90(5)) != -7.0) {
+        std::cerr << "Writing through a reflected or rotated tuple did not update its representative\n";
         return 1;
     }
 

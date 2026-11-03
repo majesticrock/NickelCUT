@@ -1,10 +1,10 @@
-#include "../sources/flow/momentum_iterator.hpp"
+#include "../sources/momentum_iterator.hpp"
 
 #include <cmath>
 #include <iostream>
 #include <numbers>
 
-using namespace NickelCUT::flow;
+using namespace NickelCUT;
 using std::numbers::pi;
 
 constexpr int L = 6;

@@ -20,8 +20,13 @@ namespace NickelCUT {
 class InteractionDataFrame {
     static constexpr int total_size = N * N * N;
     static constexpr int fixed_axis_reflection_size = (2 * L) * (2 * L) * (2 * L);
-    static constexpr int fixed_both_reflections_size = 4 * 4 * 4;
-    static constexpr int stored_size = (total_size + 2 * fixed_axis_reflection_size + fixed_both_reflections_size) / 4;
+    static constexpr int fixed_diagonal_reflection_size = L * L * L;
+    static constexpr int fixed_quarter_rotation_size = 2 * 2 * 2;
+    static constexpr int fixed_half_rotation_size = 4 * 4 * 4;
+    static constexpr int stored_size =
+        (total_size + 2 * fixed_quarter_rotation_size + fixed_half_rotation_size +
+         2 * fixed_axis_reflection_size + 2 * fixed_diagonal_reflection_size) /
+        8;
     using storage_index_type = int;
     static_assert(stored_size <= std::numeric_limits<storage_index_type>::max());
     std::vector<double> _data;
@@ -38,15 +43,27 @@ class InteractionDataFrame {
         return kx + L * ((static_cast<std::size_t>(L) - ky) % L);
     }
 
-    static std::size_t canonical_index(std::size_t index) noexcept {
-        const std::size_t x = index / (N * N);
-        const std::size_t y = (index / N) % N;
-        const std::size_t z = index % N;
-        const auto flatten = [](std::size_t a, std::size_t b, std::size_t c) { return c + N * (b + N * a); };
+    static std::size_t rotate_90(std::size_t momentum) noexcept {
+        const std::size_t kx = momentum % L;
+        const std::size_t ky = momentum / L;
+        return (static_cast<std::size_t>(L) - ky) % L + L * kx;
+    }
 
-        return std::min({index, flatten(reflect_kx(x), reflect_kx(y), reflect_kx(z)),
-                         flatten(reflect_ky(x), reflect_ky(y), reflect_ky(z)),
-                         flatten(reflect_kx(reflect_ky(x)), reflect_kx(reflect_ky(y)), reflect_kx(reflect_ky(z)))});
+    static std::size_t canonical_index(std::size_t index) noexcept {
+        const auto flatten = [](std::size_t a, std::size_t b, std::size_t c) { return c + N * (b + N * a); };
+        std::size_t x = index / (N * N);
+        std::size_t y = (index / N) % N;
+        std::size_t z = index % N;
+        std::size_t canonical = index;
+
+        for (int rotation = 0; rotation < 4; ++rotation) {
+            canonical = std::min(canonical, flatten(x, y, z));
+            canonical = std::min(canonical, flatten(reflect_kx(x), reflect_kx(y), reflect_kx(z)));
+            x = rotate_90(x);
+            y = rotate_90(y);
+            z = rotate_90(z);
+        }
+        return canonical;
     }
 
 public:
