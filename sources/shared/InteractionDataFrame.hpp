@@ -3,6 +3,7 @@
 #include "../L.hpp"
 #include "../helper_functions.hpp"
 #include "../momentum_iterator.hpp"
+#include "MomentumSymmetry.hpp"
 
 #include <algorithm>
 #include <array>
@@ -18,97 +19,25 @@
 namespace NickelCUT {
 
 class InteractionDataFrame {
-    static constexpr int total_size = N * N * N;
-    static constexpr int fixed_axis_reflection_size = (2 * L) * (2 * L) * (2 * L);
-    static constexpr int fixed_diagonal_reflection_size = L * L * L;
-    static constexpr int fixed_quarter_rotation_size = 2 * 2 * 2;
-    static constexpr int fixed_half_rotation_size = 4 * 4 * 4;
-    static constexpr int stored_size =
-        (total_size + 2 * fixed_quarter_rotation_size + fixed_half_rotation_size +
-         2 * fixed_axis_reflection_size + 2 * fixed_diagonal_reflection_size) /
-        8;
+    using symmetry = MomentumSymmetry<N, 3>;
+    static constexpr int stored_size = symmetry::independent_size();
     using storage_index_type = int;
     static_assert(stored_size <= std::numeric_limits<storage_index_type>::max());
     std::vector<double> _data;
 
-    static std::size_t reflect_kx(std::size_t momentum) noexcept {
-        const std::size_t kx = momentum % L;
-        const std::size_t ky = momentum / L;
-        return (static_cast<std::size_t>(L) - kx) % L + L * ky;
-    }
-
-    static std::size_t reflect_ky(std::size_t momentum) noexcept {
-        const std::size_t kx = momentum % L;
-        const std::size_t ky = momentum / L;
-        return kx + L * ((static_cast<std::size_t>(L) - ky) % L);
-    }
-
-    static std::size_t rotate_90(std::size_t momentum) noexcept {
-        const std::size_t kx = momentum % L;
-        const std::size_t ky = momentum / L;
-        return (static_cast<std::size_t>(L) - ky) % L + L * kx;
-    }
-
-    static std::size_t canonical_index(std::size_t index) noexcept {
-        const auto flatten = [](std::size_t a, std::size_t b, std::size_t c) { return c + N * (b + N * a); };
-        std::size_t x = index / (N * N);
-        std::size_t y = (index / N) % N;
-        std::size_t z = index % N;
-        std::size_t canonical = index;
-
-        for (int rotation = 0; rotation < 4; ++rotation) {
-            canonical = std::min(canonical, flatten(x, y, z));
-            canonical = std::min(canonical, flatten(reflect_kx(x), reflect_kx(y), reflect_kx(z)));
-            x = rotate_90(x);
-            y = rotate_90(y);
-            z = rotate_90(z);
-        }
-        return canonical;
-    }
-
 public:
     static const std::vector<storage_index_type>& storage_indices() noexcept {
-        static const std::vector<storage_index_type> indices = [] {
-            std::vector<storage_index_type> result(total_size);
-            std::vector<storage_index_type> canonical_to_storage(total_size,
-                                                                 std::numeric_limits<storage_index_type>::max());
-
-            std::size_t next_storage_index = 0;
-            for (std::size_t index = 0; index < total_size; ++index) {
-                const std::size_t canonical = canonical_index(index);
-                if (canonical == index) {
-                    canonical_to_storage[canonical] = static_cast<storage_index_type>(next_storage_index++);
-                }
-            }
-            assert(next_storage_index == stored_size);
-
-            for (std::size_t index = 0; index < total_size; ++index) {
-                result[index] = canonical_to_storage[canonical_index(index)];
-            }
-            return result;
-        }();
-        return indices;
+        return symmetry::storage_indices();
     }
 
     static std::size_t data_index(std::size_t x, std::size_t y, std::size_t z) noexcept {
-        return storage_indices()[z + N * (y + N * x)];
+        return static_cast<std::size_t>(symmetry::data_index(x, y, z));
     }
 
     static constexpr int independent_size() noexcept { return stored_size; }
 
     static const std::vector<std::size_t>& independent_indices() noexcept {
-        static const std::vector<std::size_t> indices = [] {
-            std::vector<std::size_t> result(stored_size);
-            std::size_t next_index = 0;
-            for (std::size_t index = 0; index < total_size; ++index) {
-                if (canonical_index(index) == index) {
-                    result[next_index++] = index;
-                }
-            }
-            assert(next_index == stored_size);
-            return result;
-        }();
-        return indices;
+        return symmetry::independent_indices();
     }
 
     template <class Archive>

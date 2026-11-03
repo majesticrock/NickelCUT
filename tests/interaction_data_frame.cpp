@@ -1,4 +1,5 @@
 #include "../sources/shared/InteractionDataFrame.hpp"
+#include "../sources/shared/SingleParticleDataFrame.hpp"
 
 #include <iostream>
 #include <vector>
@@ -122,6 +123,52 @@ int main() {
                 }
             }
         }
+    }
+
+    SingleParticleDataFrame single_particle;
+    constexpr std::size_t single_particle_size = (N + 2 * 2 + 4 + 2 * 2 * L + 2 * L) / 8;
+    if (single_particle.size() != single_particle_size) {
+        std::cerr << "Unexpected single-particle compact size: " << single_particle.size() << " != "
+                  << single_particle_size << '\n';
+        return 1;
+    }
+
+    for (std::size_t index = 0; index < single_particle.get_data().size(); ++index) {
+        single_particle.get_data()[index] = static_cast<double>(index + 1);
+    }
+
+    std::vector<bool> single_particle_seen(single_particle.size(), false);
+    double expected_single_particle_norm_squared = 0.0;
+    for (std::size_t momentum = 0; momentum < N; ++momentum) {
+        const double value = single_particle(momentum);
+        const std::size_t storage_index = static_cast<std::size_t>(value) - 1;
+        single_particle_seen[storage_index] = true;
+        expected_single_particle_norm_squared += value * value;
+
+        if (value != single_particle(reflect_kx(momentum)) || value != single_particle(reflect_ky(momentum)) ||
+            value != single_particle(rotate_90(momentum))) {
+            std::cerr << "A reflected or rotated single-particle momentum did not share its stored value\n";
+            return 1;
+        }
+    }
+
+    for (const bool was_seen : single_particle_seen) {
+        if (!was_seen) {
+            std::cerr << "A single-particle storage slot has no logical momentum\n";
+            return 1;
+        }
+    }
+
+    if (single_particle.abs_squared_total() != expected_single_particle_norm_squared) {
+        std::cerr << "The single-particle norm did not account for symmetry multiplicity\n";
+        return 1;
+    }
+
+    single_particle(1) = -7.0;
+    if (single_particle(reflect_kx(1)) != -7.0 || single_particle(reflect_ky(1)) != -7.0 ||
+        single_particle(rotate_90(1)) != -7.0) {
+        std::cerr << "Writing through a reflected or rotated momentum did not update its representative\n";
+        return 1;
     }
 
     InteractionDataFrame antisymmetrized;
