@@ -150,8 +150,8 @@ ieom_base::Vector ieom_base::dwave_state() const {
     return result;
 }
 
-const std::array<double, N>& ieom_base::get_dispersion() const noexcept {
-    return dispersion;
+std::array<double, N> ieom_base::get_dispersion() const noexcept {
+    return dispersion.as_array();
 }
 
 bool ieom_base::found_negative_excitation() const noexcept {
@@ -220,8 +220,8 @@ double ieom_base::compute_chemical_potential(const Model& model, const double ta
 
     auto fit_occupation = [&model, &target_filling, this](double x) {
         double filling{};
-        for (const auto& energy : dispersion) {
-            filling += model.fermi_function(energy - x);
+        for (int i = 0; i < N; ++i) {
+            filling += model.fermi_function(dispersion[i] - x);
         }
         filling *= 2. / N;
         return target_filling - filling;
@@ -293,31 +293,40 @@ double ieom_base::compute_chemical_potential(const Model& model, const double ta
 }
 
 void ieom_base::solve_hartree_fock(const Model& model) {
-    const auto compute_occupation_numbers = [this, &model](const Vector& dispersion) {
+    const auto& storage_indices = SingleParticleDataFrame::storage_indices();
+    const auto& independent_indices = SingleParticleDataFrame::independent_indices();
+    Vector self_energy(SingleParticleDataFrame::independent_size());
+    for (int i = 0; i < self_energy.size(); ++i) {
+        const std::size_t momentum = independent_indices[i];
+        self_energy[i] = flow_result->dispersion(momentum) - epsilon_tilde[momentum];
+    }
+
+    const auto set_dispersion = [this, &storage_indices](const Vector& values, double shift) {
+        for (int i = 0; i < N; ++i) {
+            dispersion[i] = epsilon_tilde[i] + values[storage_indices[i]] - shift;
+        }
+    };
+    const auto compute_occupation_numbers = [this, &model]() {
         for (int i = 0; i < N; ++i) {
             occupation_numbers[i] = model.fermi_function(dispersion[i] - chemical_potential);
         }
     };
 
-    Eigen::Map<const Vector> epsilon_tilde_map(epsilon_tilde.data(), N);
-    Vector self_energy = Eigen::Map<const Vector>(flow_result->dispersion.data(), N) 
-        - epsilon_tilde_map;
-
     const auto [differing, same] = DecouplingChannel::SingleParticleEnergy(*flow_result);
 
     const auto compute_self_energy = [&](const Vector& init, Vector& result) {
-        result.setZero(N);
-        compute_occupation_numbers(epsilon_tilde_map + init);
-        for (int i = 0; i < N; ++i) {
+        set_dispersion(init, 0.0);
+        compute_occupation_numbers();
+        result.setZero(SingleParticleDataFrame::independent_size());
+        for (int independent_pos = 0; independent_pos < result.size(); ++independent_pos) {
+            const int i = static_cast<int>(independent_indices[independent_pos]);
             for (int j = 0; j < N; ++j) {
                 // 1/N is contained in the interaction itself, and we assume spin invariance
-                result(i) += (differing(i, j) + same(i, j)) * occupation_numbers[j];
+                result(independent_pos) += (differing(i, j) + same(i, j)) * occupation_numbers[j];
             }
         }
         self_energy = 0.5 * (self_energy + result);
-        for (int i = 0; i < N; ++i) {
-            dispersion[i] = epsilon_tilde[i] + self_energy(i);
-        }
+        set_dispersion(self_energy, 0.0);
         chemical_potential = compute_chemical_potential(model, model.filling);
         result -= self_energy;
     };
@@ -337,21 +346,9 @@ void ieom_base::solve_hartree_fock(const Model& model) {
         }
     }
     
-    for (int i = 0; i < N; ++i) {
-        dispersion[i] = epsilon_tilde[i] + self_energy(i);
-    }
-    compute_occupation_numbers(epsilon_tilde_map + self_energy);
-    for (int i = 0; i < N; ++i) {
-        dispersion[i] = epsilon_tilde[i] + self_energy(i) - chemical_potential;
-    }
-
-    for (momentum k = momentum::begin(); k != momentum::end(); ++k) {
-        const momentum kprime = k.rotate_90();
-        if (!float_equal(dispersion[k], dispersion[kprime])) {
-            _found_pomeranchuk = true;
-            break;
-        }
-    }
+    set_dispersion(self_energy, 0.0);
+    compute_occupation_numbers();
+    set_dispersion(self_energy, chemical_potential);
 }
 
 void ieom_base::prepare_static(const momentum& x) {

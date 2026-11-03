@@ -22,8 +22,9 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
     }
 
 #pragma omp parallel for
-    for (int K_pos = 0; K_pos < N; ++K_pos) {
-        momentum_iterator<L> K(K_pos);
+    for (int K_pos = 0; K_pos < SingleParticleDataFrame::independent_size(); ++K_pos) {
+        const std::size_t k_index = SingleParticleDataFrame::independent_indices()[K_pos];
+        momentum_iterator<L> K(static_cast<int>(k_index));
         for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
             double Q_sum_value{};
             for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {

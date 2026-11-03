@@ -28,7 +28,8 @@ FlowContainer::FlowContainer(const Model& model) noexcept
 void FlowContainer::print_memory_allocation() const {
     const std::size_t allocated_bytes = sizeof(FlowContainer) +
                                         interactions_same_spin.get_data().capacity() * sizeof(double) +
-                                        interactions_differing_spin.get_data().capacity() * sizeof(double);
+                                        interactions_differing_spin.get_data().capacity() * sizeof(double) +
+                                        dispersion.get_data().capacity() * sizeof(double);
 
     std::cout << "FlowContainer constructed, allocated memory: " << allocated_bytes / (1024) << " kb" << std::endl;
 }
@@ -52,7 +53,7 @@ bool FlowContainer::contains_nan_or_inf() const noexcept {
         if (std::isnan(val) || std::isinf(val))
             return true;
     }
-    for (const auto& val : dispersion) {
+    for (const auto& val : dispersion.get_data()) {
         if (std::isnan(val) || std::isinf(val))
             return true;
     }
@@ -192,8 +193,8 @@ bool FlowContainer::is_particle_hole_invariant() const noexcept {
 }
 
 double FlowContainer::band_width() const noexcept {
-    return (*std::max_element(dispersion.begin(), dispersion.end())) -
-           (*std::min_element(dispersion.begin(), dispersion.end()));
+    return (*std::max_element(dispersion.get_data().begin(), dispersion.get_data().end())) -
+           (*std::min_element(dispersion.get_data().begin(), dispersion.get_data().end()));
 }
 
 double FlowContainer::max_interaction() const noexcept {
@@ -232,41 +233,33 @@ FlowContainer::coeff_array FlowContainer::epsilon_tilde() const noexcept {
 
 double FlowContainer::abs_total() const noexcept {
     double val = interactions_same_spin.abs_squared_total() + interactions_differing_spin.abs_squared_total();
-    for (const auto& element : dispersion) {
-        val += element * element;
-    }
+    val += dispersion.abs_squared_total();
     return std::sqrt(val);
 }
 
 double FlowContainer::norm_inf() const noexcept {
     return std::max(max_interaction(),
-                    std::abs(*std::max_element(dispersion.begin(), dispersion.end(), LessThanAbs())));
+                    dispersion.norm_inf());
 }
 
 FlowContainer abs(FlowContainer input) noexcept {
     input.interactions_differing_spin.abs_in_place();
     input.interactions_same_spin.abs_in_place();
-    for (auto& val : input.dispersion) {
-        val = std::abs(val);
-    }
+    input.dispersion.abs_in_place();
     return input;
 }
 
 FlowContainer& FlowContainer::operator+=(const FlowContainer& other) noexcept {
     interactions_same_spin += other.interactions_same_spin;
     interactions_differing_spin += other.interactions_differing_spin;
-    for (int i = 0; i < N; ++i) {
-        dispersion[i] += other.dispersion[i];
-    }
+    dispersion += other.dispersion;
 
     return *this;
 }
 FlowContainer& FlowContainer::operator-=(const FlowContainer& other) noexcept {
     interactions_same_spin -= other.interactions_same_spin;
     interactions_differing_spin -= other.interactions_differing_spin;
-    for (int i = 0; i < N; ++i) {
-        dispersion[i] -= other.dispersion[i];
-    }
+    dispersion -= other.dispersion;
 
     return *this;
 }
@@ -274,18 +267,14 @@ FlowContainer& FlowContainer::operator-=(const FlowContainer& other) noexcept {
 FlowContainer& FlowContainer::operator*=(const FlowContainer& other) noexcept {
     interactions_same_spin *= other.interactions_same_spin;
     interactions_differing_spin *= other.interactions_differing_spin;
-    for (int i = 0; i < N; ++i) {
-        dispersion[i] *= other.dispersion[i];
-    }
+    dispersion *= other.dispersion;
 
     return *this;
 }
 FlowContainer& FlowContainer::operator/=(const FlowContainer& other) noexcept {
     interactions_same_spin /= other.interactions_same_spin;
     interactions_differing_spin /= other.interactions_differing_spin;
-    for (int i = 0; i < N; ++i) {
-        dispersion[i] /= other.dispersion[i];
-    }
+    dispersion /= other.dispersion;
 
     return *this;
 }
@@ -293,18 +282,14 @@ FlowContainer& FlowContainer::operator/=(const FlowContainer& other) noexcept {
 FlowContainer& FlowContainer::operator*=(const double other) noexcept {
     interactions_same_spin *= other;
     interactions_differing_spin *= other;
-    for (int i = 0; i < N; ++i) {
-        dispersion[i] *= other;
-    }
+    dispersion *= other;
 
     return *this;
 }
 FlowContainer& FlowContainer::operator/=(const double other) noexcept {
     interactions_same_spin /= other;
     interactions_differing_spin /= other;
-    for (int i = 0; i < N; ++i) {
-        dispersion[i] /= other;
-    }
+    dispersion /= other;
 
     return *this;
 }
@@ -312,15 +297,13 @@ FlowContainer& FlowContainer::operator/=(const double other) noexcept {
 FlowContainer& FlowContainer::operator+=(const double other) noexcept {
     interactions_same_spin += other;
     interactions_differing_spin += other;
-    for (int i = 0; i < N; ++i) {
-        dispersion[i] += other;
-    }
+    dispersion += other;
 
     return *this;
 }
 
 void to_json(nlohmann::json& j, const FlowContainer& container) noexcept {
-    j = nlohmann::json{{"dispersion", container.dispersion},
+    j = nlohmann::json{{"dispersion", container.dispersion.as_array()},
                        {"epsilon_tilde", container.epsilon_tilde()},
                        {"interactions_same_spin", container.interactions_same_spin.as_3D_array()},
                        {"interactions_differing_spin", container.interactions_differing_spin.as_3D_array()}};

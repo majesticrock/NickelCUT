@@ -4,6 +4,7 @@
 #include "MomentumSymmetry.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstddef>
 #include <omp.h>
@@ -50,6 +51,9 @@ public:
         assert(momentum < N);
         return _data[symmetry::data_index(momentum)];
     }
+
+    double& operator[](std::size_t momentum) noexcept { return (*this)(momentum); }
+    const double& operator[](std::size_t momentum) const noexcept { return (*this)(momentum); }
 
     void clear_noise() noexcept {
         for (auto& value : _data) {
@@ -147,8 +151,8 @@ public:
     std::vector<double>& get_data() noexcept { return _data; }
     const std::vector<double>& get_data() const noexcept { return _data; }
 
-    std::vector<double> as_array() const {
-        std::vector<double> result(N);
+    std::array<double, N> as_array() const {
+        std::array<double, N> result{};
         for (std::size_t momentum = 0; momentum < N; ++momentum) {
             result[momentum] = (*this)(momentum);
         }

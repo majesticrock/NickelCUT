@@ -1,4 +1,5 @@
 #include "../sources/shared/InteractionDataFrame.hpp"
+#include "../sources/shared/FlowContainer.hpp"
 #include "../sources/shared/SingleParticleDataFrame.hpp"
 
 #include <iostream>
@@ -161,6 +162,21 @@ int main() {
 
     if (single_particle.abs_squared_total() != expected_single_particle_norm_squared) {
         std::cerr << "The single-particle norm did not account for symmetry multiplicity\n";
+        return 1;
+    }
+
+    FlowContainer flow;
+    if (flow.dispersion.size() != single_particle_size) {
+        std::cerr << "FlowContainer dispersion does not use compact single-particle storage\n";
+        return 1;
+    }
+    flow.dispersion(1) = 3.0;
+    if (flow.dispersion(rotate_90(1)) != 3.0 || flow.dispersion(reflect_kx(1)) != 3.0) {
+        std::cerr << "FlowContainer dispersion does not preserve momentum symmetries\n";
+        return 1;
+    }
+    if (flow.dispersion.as_array().size() != N) {
+        std::cerr << "Expanded FlowContainer dispersion has an unexpected size\n";
         return 1;
     }
 

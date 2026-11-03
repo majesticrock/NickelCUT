@@ -2,6 +2,7 @@
 
 #include "../L.hpp"
 #include "InteractionDataFrame.hpp"
+#include "SingleParticleDataFrame.hpp"
 #include "../momentum_iterator.hpp"
 
 #include <nlohmann/json.hpp>
@@ -17,13 +18,22 @@ struct FlowContainer {
 
     InteractionDataFrame interactions_same_spin;
     InteractionDataFrame interactions_differing_spin;
-    coeff_array dispersion;
+    SingleParticleDataFrame dispersion;
 
     template <class Archive>
     void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
+        coeff_array full_dispersion{};
+        if constexpr (Archive::is_saving::value) {
+            full_dispersion = dispersion.as_array();
+        }
         ar & interactions_same_spin;
         ar & interactions_differing_spin;
-        ar & dispersion;
+        ar & full_dispersion;
+        if constexpr (Archive::is_loading::value) {
+            for (std::size_t momentum = 0; momentum < N; ++momentum) {
+                dispersion[momentum] = full_dispersion[momentum];
+            }
+        }
     }
 
     FlowContainer() noexcept;

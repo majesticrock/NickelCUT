@@ -14,7 +14,7 @@ ExtractionContainer::ExtractionContainer(const FlowContainer& x)
     : single_particle_energy(DecouplingChannel::SingleParticleEnergy(x)),
       density_wave(DecouplingChannel::DensityWave(x)),
       superconductivity(DecouplingChannel::Superconductivity(x)),
-      dispersion(x.dispersion),
+      dispersion(x.dispersion.as_array()),
       epsilon_tilde(x.epsilon_tilde()) {}
 
 void to_json(nlohmann::json& j, const ExtractionContainer& extracted_channels) noexcept {

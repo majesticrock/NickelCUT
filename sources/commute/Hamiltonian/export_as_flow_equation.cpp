@@ -13,7 +13,10 @@ namespace NickelCUT::commute::Hamiltonian {
 using namespace mrock::symbolic_operators;
 
 const std::string outer_K_loop =
-    "#pragma omp parallel for\nfor (int K_pos=0; K_pos < N; ++K_pos) {\nmomentum_iterator<L> K(K_pos);\n";
+    "#pragma omp parallel for\n"
+    "for (int K_pos = 0; K_pos < SingleParticleDataFrame::independent_size(); ++K_pos) {\n"
+    "const std::size_t k_index = SingleParticleDataFrame::independent_indices()[K_pos];\n"
+    "momentum_iterator<L> K(static_cast<int>(k_index));\n";
 
 const std::string independent_interaction_loop =
     "#pragma omp parallel for\n"

@@ -51,7 +51,7 @@ public:
     Vector swave_state() const;
     Vector dwave_state() const;
 
-    const std::array<double, N>& get_dispersion() const noexcept;
+    std::array<double, N> get_dispersion() const noexcept;
     bool found_negative_excitation() const noexcept;
     bool found_pomeranchuk_instability() const noexcept;
     double get_extremal_eigenvalue() const noexcept;
@@ -64,7 +64,7 @@ protected:
     Eigen::SelfAdjointEigenSolver<Matrix> eigen_solver;
 
     std::array<double, N> occupation_numbers;
-    std::array<double, N> dispersion;
+    SingleParticleDataFrame dispersion;
 
     FlowContainer const * flow_result;
     std::array<double, N> epsilon_tilde;
