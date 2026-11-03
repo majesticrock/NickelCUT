@@ -65,15 +65,18 @@ ieom_base::ieom_base(const ieom_base* const other_instance)
       dispersion{other_instance->dispersion},
       flow_result{other_instance->flow_result},
       epsilon_tilde{other_instance->epsilon_tilde},
-      beta{other_instance->beta} {}
+      beta{other_instance->beta},
+      chemical_potential{other_instance->chemical_potential},
+      _found_negative_excitation{false},
+      _found_pomeranchuk{other_instance->_found_pomeranchuk} {}
 
 void ieom_base::update(const FlowContainer& _flow_result, const Model& model) {
     flow_result = &_flow_result;
     epsilon_tilde = flow_result->epsilon_tilde();
-    solve_hartree_fock(model);
     _extremal_eigenvalue = 10000.;
     _found_negative_excitation = false;
     _found_pomeranchuk = false;
+    solve_hartree_fock(model);
 }
 
 void ieom_base::update(const ieom_base* const other_instance) {
@@ -81,9 +84,10 @@ void ieom_base::update(const ieom_base* const other_instance) {
     dispersion = other_instance->dispersion;
     flow_result = other_instance->flow_result;
     epsilon_tilde = other_instance->epsilon_tilde;
+    chemical_potential = other_instance->chemical_potential;
     _extremal_eigenvalue = 10000.;
     _found_negative_excitation = false;
-    _found_pomeranchuk = false;
+    _found_pomeranchuk = other_instance->_found_pomeranchuk;
 }
 
 void ieom_base::fill_matrices(const momentum& x) {
@@ -97,11 +101,12 @@ std::vector<double> ieom_base::compute_static_susceptibility(const momentum& x, 
     std::vector<double> result;
     result.reserve(states.size());
     for (const auto& state : states) {
-        const Vector tmp = eigen_solver.eigenvectors().adjoint() * chi_matrix.asDiagonal() * state;
+        const Vector tmp = eigen_solver.eigenvectors().adjoint() * (chi_matrix.asDiagonal() * state);
         Vector inverse_eigenvalues = eigen_solver.eigenvalues();
         for (auto& ev : inverse_eigenvalues) {
-            ev += 1.; // The matrix to invert is 1+K
+            ev += 1.; // The matrix to invert is 1+X
             if (ev < _extremal_eigenvalue) _extremal_eigenvalue = ev;
+
             if (is_non_zero(ev)) {
                 ev = 1. / ev;
                 if (ev < 0.0) {
@@ -110,7 +115,7 @@ std::vector<double> ieom_base::compute_static_susceptibility(const momentum& x, 
             } 
             else {
                 std::cerr << "Warning: Inversion fallback was used!" << std::endl;
-                ev = PRECISION;
+                ev = 1. / PRECISION;
             }
         }
 
