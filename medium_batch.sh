@@ -6,7 +6,16 @@ BASE_CONFIG="${PROJECT_ROOT}/params/med_queue.config"
 INPUT_FILE="${PROJECT_ROOT}/params/for_auto.txt"
 SLURM_TEMPLATE="${PROJECT_ROOT}/slurm/flow_med.slurm"
 
-read -r -p "Lattice size L: " L
+if (( $# > 2 )); then
+  echo "Usage: $0 [L [parameter]]"
+  exit 1
+fi
+
+if (( $# >= 1 )); then
+  L="$1"
+else
+  read -r -p "Lattice size L: " L
+fi
 if [[ ! "${L}" =~ ^[0-9]+$ ]] || ((10#${L} < 2 || 10#${L} % 2 != 0)); then
   echo "L must be a positive even integer."
   exit 1
@@ -72,12 +81,16 @@ declare -A TOKENS=(
   [P]="tprime"
 )
 
-echo "Select the parameter to vary:"
-echo "1 / U: local interaction"
-echo "2 / T: temperature"
-echo "3 / F: filling"
-echo "4 / p: next-nearest hopping"
-read -p "Enter your choice: " choice
+if (( $# == 2 )); then
+  choice="$2"
+else
+  echo "Select the parameter to vary:"
+  echo "1 / U: local interaction"
+  echo "2 / T: temperature"
+  echo "3 / F: filling"
+  echo "4 / p: next-nearest hopping"
+  read -r -p "Enter your choice: " choice
+fi
 TOKEN="${TOKENS[$choice]:-}"
 
 if [[ -z "${TOKEN}" ]]; then
