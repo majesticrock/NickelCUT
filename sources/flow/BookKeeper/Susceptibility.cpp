@@ -54,12 +54,12 @@ void Susceptibility::operator()(const FlowContainer& x, double l) {
 
     // If all channels display a negative eigenvalue, we assume that we neglect to many high-order fluctuations
     // and interrupt the flow before acrueing more errors.
-    if (extremal_charge_eigenvalues.back() < 0.0 
-        && extremal_sc_eigenvalues.back() < 0.0
-        && extremal_spin_eigenvalues.back() < 0.0) 
-    {
-        throw NegativeSusceptibilitiesException(l);
-    }
+    //if (extremal_charge_eigenvalues.back() < 0.0 
+    //    && extremal_sc_eigenvalues.back() < 0.0
+    //    && extremal_spin_eigenvalues.back() < 0.0) 
+    //{
+    //    throw NegativeSusceptibilitiesException(l);
+    //}
 
     // If the shift surpasses half the initial shift, we treat it as non-convergent.
     // We must also guard against too early interruptions because the shifts in the beginning are fairly large

@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
 #endif
     );
 
-    // Default end_reason will probably never be reached.
+    // Default end_reason
     std::string end_reason = "Reached l_final";
     double actual_l_final = 0.;
     try {
