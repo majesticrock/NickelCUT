@@ -67,8 +67,8 @@ void Susceptibility::operator()(const FlowContainer& x, double l) {
     if (rel_shift > 0.4 && l > 0.5) {
         throw UnreliableSusceptibilityException(l);
     }
-    // If the shift is less than 0.5% of the initial shift, we treat it as convergent.
-    if (rel_shift < 0.005) {
+    // If the shift is less than 0.1% of the initial shift, we treat it as convergent.
+    if (rel_shift < 0.001) {
         if (previous_was_stable) {
             throw ConvergedSusceptibilityException(l);
         }
