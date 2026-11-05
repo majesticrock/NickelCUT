@@ -3,6 +3,7 @@
 #include "../L.hpp"
 #include "../helper_functions.hpp"
 #include "../momentum_iterator.hpp"
+#include "MomentumGrid.hpp"
 #include "occupation_numbers.hpp"
 
 #include <boost/math/tools/toms748_solve.hpp>
@@ -27,7 +28,12 @@ Model::Model(mrock::utility::InputFileReader& input)
       filling{input.getDouble("filling")},
       temperature{input.getDouble("T")},
       beta{temperature > 0.0 ? 1. / temperature : 100.} {
+    MomentumGrid::reset();
     E_F = compute_chemical_potential();
+    for (int iteration = 0; iteration < 4; ++iteration) {
+        MomentumGrid::initialize(tprime, E_F);
+        E_F = compute_chemical_potential();
+    }
     compute_occupation_numbers(*this);
     std::cout << info() << std::endl;
 }
@@ -39,7 +45,8 @@ double Model::compute_chemical_potential() const {
 
     double min_energy = std::numeric_limits<double>::infinity();
     double max_energy = -std::numeric_limits<double>::infinity();
-    for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
+    for (const auto& point : MomentumGrid::fermion_points()) {
+        const auto p = point.momentum;
         const double energy = epsilon_0(p.get_kx(), p.get_ky()) + E_F;
         min_energy = std::min(min_energy, energy);
         max_energy = std::max(max_energy, energy);
@@ -53,9 +60,10 @@ double Model::compute_chemical_potential() const {
 
     const auto filling_deviation = [this](double chemical_potential) {
         double computed_filling{};
-        for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
+        for (const auto& point : MomentumGrid::fermion_points()) {
+            const auto p = point.momentum;
             const double energy = epsilon_0(p.get_kx(), p.get_ky()) + E_F - chemical_potential;
-            computed_filling += fermi_function(energy);
+            computed_filling += point.weight * fermi_function(energy);
         }
         computed_filling *= 2.0 / N;
         return filling - computed_filling;
@@ -112,7 +120,9 @@ std::string Model::info() const {
     return "NickelCUT Model (L=" + std::to_string(L) + "): U_0=" + std::to_string(U_0) +
            "   tprime=" + std::to_string(tprime) + "   filling=" + std::to_string(filling) +
            "   E_F=" + std::to_string(E_F) +
-           "   temperature=" + std::to_string(temperature);
+           "   temperature=" + std::to_string(temperature) +
+           "   adaptive fermion momenta=" + std::to_string(MomentumGrid::fermion_points().size()) +
+           "   transfer momenta=" + std::to_string(MomentumGrid::transfer_points().size());
 }
 
 std::string Model::data_dir_name() const {

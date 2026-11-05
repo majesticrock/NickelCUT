@@ -3,6 +3,7 @@
 #include "../L.hpp"
 #include "../helper_functions.hpp"
 #include "../momentum_iterator.hpp"
+#include "MomentumGrid.hpp"
 #include "MomentumSymmetry.hpp"
 
 #include <algorithm>
@@ -40,6 +41,24 @@ public:
         return symmetry::independent_indices();
     }
 
+    static const std::vector<std::size_t>& active_independent_indices() {
+        static std::vector<std::size_t> indices;
+        static std::uint64_t cached_generation = std::numeric_limits<std::uint64_t>::max();
+        if (cached_generation != MomentumGrid::generation()) {
+            indices.clear();
+            for (const std::size_t index : independent_indices()) {
+                const int k = static_cast<int>(index / (N * N));
+                const int p = static_cast<int>((index / N) % N);
+                const int q = static_cast<int>(index % N);
+                if (MomentumGrid::is_fermion(k) && MomentumGrid::is_fermion(p) && MomentumGrid::is_transfer(q)) {
+                    indices.push_back(index);
+                }
+            }
+            cached_generation = MomentumGrid::generation();
+        }
+        return indices;
+    }
+
     template <class Archive>
     void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
         ar & _data;
@@ -61,6 +80,12 @@ public:
         assert(x < N);
         assert(y < N);
         assert(z < N);
+        x = static_cast<std::size_t>(
+            MomentumGrid::nearest_fermion(momentum_iterator<L>(static_cast<int>(x))).get_position());
+        y = static_cast<std::size_t>(
+            MomentumGrid::nearest_fermion(momentum_iterator<L>(static_cast<int>(y))).get_position());
+        z = static_cast<std::size_t>(
+            MomentumGrid::nearest_transfer(momentum_iterator<L>(static_cast<int>(z))).get_position());
         return _data[data_index(x, y, z)];
     }
 
@@ -68,6 +93,12 @@ public:
         assert(x < N);
         assert(y < N);
         assert(z < N);
+        x = static_cast<std::size_t>(
+            MomentumGrid::nearest_fermion(momentum_iterator<L>(static_cast<int>(x))).get_position());
+        y = static_cast<std::size_t>(
+            MomentumGrid::nearest_fermion(momentum_iterator<L>(static_cast<int>(y))).get_position());
+        z = static_cast<std::size_t>(
+            MomentumGrid::nearest_transfer(momentum_iterator<L>(static_cast<int>(z))).get_position());
         return _data[data_index(x, y, z)];
     }
 
@@ -108,9 +139,13 @@ public:
 
     inline double abs_squared_total() const noexcept {  ///< the square of the L2 norm
         double val{};
-        const auto& indices = storage_indices();
-        for (const std::size_t index : indices) {
-            val += _data[index] * _data[index];
+        for (const auto& k : MomentumGrid::fermion_points()) {
+            for (const auto& p : MomentumGrid::fermion_points()) {
+                for (const auto& q : MomentumGrid::transfer_points()) {
+                    const double value = operator()(k.momentum, p.momentum, q.momentum);
+                    val += k.weight * p.weight * q.weight * value * value;
+                }
+            }
         }
         return val;
     };
@@ -121,8 +156,13 @@ public:
         return std::sqrt(abs_squared_total());
     };
     inline double norm_inf() const noexcept {  ///< the L_infinity norm
-        return std::abs(*std::max_element(_data.begin(), _data.end(), LessThanAbs()));
-    };
+        double result{};
+        for (const std::size_t index : active_independent_indices()) {
+            result = std::max(result, std::abs(_data[data_index(
+                index / (N * N), (index / N) % N, index % N)]));
+        }
+        return result;
+    }
 
     // Required for boost odeint
     inline InteractionDataFrame abs() const noexcept {

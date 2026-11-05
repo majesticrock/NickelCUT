@@ -2,6 +2,7 @@
 
 #include "../helper_functions.hpp"
 #include "../shared/FlowContainer.hpp"
+#include "../shared/MomentumGrid.hpp"
 #include "../momentum_iterator.hpp"
 #include "../shared/occupation_numbers.hpp"
 
@@ -12,9 +13,13 @@ namespace NickelCUT::flow {
 void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/) {
     dHdl.reset();
     static InteractionDataFrame alpha_sign_cache;
+    const auto& active_interaction_tuples = InteractionDataFrame::active_independent_indices();
+    const auto& active_fermion_indices = SingleParticleDataFrame::active_independent_indices();
 #pragma omp parallel for
-    for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {
-        const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];
+    for (int independent_pos = 0;
+         independent_pos < static_cast<int>(active_interaction_tuples.size());
+         ++independent_pos) {
+        const std::size_t tuple_index = active_interaction_tuples[independent_pos];
         momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));
         momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
         momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
@@ -22,12 +27,15 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
     }
 
 #pragma omp parallel for
-    for (int K_pos = 0; K_pos < SingleParticleDataFrame::independent_size(); ++K_pos) {
-        const std::size_t k_index = SingleParticleDataFrame::independent_indices()[K_pos];
+    for (int K_pos = 0; K_pos < static_cast<int>(active_fermion_indices.size()); ++K_pos) {
+        const std::size_t k_index = active_fermion_indices[K_pos];
         momentum_iterator<L> K(static_cast<int>(k_index));
-        for (momentum_iterator<L> P = momentum_iterator<L>::begin(); P != momentum_iterator<L>::end(); ++P) {
+        for (const auto& P_point : MomentumGrid::fermion_points()) {
+            const auto P = P_point.momentum;
             double Q_sum_value{};
-            for (momentum_iterator<L> Q = momentum_iterator<L>::begin(); Q != momentum_iterator<L>::end(); ++Q) {
+            for (const auto& Q_point : MomentumGrid::transfer_points()) {
+                const auto Q = Q_point.momentum;
+                const double q_sum_before = Q_sum_value;
                 Q_sum_value -= current.interactions_same_spin(-K, -P, K + Q) * alpha_sign_cache(-Q, K + P + Q, K + Q) *
                                current.interactions_same_spin(-Q, K + P + Q, K + Q) * hole_numbers[Q] *
                                hole_numbers[K + P + Q];
@@ -66,15 +74,18 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
                 Q_sum_value += current.interactions_differing_spin(-Q, K + P + Q, K + Q) *
                                alpha_sign_cache(-K, -P, K + Q) * current.interactions_differing_spin(-K, -P, K + Q) *
                                hole_numbers[Q] * hole_numbers[K + P + Q];
+                Q_sum_value = q_sum_before + (Q_sum_value - q_sum_before) * Q_point.weight;
             }  // Q-loop
-            dHdl.dispersion[K] += 8.000000 * Q_sum_value * occupation_numbers[P];
+            dHdl.dispersion[K] += 8.000000 * Q_sum_value * occupation_numbers[P] * P_point.weight;
         }  // P-loop
     }  // K-loop
 
 //--------------------------------------------------------------//
 #pragma omp parallel for
-    for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {
-        const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];
+    for (int independent_pos = 0;
+         independent_pos < static_cast<int>(active_interaction_tuples.size());
+         ++independent_pos) {
+        const std::size_t tuple_index = active_interaction_tuples[independent_pos];
         momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));
         momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
         momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
@@ -82,7 +93,9 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
             alpha_sign_cache(K, P, Q) * current.interactions_differing_spin(K, P, Q) * current.dispersion[K];
         dHdl.interactions_differing_spin(K, P, Q) +=
             alpha_sign_cache(K, P, Q) * current.interactions_differing_spin(K, P, Q) * current.dispersion[K + Q];
-        for (momentum_iterator<L> R = momentum_iterator<L>::begin(); R != momentum_iterator<L>::end(); ++R) {
+        for (const auto& R_point : MomentumGrid::fermion_points()) {
+            const auto R = R_point.momentum;
+            const double r_sum_before = dHdl.interactions_differing_spin(K, P, Q);
             double nR_hQR_value{};
             nR_hQR_value -= current.interactions_same_spin(-K, -Q - R, K - R) * alpha_sign_cache(-P, -R, Q) *
                             current.interactions_differing_spin(-P, -R, Q);
@@ -126,14 +139,19 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
                 current.interactions_differing_spin(-K, -P, K + R) * hole_numbers[R] * hole_numbers[K + P + R];
             dHdl.interactions_differing_spin(K, P, Q) +=
                 2. * nR_hQR_value * occupation_numbers[R] * hole_numbers[Q + R];
+            const double r_sum_after = dHdl.interactions_differing_spin(K, P, Q);
+            dHdl.interactions_differing_spin(K, P, Q) =
+                r_sum_before + (r_sum_after - r_sum_before) * R_point.weight;
         }  // R-loop
         dHdl.interactions_differing_spin(K, P, Q) *= 4.000000;
     }
 
 //--------------------------------------------------------------//
 #pragma omp parallel for
-    for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {
-        const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];
+    for (int independent_pos = 0;
+         independent_pos < static_cast<int>(active_interaction_tuples.size());
+         ++independent_pos) {
+        const std::size_t tuple_index = active_interaction_tuples[independent_pos];
         momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));
         momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
         momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
@@ -145,7 +163,9 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
             alpha_sign_cache(K, P, Q) * current.interactions_same_spin(K, P, Q) * current.dispersion[K];
         dHdl.interactions_same_spin(K, P, Q) +=
             alpha_sign_cache(K, P, Q) * current.interactions_same_spin(K, P, Q) * current.dispersion[K + Q];
-        for (momentum_iterator<L> R = momentum_iterator<L>::begin(); R != momentum_iterator<L>::end(); ++R) {
+        for (const auto& R_point : MomentumGrid::fermion_points()) {
+            const auto R = R_point.momentum;
+            const double r_sum_before = dHdl.interactions_same_spin(K, P, Q);
             double nR_hQR_value{};
             dHdl.interactions_same_spin(K, P, Q) += current.interactions_same_spin(-K, -P, K + R) *
                                                     alpha_sign_cache(-R, K + P + R, K + Q + R) *
@@ -185,6 +205,9 @@ void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl,
             nR_hQR_value -= current.interactions_differing_spin(-P, -R, Q) * alpha_sign_cache(K, Q + R, Q) *
                             current.interactions_differing_spin(K, Q + R, Q);
             dHdl.interactions_same_spin(K, P, Q) += 2. * nR_hQR_value * occupation_numbers[R] * hole_numbers[Q + R];
+            const double r_sum_after = dHdl.interactions_same_spin(K, P, Q);
+            dHdl.interactions_same_spin(K, P, Q) =
+                r_sum_before + (r_sum_after - r_sum_before) * R_point.weight;
         }  // R-loop
         dHdl.interactions_same_spin(K, P, Q) *= 4.000000;
     }

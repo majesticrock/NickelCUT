@@ -14,19 +14,28 @@ using namespace mrock::symbolic_operators;
 
 const std::string outer_K_loop =
     "#pragma omp parallel for\n"
-    "for (int K_pos = 0; K_pos < SingleParticleDataFrame::independent_size(); ++K_pos) {\n"
-    "const std::size_t k_index = SingleParticleDataFrame::independent_indices()[K_pos];\n"
+    "for (int K_pos = 0; K_pos < static_cast<int>(active_fermion_indices.size()); ++K_pos) {\n"
+    "const std::size_t k_index = active_fermion_indices[K_pos];\n"
     "momentum_iterator<L> K(static_cast<int>(k_index));\n";
 
 const std::string independent_interaction_loop =
     "#pragma omp parallel for\n"
-    "for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {\n"
-    "const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];\n"
+    "for (int independent_pos = 0; independent_pos < static_cast<int>(active_interaction_tuples.size()); ++independent_pos) {\n"
+    "const std::size_t tuple_index = active_interaction_tuples[independent_pos];\n"
     "momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));\n"
     "momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));\n"
     "momentum_iterator<L> Q(static_cast<int>(tuple_index % N));\n";
 
 std::string momentum_for_loop(std::string const& it_name) {
+    if (it_name == "Q") {
+        return "for (const auto& Q_point : MomentumGrid::transfer_points()) {\n"
+               "const auto Q = Q_point.momentum;\n"
+               "const double q_sum_before = Q_sum_value;\n";
+    }
+    if (it_name == "P" || it_name == "R") {
+        return "for (const auto& " + it_name + "_point : MomentumGrid::fermion_points()) {\n"
+               "const auto " + it_name + " = " + it_name + "_point.momentum;\n";
+    }
     return "for (momentum_iterator<L> " + it_name + " = momentum_iterator<L>::begin(); " + it_name +
            " != momentum_iterator<L>::end(); ++" + it_name + ") {\n";
 }
@@ -148,9 +157,10 @@ std::string generate_bilinear(const experimental::WickOrderedCollector& bilinear
         code += ";\n";
     }
 
+    code += "Q_sum_value = q_sum_before + (Q_sum_value - q_sum_before) * Q_point.weight;\n";
     code += "} // Q-loop\n";
     code += accessor + "+= " + std::to_string(static_cast<double>(smallest_factor)) +
-            " * Q_sum_value * occupation_numbers[P];\n";
+            " * Q_sum_value * occupation_numbers[P] * P_point.weight;\n";
     code += "} // P-loop\n";
     code += "} // K-loop\n";
     return code;
@@ -191,6 +201,7 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
     }
 
     code += momentum_for_loop("R");
+    code += "const double r_sum_before = " + accessor + ";\n";
     code += "double nR_hQR_value{};\n";
 
     const auto is_nR_hQR = [](const std::vector<WickOperator>& expecs) {
@@ -230,6 +241,7 @@ std::string generate_quartic(const experimental::WickOrderedCollector& quartics,
     }
 
     code += accessor + "+= 2. * nR_hQR_value * occupation_numbers[R] * hole_numbers[Q+R];\n";
+    code += accessor + "= r_sum_before + (" + accessor + " - r_sum_before) * R_point.weight;\n";
     code += "} // R-loop\n";
     code += accessor + "*= " + std::to_string(static_cast<double>(smallest_factor)) + ";\n";
 
@@ -243,6 +255,7 @@ void export_as_flow_equation(const std::array<experimental::WickOrderedCollector
         "#include \"FlowEquation.hpp\"\n\n"
         "#include \"momentum_iterator.hpp\"\n"
         "#include \"FlowContainer.hpp\"\n"
+        "#include \"../shared/MomentumGrid.hpp\"\n"
         "#include \"occupation_numbers.hpp\"\n"
         "#include \"../helper_functions.hpp\"\n"
         "\n"
@@ -251,6 +264,8 @@ void export_as_flow_equation(const std::array<experimental::WickOrderedCollector
         "namespace NickelCUT::flow {\n\n"
         "void FlowEquation::operator()(const FlowContainer& current, FlowContainer& dHdl, const double /*l*/) {\n"
         "dHdl.reset();\n"
+        "const auto& active_interaction_tuples = InteractionDataFrame::active_independent_indices();\n"
+        "const auto& active_fermion_indices = SingleParticleDataFrame::active_independent_indices();\n"
         "static InteractionDataFrame alpha_sign_cache;\n" +
         independent_interaction_loop +
         "#ifdef USE_LW_GENERATOR\n"

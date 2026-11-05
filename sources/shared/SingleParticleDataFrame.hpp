@@ -1,12 +1,16 @@
 #pragma once
 
 #include "../helper_functions.hpp"
+#include "../momentum_iterator.hpp"
+#include "MomentumGrid.hpp"
 #include "MomentumSymmetry.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <omp.h>
 #include <utility>
 #include <vector>
@@ -24,6 +28,21 @@ public:
     static constexpr int independent_size() noexcept { return stored_size; }
 
     static const std::vector<std::size_t>& independent_indices() noexcept { return symmetry::independent_indices(); }
+
+    static const std::vector<std::size_t>& active_independent_indices() {
+        static std::vector<std::size_t> indices;
+        static std::uint64_t cached_generation = std::numeric_limits<std::uint64_t>::max();
+        if (cached_generation != MomentumGrid::generation()) {
+            indices.clear();
+            for (const std::size_t index : independent_indices()) {
+                if (MomentumGrid::is_fermion(static_cast<int>(index))) {
+                    indices.push_back(index);
+                }
+            }
+            cached_generation = MomentumGrid::generation();
+        }
+        return indices;
+    }
 
     template <class Archive>
     void serialize(Archive& ar, [[maybe_unused]] const unsigned int version) {
@@ -44,11 +63,15 @@ public:
 
     double& operator()(std::size_t momentum) noexcept {
         assert(momentum < N);
+        momentum = static_cast<std::size_t>(
+            MomentumGrid::nearest_fermion(momentum_iterator<L>(static_cast<int>(momentum))).get_position());
         return _data[symmetry::data_index(momentum)];
     }
 
     const double& operator()(std::size_t momentum) const noexcept {
         assert(momentum < N);
+        momentum = static_cast<std::size_t>(
+            MomentumGrid::nearest_fermion(momentum_iterator<L>(static_cast<int>(momentum))).get_position());
         return _data[symmetry::data_index(momentum)];
     }
 
@@ -67,15 +90,22 @@ public:
 
     double abs_squared_total() const noexcept {
         double result = 0.0;
-        for (const int index : storage_indices()) {
-            result += _data[index] * _data[index];
+        for (const auto& point : MomentumGrid::fermion_points()) {
+            const double value = (*this)(point.momentum);
+            result += point.weight * value * value;
         }
         return result;
     }
 
     std::size_t size() const noexcept { return _data.size(); }
     double abs_total() const noexcept { return std::sqrt(abs_squared_total()); }
-    double norm_inf() const noexcept { return std::abs(*std::max_element(_data.begin(), _data.end(), LessThanAbs())); }
+    double norm_inf() const noexcept {
+        double result{};
+        for (const auto& point : MomentumGrid::fermion_points()) {
+            result = std::max(result, std::abs((*this)(point.momentum)));
+        }
+        return result;
+    }
 
     SingleParticleDataFrame abs() const noexcept {
         SingleParticleDataFrame result(*this);

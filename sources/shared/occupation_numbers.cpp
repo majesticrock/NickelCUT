@@ -1,6 +1,7 @@
 #include "occupation_numbers.hpp"
 
 #include "Model.hpp"
+#include "MomentumGrid.hpp"
 #include "../momentum_iterator.hpp"
 
 namespace NickelCUT {
@@ -16,9 +17,14 @@ double compute_occupation_numbers(const Model& model) {
 
     double filling{};
     for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
-        occupation_numbers[p.get_position()] = model.fermi_function(model.epsilon_0(p.get_kx(), p.get_ky()));
-        hole_numbers[p.get_position()] = model.fermi_function(-model.epsilon_0(p.get_kx(), p.get_ky()));
-        filling += occupation_numbers[p.get_position()];
+        const auto resolved = MomentumGrid::nearest_fermion(p);
+        occupation_numbers[p.get_position()] =
+            model.fermi_function(model.epsilon_0(resolved.get_kx(), resolved.get_ky()));
+        hole_numbers[p.get_position()] =
+            model.fermi_function(-model.epsilon_0(resolved.get_kx(), resolved.get_ky()));
+    }
+    for (const auto& point : MomentumGrid::fermion_points()) {
+        filling += point.weight * occupation_numbers[point.momentum];
     }
     filling *= 2. / N;
     return filling;

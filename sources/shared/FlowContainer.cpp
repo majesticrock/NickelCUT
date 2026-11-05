@@ -2,6 +2,7 @@
 
 #include "../helper_functions.hpp"
 #include "Model.hpp"
+#include "MomentumGrid.hpp"
 #include "../momentum_iterator.hpp"
 #include "occupation_numbers.hpp"
 
@@ -9,6 +10,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 
 namespace NickelCUT {
 
@@ -20,7 +22,8 @@ FlowContainer::FlowContainer(const Model& model) noexcept
     : interactions_same_spin(),
       // Factor 1/2 to account for the extra spin summation compared to the standard Hubbard model
       interactions_differing_spin(0.5 * model.U_0 / N) {
-    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+    for (const auto& point : MomentumGrid::fermion_points()) {
+        const auto K = point.momentum;
         dispersion[K] = model.epsilon_0(K.get_kx(), K.get_ky());
     }
 }
@@ -65,24 +68,25 @@ double FlowContainer::residual_offdiagonality() const noexcept {
     // so -> abs_squared is 1/N^2, there a 3 sums of N elements -> scales as N
     // sqrt(N) = L -> dividing by L makes ROD independent of the system size
     double val{};
-#pragma omp parallel for reduction(+ : val) schedule(static)
-    for (std::size_t i = 0U; i < N * N * N; ++i) {
-        momentum_iterator<L> K(static_cast<int>(i / (N * N)));
-        momentum_iterator<L> P(static_cast<int>((i / N) % N));
-        momentum_iterator<L> Q(static_cast<int>(i % N));
-
-        val += alpha_factor(K, P, Q) * alpha_factor(K, P, Q) * (
-            interactions_differing_spin(K, P, Q) * interactions_differing_spin(K, P, Q) 
-            + interactions_same_spin(K, P, Q) * interactions_same_spin(K, P, Q)
-        );
+    for (const auto& K_point : MomentumGrid::fermion_points()) {
+        const auto K = K_point.momentum;
+        for (const auto& P_point : MomentumGrid::fermion_points()) {
+            const auto P = P_point.momentum;
+            for (const auto& Q_point : MomentumGrid::transfer_points()) {
+                const auto Q = Q_point.momentum;
+                const double alpha = alpha_factor(K, P, Q);
+                val += K_point.weight * P_point.weight * Q_point.weight * alpha * alpha *
+                       (interactions_differing_spin(K, P, Q) * interactions_differing_spin(K, P, Q) +
+                        interactions_same_spin(K, P, Q) * interactions_same_spin(K, P, Q));
+            }
+        }
     }
     return std::sqrt(val) / L;
 }
 
 double FlowContainer::max_generator_element() const noexcept {
     double max = 0.;
-    for (int independent_pos = 0; independent_pos < InteractionDataFrame::independent_size(); ++independent_pos) {
-        const std::size_t tuple_index = InteractionDataFrame::independent_indices()[independent_pos];
+    for (const std::size_t tuple_index : InteractionDataFrame::active_independent_indices()) {
         momentum_iterator<L> K(static_cast<int>(tuple_index / (N * N)));
         momentum_iterator<L> P(static_cast<int>((tuple_index / N) % N));
         momentum_iterator<L> Q(static_cast<int>(tuple_index % N));
@@ -96,16 +100,20 @@ double FlowContainer::max_generator_element() const noexcept {
 }
 
 bool FlowContainer::is_inversion_symmetric() const noexcept {
-    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+    for (const auto& point : MomentumGrid::fermion_points()) {
+        const auto K = point.momentum;
         if (!float_equal(dispersion[K], dispersion[-K])) {
             std::cerr << "Dispersion is not inversion symmetric!" << std::endl;
             return false;
         }
     }
 
-    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
-            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+    for (const auto& K_point : MomentumGrid::fermion_points()) {
+        const auto K = K_point.momentum;
+        for (const auto& P_point : MomentumGrid::fermion_points()) {
+            const auto P = P_point.momentum;
+            for (const auto& Q_point : MomentumGrid::transfer_points()) {
+                const auto Q = Q_point.momentum;
                 if (!float_equal(interactions_differing_spin(K, P, Q), interactions_differing_spin(-K, -P, -Q))) {
                     std::cerr << "Interaction antiparallel is not inversion symmetric!" << std::endl;
                     return false;
@@ -114,9 +122,12 @@ bool FlowContainer::is_inversion_symmetric() const noexcept {
         }
     }
 
-    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
-            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+    for (const auto& K_point : MomentumGrid::fermion_points()) {
+        const auto K = K_point.momentum;
+        for (const auto& P_point : MomentumGrid::fermion_points()) {
+            const auto P = P_point.momentum;
+            for (const auto& Q_point : MomentumGrid::transfer_points()) {
+                const auto Q = Q_point.momentum;
                 if (!float_equal(interactions_same_spin(K, P, Q), interactions_same_spin(-K, -P, -Q))) {
                     std::cerr << "Interaction parallel is not inversion symmetric!" << std::endl;
                     return false;
@@ -128,9 +139,12 @@ bool FlowContainer::is_inversion_symmetric() const noexcept {
 }
 
 bool FlowContainer::is_hermitian() const noexcept {
-    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
-            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+    for (const auto& K_point : MomentumGrid::fermion_points()) {
+        const auto K = K_point.momentum;
+        for (const auto& P_point : MomentumGrid::fermion_points()) {
+            const auto P = P_point.momentum;
+            for (const auto& Q_point : MomentumGrid::transfer_points()) {
+                const auto Q = Q_point.momentum;
                 if (!float_equal(interactions_differing_spin(K, P, Q), interactions_differing_spin(K + Q, P - Q, -Q))) {
                     std::cerr << "Interaction antiparallel is not Hermitian!" << std::endl;
                     return false;
@@ -139,9 +153,12 @@ bool FlowContainer::is_hermitian() const noexcept {
         }
     }
 
-    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
-            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+    for (const auto& K_point : MomentumGrid::fermion_points()) {
+        const auto K = K_point.momentum;
+        for (const auto& P_point : MomentumGrid::fermion_points()) {
+            const auto P = P_point.momentum;
+            for (const auto& Q_point : MomentumGrid::transfer_points()) {
+                const auto Q = Q_point.momentum;
                 if (!float_equal(interactions_same_spin(K, P, Q), interactions_same_spin(K + Q, P - Q, -Q))) {
                     std::cerr << "Interaction parallel is not Hermitian!" << std::endl;
                     return false;
@@ -153,7 +170,8 @@ bool FlowContainer::is_hermitian() const noexcept {
 }
 
 bool FlowContainer::is_particle_hole_invariant() const noexcept {
-    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
+    for (const auto& point : MomentumGrid::fermion_points()) {
+        const auto K = point.momentum;
         if (!is_zero(dispersion[K] + dispersion[PI<L> - K])) {
             std::cerr << "Dispersion is not particle-hole invariant!       " << K << ":\t" << dispersion[K] << "    "
                       << dispersion[PI<L> - K] << std::endl;
@@ -161,9 +179,12 @@ bool FlowContainer::is_particle_hole_invariant() const noexcept {
         }
     }
 
-    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
-            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+    for (const auto& K_point : MomentumGrid::fermion_points()) {
+        const auto K = K_point.momentum;
+        for (const auto& P_point : MomentumGrid::fermion_points()) {
+            const auto P = P_point.momentum;
+            for (const auto& Q_point : MomentumGrid::transfer_points()) {
+                const auto Q = Q_point.momentum;
                 if (!float_equal(interactions_differing_spin(K, P, Q),
                                  interactions_differing_spin(PI<L> - K - Q, PI<L> - P + Q, Q))) {
                     std::cerr << "Interaction antiparallel is not particle-hole invariant!   " << K << " " << P << " "
@@ -176,9 +197,12 @@ bool FlowContainer::is_particle_hole_invariant() const noexcept {
         }
     }
 
-    for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
-        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
-            for (mom_it Q = mom_it::begin(); Q != mom_it::end(); ++Q) {
+    for (const auto& K_point : MomentumGrid::fermion_points()) {
+        const auto K = K_point.momentum;
+        for (const auto& P_point : MomentumGrid::fermion_points()) {
+            const auto P = P_point.momentum;
+            for (const auto& Q_point : MomentumGrid::transfer_points()) {
+                const auto Q = Q_point.momentum;
                 if (!float_equal(interactions_same_spin(K, P, Q),
                                  interactions_same_spin(PI<L> - K - Q, PI<L> - P + Q, Q))) {
                     std::cerr << "Interaction parallel is not particle-hole invariant!   " << K << " " << P << " " << Q
@@ -193,8 +217,14 @@ bool FlowContainer::is_particle_hole_invariant() const noexcept {
 }
 
 double FlowContainer::band_width() const noexcept {
-    return (*std::max_element(dispersion.get_data().begin(), dispersion.get_data().end())) -
-           (*std::min_element(dispersion.get_data().begin(), dispersion.get_data().end()));
+    double minimum = std::numeric_limits<double>::infinity();
+    double maximum = -std::numeric_limits<double>::infinity();
+    for (const auto& point : MomentumGrid::fermion_points()) {
+        const double value = dispersion[point.momentum];
+        minimum = std::min(minimum, value);
+        maximum = std::max(maximum, value);
+    }
+    return maximum - minimum;
 }
 
 double FlowContainer::max_interaction() const noexcept {
@@ -221,8 +251,9 @@ FlowContainer::coeff_array FlowContainer::epsilon_tilde() const noexcept {
     for (mom_it K = mom_it::begin(); K != mom_it::end(); ++K) {
         ret[K] = dispersion[K];
 
-        for (mom_it P = mom_it::begin(); P != mom_it::end(); ++P) {
-            ret[K] -= 2. *
+        for (const auto& point : MomentumGrid::fermion_points()) {
+            const auto P = point.momentum;
+            ret[K] -= point.weight * 2. *
                       (interactions_differing_spin(K, P, Gamma<L>) + interactions_same_spin(K, P, Gamma<L>) -
                        interactions_same_spin(K, P, P - K)) *
                       occupation_numbers[P];
