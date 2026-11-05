@@ -47,7 +47,6 @@ int main(int argc, char** argv) {
 
     Model model(input);
     FlowContainer flow_state(model);
-    std::cout << "\nConstructed initial states. The filling of the system is " << model.filling << std::endl;
 
     const std::string output_dir =
         std::string(OUTPUT_DATA_DIR) +

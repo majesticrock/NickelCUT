@@ -15,7 +15,7 @@ DEFAULT_DATA_ROOT = (PROJECT_ROOT / "../../data/nickel_cut").resolve()
 EXTRACTED_CHANNELS = "final_flow_state.bin"
 
 # Parameters that can be matched against the directory hierarchy and varied.
-NUMERIC_PARAMETERS = ("U_0", "T", "tprime", "E_F")
+NUMERIC_PARAMETERS = ("U_0", "T", "tprime", "filling")
 REQUIRED_PARAMETERS = (*NUMERIC_PARAMETERS, "output_dir")
 
 
@@ -248,11 +248,11 @@ def main():
         "--vary",
         nargs="+",
         choices=NUMERIC_PARAMETERS,
-        default=["E_F"],
+        default=["filling"],
         metavar="PARAMETER",
         help=(
-            "parameter(s) to vary. Choices: U_0, T, tprime, E_F "
-            "(default: E_F). Example: --vary E_F T"
+            "parameter(s) to vary. Choices: U_0, T, tprime, filling "
+            "(default: filling). Example: --vary filling T"
         ),
     )
     parser.add_argument(

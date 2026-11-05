@@ -5,23 +5,74 @@
 #include "../momentum_iterator.hpp"
 #include "occupation_numbers.hpp"
 
+#include <boost/math/tools/toms748_solve.hpp>
 #include <mrock/utility/InputFileReader.hpp>
 #include <mrock/utility/OutputConvenience.hpp>
 #include <mrock/utility/better_to_string.hpp>
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <iostream>
+#include <limits>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 namespace NickelCUT {
 Model::Model(mrock::utility::InputFileReader& input)
     : U_0{input.getDouble("U_0")},
       tprime{input.getDouble("tprime")},
-      E_F{input.getDouble("E_F")},
+      filling{input.getDouble("filling")},
       temperature{input.getDouble("T")},
       beta{temperature > 0.0 ? 1. / temperature : 100.} {
-    filling = compute_occupation_numbers(*this);
+    E_F = compute_chemical_potential();
+    compute_occupation_numbers(*this);
+    std::cout << info() << std::endl;
+}
+
+double Model::compute_chemical_potential() const {
+    if (!std::isfinite(filling) || filling <= 0.0 || filling >= 2.0) {
+        throw std::invalid_argument("The target filling must be finite and between 0 and 2.");
+    }
+
+    double min_energy = std::numeric_limits<double>::infinity();
+    double max_energy = -std::numeric_limits<double>::infinity();
+    for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
+        const double energy = epsilon_0(p.get_kx(), p.get_ky()) + E_F;
+        min_energy = std::min(min_energy, energy);
+        max_energy = std::max(max_energy, energy);
+    }
+
+    const double filling_per_spin = filling / 2.0;
+    const double logit = std::log(filling_per_spin) - std::log1p(-filling_per_spin);
+    const double thermal_shift = logit / beta;
+    const double lower_bound = min_energy + thermal_shift;
+    const double upper_bound = max_energy + thermal_shift;
+
+    const auto filling_deviation = [this](double chemical_potential) {
+        double computed_filling{};
+        for (momentum_iterator<L> p = momentum_iterator<L>::begin(); p != momentum_iterator<L>::end(); ++p) {
+            const double energy = epsilon_0(p.get_kx(), p.get_ky()) + E_F - chemical_potential;
+            computed_filling += fermi_function(energy);
+        }
+        computed_filling *= 2.0 / N;
+        return filling - computed_filling;
+    };
+
+    if (filling_deviation(lower_bound) == 0.0) {
+        return lower_bound;
+    }
+    if (filling_deviation(upper_bound) == 0.0) {
+        return upper_bound;
+    }
+
+    std::uintmax_t max_iterations{100U};
+    const auto bounds = boost::math::tools::toms748_solve(
+        filling_deviation, lower_bound, upper_bound, boost::math::tools::eps_tolerance<double>(36), max_iterations);
+
+    return 0.5 * (bounds.first + bounds.second);
 }
 
 double Model::epsilon_0(double kx, double ky) const noexcept {
@@ -59,7 +110,8 @@ double Model::band_width() const noexcept {
 
 std::string Model::info() const {
     return "NickelCUT Model (L=" + std::to_string(L) + "): U_0=" + std::to_string(U_0) +
-           "   tprime=" + std::to_string(tprime) + "   E_F=" + std::to_string(E_F) +
+           "   tprime=" + std::to_string(tprime) + "   filling=" + std::to_string(filling) +
+           "   E_F=" + std::to_string(E_F) +
            "   temperature=" + std::to_string(temperature);
 }
 
@@ -81,7 +133,7 @@ std::string Model::data_dir_name() const {
     };
 
     return "L=" + std::to_string(L) + "/" + "T=" + improved_string(temperature) + "/" + "U_0=" + improved_string(U_0) +
-           "/" + "tprime=" + improved_string(tprime) + "/" + "E_F=" + improved_string(E_F) + "/";
+           "/" + "tprime=" + improved_string(tprime) + "/" + "filling=" + improved_string(filling) + "/";
 }
 
 nlohmann::json Model::generate_meta_data_json() const {

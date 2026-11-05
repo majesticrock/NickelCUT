@@ -35,9 +35,9 @@ declare -A TOKENS=(
   [2]="T"
   [T]="T"
   [t]="T"
-  [3]="E_F"
-  [E]="E_F"
-  [e]="E_F"
+  [3]="filling"
+  [F]="filling"
+  [f]="filling"
   [4]="tprime"
   [p]="tprime"
   [P]="tprime"
@@ -45,8 +45,8 @@ declare -A TOKENS=(
 
 echo "Select the parameter to vary:"
 echo "1 / U: local interaction"
-echo "2 / T: hopping"
-echo "3 / E: Fermi energy"
+echo "2 / T: temperature"
+echo "3 / F: filling"
 echo "4 / p: next-nearest hopping"
 read -p "Enter your choice: " choice
 TOKEN="${TOKENS[$choice]}"

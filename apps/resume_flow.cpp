@@ -67,7 +67,6 @@ int main(int argc, char** argv) {
         std::cout << "Loaded serialized flow state from " << final_state_file << std::endl;
     } else {
         flow_state = FlowContainer(model);
-        std::cout << "\nConstructed initial states. The filling of the system is " << model.filling << std::endl;
     }
 
     FlowEquation flow_equation;

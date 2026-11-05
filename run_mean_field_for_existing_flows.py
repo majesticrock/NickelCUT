@@ -14,7 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 DEFAULT_DATA_ROOT = (PROJECT_ROOT / "../../data/nickel_cut").resolve()
 EXTRACTED_CHANNELS = "final_extracted_channels.bin"
 
-NUMERIC_PARAMETERS = ("U_0", "T", "tprime", "E_F")
+NUMERIC_PARAMETERS = ("U_0", "T", "tprime", "filling")
 REQUIRED_PARAMETERS = (*NUMERIC_PARAMETERS, "output_dir")
 
 
@@ -195,11 +195,11 @@ def main():
         "--vary",
         nargs="+",
         choices=NUMERIC_PARAMETERS,
-        default=["E_F"],
+        default=["filling"],
         metavar="PARAMETER",
         help=(
-            "parameter(s) to vary. Choices: U_0, T, tprime, E_F "
-            "(default: E_F). Example: --vary E_F T"
+            "parameter(s) to vary. Choices: U_0, T, tprime, filling "
+            "(default: filling). Example: --vary filling T"
         ),
     )
     parser.add_argument(

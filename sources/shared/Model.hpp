@@ -10,11 +10,11 @@ namespace NickelCUT {
 struct Model {
     const double U_0{};
     const double tprime{};
-    const double E_F{};
+    double filling{};
     double temperature{};
 
     double beta{};
-    double filling{};
+    double E_F{};
 
     Model(mrock::utility::InputFileReader& input);
 
@@ -31,6 +31,9 @@ struct Model {
     std::string data_dir_name() const;
 
     nlohmann::json generate_meta_data_json() const;
+
+private:
+    double compute_chemical_potential() const;
 };
 
 }  // namespace NickelCUT
