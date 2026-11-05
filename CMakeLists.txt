@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.30)
 
 project(NickelCUT VERSION 2.1.0 LANGUAGES CXX)
 
+set(NICKELCUT_L 10 CACHE STRING "Even linear lattice size L")
+if(NOT NICKELCUT_L MATCHES "^[0-9]+$" OR NICKELCUT_L LESS 2 OR NICKELCUT_L MATCHES "^[0-9]*[13579]$")
+  message(FATAL_ERROR "NICKELCUT_L must be an even integer greater than or equal to 2 (got '${NICKELCUT_L}').")
+endif()
+message(STATUS "Building NickelCUT for lattice size L=${NICKELCUT_L}.")
+
 # Keep Release optimizations while leaving assertions enabled.
 set(CMAKE_CXX_FLAGS_BETA_TEST "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING
     "Flags for an optimized build with assertions enabled." FORCE)

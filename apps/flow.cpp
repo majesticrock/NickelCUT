@@ -101,7 +101,9 @@ int main(int argc, char** argv) {
     mrock::utility::save_string(j_flow_data.dump(4), output_dir + data_file_names::FLOW_STEPS);
 #endif
 
-    mrock::utility::save_string(j_final_flow_state.dump(4), output_dir + data_file_names::FINAL_FLOW_STATE_JSON);
+    // These files are very large. We save only the serialized binary versions.
+    // If required, we can convert them to jsons afterward still.
+    //mrock::utility::save_string(j_final_flow_state.dump(4), output_dir + data_file_names::FINAL_FLOW_STATE_JSON);
 
     serialize_flow_state(book_keeper.get_last_good_state(), binary_ouput_dir, data_file_names::FINAL_FLOW_STATE_BIN);
     serialize_extracted_channels(ExtractionContainer(book_keeper.get_last_good_state()), binary_ouput_dir,

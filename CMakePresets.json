@@ -15,14 +15,18 @@
     {
       "name": "default",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build/default"
+      "binaryDir": "${sourceDir}/build/default/L10",
+      "cacheVariables": {
+        "NICKELCUT_L": "10"
+      }
     },
 
     {
       "name": "lw-generator",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build/lw-generator",
+      "binaryDir": "${sourceDir}/build/lw-generator/L10",
       "cacheVariables": {
+        "NICKELCUT_L": "10",
         "USE_LW_GENERATOR": "ON"
       }
     },
@@ -30,8 +34,9 @@
     {
       "name": "cascadelake",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build/cascadelake",
+      "binaryDir": "${sourceDir}/build/cascadelake/L10",
       "cacheVariables": {
+        "NICKELCUT_L": "10",
         "TARGET_ARCH": "cascadelake"
       }
     },
@@ -39,8 +44,9 @@
     {
       "name": "icelake",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build/icelake",
+      "binaryDir": "${sourceDir}/build/icelake/L10",
       "cacheVariables": {
+        "NICKELCUT_L": "10",
         "TARGET_ARCH": "icelake"
       }
     },
@@ -48,8 +54,9 @@
     {
       "name": "debug",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build/debug",
+      "binaryDir": "${sourceDir}/build/debug/L10",
       "cacheVariables": {
+        "NICKELCUT_L": "10",
         "CMAKE_BUILD_TYPE": "Debug"
       }
     },
@@ -57,8 +64,9 @@
     {
       "name": "BetaTest",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build/BetaTest",
+      "binaryDir": "${sourceDir}/build/BetaTest/L10",
       "cacheVariables": {
+        "NICKELCUT_L": "10",
         "CMAKE_BUILD_TYPE": "BetaTest"
       }
     },

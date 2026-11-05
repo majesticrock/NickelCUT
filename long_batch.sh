@@ -5,7 +5,36 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_CONFIG="${PROJECT_ROOT}/params/long_queue.config"
 INPUT_FILE="${PROJECT_ROOT}/params/for_auto.txt"
 SLURM_TEMPLATE="${PROJECT_ROOT}/slurm/flow_long.slurm"
-BUILD_DIR="${BUILD_DIR:-${PROJECT_ROOT}/build/cascadelake}"
+
+read -r -p "Lattice size L: " L
+if [[ ! "${L}" =~ ^[0-9]+$ ]] || ((10#${L} < 2 || 10#${L} % 2 != 0)); then
+  echo "L must be a positive even integer."
+  exit 1
+fi
+L=$((10#${L}))
+
+BUILD_DIR="${BUILD_DIR:-${PROJECT_ROOT}/build/cascadelake/L${L}}"
+FLOW_EXECUTABLE="${BUILD_DIR}/apps/flow"
+
+if [[ ! -x "${FLOW_EXECUTABLE}" ]]; then
+  echo "WARNING: No flow executable found for L=${L}: ${FLOW_EXECUTABLE}"
+  echo "Build it first with: make cascadelake L=${L}"
+  echo "No jobs were generated or submitted."
+  exit 1
+fi
+
+if [[ ! -f "${BUILD_DIR}/CMakeCache.txt" ]]; then
+  echo "WARNING: Cannot verify the lattice size of ${FLOW_EXECUTABLE}."
+  echo "No jobs were generated or submitted."
+  exit 1
+fi
+
+BUILT_L="$(sed -n 's/^NICKELCUT_L:STRING=//p' "${BUILD_DIR}/CMakeCache.txt")"
+if [[ "${BUILT_L}" != "${L}" ]]; then
+  echo "WARNING: ${FLOW_EXECUTABLE} was configured for L=${BUILT_L:-unknown}, not L=${L}."
+  echo "No jobs were generated or submitted."
+  exit 1
+fi
 
 if [[ ! -f "${BASE_CONFIG}" ]]; then
   echo "Missing NickelCUT base config: ${BASE_CONFIG}"
@@ -49,7 +78,7 @@ echo "2 / T: temperature"
 echo "3 / F: filling"
 echo "4 / p: next-nearest hopping"
 read -p "Enter your choice: " choice
-TOKEN="${TOKENS[$choice]}"
+TOKEN="${TOKENS[$choice]:-}"
 
 if [[ -z "${TOKEN}" ]]; then
   echo "Invalid choice. Exiting."
@@ -82,7 +111,7 @@ for NEW_VALUE in "${NEW_VALUES[@]}"; do
       -e "s|#SBATCH --job-name=flow|#SBATCH --job-name=flow_${NEW_NAME}_${CURRENT_TIME}|" \
       -e "s|#SBATCH --output=/home/althueser/phd/cpp/NickelCUT/output_long.txt|#SBATCH --output=${PROJECT_ROOT}/output_${CURRENT_TIME}_${NEW_NAME}.txt|" \
       -e "s|^#SBATCH --partition=.*|#SBATCH --partition=long|" \
-      -e "s|./build/cascadelake/apps/flow params/long_queue.config|${BUILD_DIR}/apps/flow ${OUTPUT_DIR}/${NEW_NAME}.config|" \
+      -e "s|^[[:space:]]*\\./build/cascadelake/apps/flow .*|${FLOW_EXECUTABLE} ${OUTPUT_DIR}/${NEW_NAME}.config|" \
       "${SLURM_TEMPLATE}" > "${slurm_path}"
 
   echo "Submitting ${slurm_path}"
