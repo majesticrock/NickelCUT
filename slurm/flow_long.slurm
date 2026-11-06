@@ -1,38 +1,58 @@
 #!/bin/bash
-
-## For more information on the following SBATCH commands, please refer to the manual page (man sbatch) in the terminal
-## or look up the slurm documentation under https://slurm.schedmed.com/sbatch.html
-
-## Mandatory:
 #SBATCH --job-name=flow
 #SBATCH --output=/home/althueser/phd/cpp/NickelCUT/output_long.txt
-#SBATCH --time=48:00:00         ## maximum runtime; hours:minutes:seconds
-#SBATCH --partition=long        ## choose queue
+#SBATCH --time=48:00:00
+#SBATCH --partition=long
+#SBATCH --nodes=1
+#SBATCH --exclusive
+#SBATCH --mem=40G
+#SBATCH --hint=nomultithread
+#SBATCH --constraint="CascadeLake|IceLake"
+#SBATCH --mail-user=joshua.althueser@tu-dortmund.de
+#SBATCH --mail-type=END
 
-#SBATCH --ntasks=1              ## sets number of total mpi processes
-#SBATCH --tasks-per-node=1      ## mpi processes spawned per node
-#SBATCH --cpus-per-task=40       ## logical cores used per mpi process: should be 1, except if you want to combine OpenMP with$
-
-#SBATCH --mem=160gb              ## sets maximum allowed memory per node
-##SBATCH --mem-per-cpu=100mb    ## sets maximum allowed memory per mpi process
-
-#SBATCH --mail-user=joshua.althueser@tu-dortmund.de     ## replace mail by personal mail address
-#SBATCH --mail-type=END ## most relevant options: NONE, BEGIN, END, FAIL
-
-## Optional:
-#SBATCH --hint=nomultithread    ## deactivate Hyperthreading (recommended); for Hyperthreading comment out this line
-#SBATCH --constraint=CascadeLake    ## chose a specific feature, e.g., only nodes with Haswell-architecture
-                                ## Feature-Output by "cat /etc/slurm/slurm.conf | grep Feature"
-cd /home/althueser/phd/cpp/NickelCUT/        ## go to working directory
+# -------------------------------------------------
+# 0. Go to the project directory
+# -------------------------------------------------
+cd /home/althueser/phd/cpp/NickelCUT/ || { echo "Cannot cd!"; exit 1; }
 
 date
 echo "--- START ---"
 
-export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-./build/cascadelake/apps/flow params/long_queue.config
+# -------------------------------------------------
+# 1. Determine which CPU family we got
+# -------------------------------------------------
+echo "SLURM constraint reported: $SLURM_CONSTRAINT"
+case "$SLURM_CONSTRAINT" in
+    CascadeLake) ARCH_DIR="cascadelake" ;;
+    IceLake)    ARCH_DIR="icelake"    ;;
+    *) echo "ERROR: Unexpected CPU family"; exit 1 ;;
+esac
+
+# -------------------------------------------------
+# 2. Pick the correct binary (adjust L‑folder if needed)
+# -------------------------------------------------
+LAYER="L1"                       # <-- adapt if you have several builds
+EXEC="./build/${ARCH_DIR}/${LAYER}/apps/flow"
+
+if [[ ! -x "$EXEC" ]]; then
+    echo "ERROR: Executable $EXEC not found."
+    exit 1
+fi
+
+# -------------------------------------------------
+# 3. OpenMP threads = all allocated physical cores
+# -------------------------------------------------
+export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
+echo "Running on $(hostname) – $OMP_NUM_THREADS cores"
+echo "Executable = $EXEC"
+
+# -------------------------------------------------
+# 4. Launch the program
+# -------------------------------------------------
+"$EXEC" params/long_queue.config
 
 echo "--- END ---"
 date
-echo
 echo "$(whoami) is leaving from $(hostname) ..."
 echo
