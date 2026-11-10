@@ -22,17 +22,22 @@ echo "--- START ---"
 # --------------------------------------------------------------------
 # 2.  Find out which CPU family the allocated node belongs to
 # --------------------------------------------------------------------
-echo "SLURM reports constraint: $SLURM_CONSTRAINT"
+CPU_INFO="$(awk -F: '
+    /^(vendor_id|cpu family|model)[[:space:]]*:/ {
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+        if ($1 ~ /^vendor_id/) vendor = $2
+        else if ($1 ~ /^cpu family/) family = $2
+        else if ($1 ~ /^model/) model = $2
+    }
+    END { print vendor, family, model }
+' /proc/cpuinfo)"
+read -r CPU_VENDOR CPU_FAMILY CPU_MODEL <<< "$CPU_INFO"
 
-case "$SLURM_CONSTRAINT" in
-    CascadeLake)
-        ARCH_DIR="cascadelake"
-        ;;
-    IceLake)
-        ARCH_DIR="icelake"
-        ;;
+case "${CPU_VENDOR}:${CPU_FAMILY}:${CPU_MODEL}" in
+    GenuineIntel:6:85)  ARCH_DIR="cascadelake" ;;
+    GenuineIntel:6:106) ARCH_DIR="icelake" ;;
     *)
-        echo "ERROR: Unexpected CPU family '$SLURM_CONSTRAINT'."
+        echo "ERROR: Unsupported CPU (vendor=$CPU_VENDOR family=$CPU_FAMILY model=$CPU_MODEL)."
         exit 1
         ;;
 esac
@@ -53,7 +58,7 @@ fi
 # 4.  Set OpenMP thread count to the *exact* number of cores allocated
 # --------------------------------------------------------------------
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
-echo "Running $EXEC with OMP_NUM_THREADS=$OMP_NUM_THREADS on $(hostname)"
+echo "Running $EXEC with OMP_NUM_THREADS=$OMP_NUM_THREADS on $(hostname) (CPU model $CPU_MODEL, arch $ARCH_DIR)"
 
 # --------------------------------------------------------------------
 # 5.  Launch the program

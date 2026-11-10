@@ -16,14 +16,28 @@
 # -------------------------------------------------------
 cd /home/althueser/phd/cpp/NickelCUT/ || { echo "Cannot cd to project dir"; exit 1; }
 
+# Lattice size is filled in by the batch-script generator.
+L=__LATTICE_SIZE__
+
 # -------------------------------------------------------
 # 2.  Helper: pick the correct binary at *runtime*
 # -------------------------------------------------------
-case "$SLURM_CONSTRAINT" in
-    CascadeLake) ARCH_DIR="cascadelake" ;;
-    IceLake)    ARCH_DIR="icelake"    ;;
+CPU_INFO="$(awk -F: '
+    /^(vendor_id|cpu family|model)[[:space:]]*:/ {
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2)
+        if ($1 ~ /^vendor_id/) vendor = $2
+        else if ($1 ~ /^cpu family/) family = $2
+        else if ($1 ~ /^model/) model = $2
+    }
+    END { print vendor, family, model }
+' /proc/cpuinfo)"
+read -r CPU_VENDOR CPU_FAMILY CPU_MODEL <<< "$CPU_INFO"
+
+case "${CPU_VENDOR}:${CPU_FAMILY}:${CPU_MODEL}" in
+    GenuineIntel:6:85)  ARCH_DIR="cascadelake" ;;
+    GenuineIntel:6:106) ARCH_DIR="icelake" ;;
     *)
-        echo "ERROR: Unexpected SLURM constraint '$SLURM_CONSTRAINT'"
+        echo "ERROR: Unsupported CPU (vendor=$CPU_VENDOR family=$CPU_FAMILY model=$CPU_MODEL)"
         exit 1
         ;;
 esac
@@ -42,7 +56,7 @@ fi
 # 3.  OpenMP – use *all* physical cores allocated on the node
 # -------------------------------------------------------
 export OMP_NUM_THREADS=$SLURM_CPUS_ON_NODE
-echo "Running on $(hostname) with $OMP_NUM_THREADS threads (arch $ARCH_DIR, L=$L)"
+echo "Running on $(hostname) with $OMP_NUM_THREADS threads (CPU model $CPU_MODEL, arch $ARCH_DIR, L=$L)"
 
 # -------------------------------------------------------
 # 4.  Run the program – the actual config file is supplied
