@@ -9,6 +9,7 @@
 
 #include <chrono>
 #include <deque>
+#include <utility>
 #include <vector>
 
 namespace NickelCUT {
@@ -25,6 +26,14 @@ struct Susceptibility : private base {
     std::deque<double> extremal_sc_eigenvalues;
     std::deque<double> extremal_charge_eigenvalues;
     std::deque<double> extremal_spin_eigenvalues;
+
+    std::deque<std::vector<double>> extremal_sc_eigenvectors;
+    std::deque<std::vector<double>> extremal_charge_eigenvectors;
+    std::deque<std::vector<double>> extremal_spin_eigenvectors;
+
+    std::deque<std::pair<int, int>> extremal_sc_momenta;
+    std::deque<std::pair<int, int>> extremal_charge_momenta;
+    std::deque<std::pair<int, int>> extremal_spin_momenta;
 
     /////////////////////////////////////////////////////////
 

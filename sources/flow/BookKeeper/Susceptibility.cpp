@@ -63,22 +63,22 @@ void Susceptibility::operator()(const FlowContainer& x, double l) {
 
     // If the shift surpasses half the initial shift, we treat it as non-convergent.
     // We must also guard against too early interruptions because the shifts in the beginning are fairly large
-    // and may easily surpass this threshold. l=0.5 seems to be a good value
-    if (rel_shift > 0.4 && l > 0.5) {
+    // and may surpass this threshold. l=0.5 seems to be a good value
+    if (rel_shift > 1. && l > 0.5) {
         throw UnreliableSusceptibilityException(l);
     }
     // If the shift is less than 0.1% of the initial shift, we treat it as convergent.
-    if (rel_shift < 0.001) {
-        if (previous_was_stable) {
-            throw ConvergedSusceptibilityException(l);
-        }
-        else {
-            previous_was_stable = true;
-        }
-    }
-    else {
-        previous_was_stable = false;
-    }
+    //if (rel_shift < 0.001) {
+    //    if (previous_was_stable) {
+    //        throw ConvergedSusceptibilityException(l);
+    //    }
+    //    else {
+    //        previous_was_stable = true;
+    //    }
+    //}
+    //else {
+    //    previous_was_stable = false;
+    //}
 }
 
 void Susceptibility::compute_static_ieom() {
@@ -86,13 +86,29 @@ void Susceptibility::compute_static_ieom() {
     spin_susceptibilities.push_back(ieom_spin.static_susceptibility_at_high_symmetry(states));
     charge_susceptibilities.push_back(ieom_charge.static_susceptibility_at_high_symmetry(states));
 
-    extremal_sc_eigenvalues.push_back(ieom_sc.get_extremal_eigenvalue());
-    extremal_charge_eigenvalues.push_back(ieom_charge.get_extremal_eigenvalue());
-    extremal_spin_eigenvalues.push_back(ieom_spin.get_extremal_eigenvalue());
+    {
+        const auto [value, vector, momentum] = ieom_sc.get_extremal_information();
+        extremal_sc_eigenvalues.push_back(value);
+        extremal_sc_eigenvectors.push_back(std::vector<double>(vector.begin(), vector.end()));
+        extremal_sc_momenta.push_back(std::pair<int, int>(momentum._x, momentum._y));
+    }
+    {
+        const auto [value, vector, momentum] = ieom_charge.get_extremal_information();
+        extremal_charge_eigenvalues.push_back(value);
+        extremal_charge_eigenvectors.push_back(std::vector<double>(vector.begin(), vector.end()));
+        extremal_charge_momenta.push_back(std::pair<int, int>(momentum._x, momentum._y));
+    }
+    {
+        const auto [value, vector, momentum] = ieom_spin.get_extremal_information();
+        extremal_spin_eigenvalues.push_back(value);
+        extremal_spin_eigenvectors.push_back(std::vector<double>(vector.begin(), vector.end()));
+        extremal_spin_momenta.push_back(std::pair<int, int>(momentum._x, momentum._y));
+    }
+
 }
 
 double Susceptibility::compute_lambda_ex_derivative() noexcept {
-    const double dl = (*(l_times.rbegin()) - *(l_times.rbegin() + 1));
+    const double dl     = (*(l_times.rbegin()) - *(l_times.rbegin() + 1));
     const double sc     = (*(extremal_sc_eigenvalues.rbegin()) - *(extremal_sc_eigenvalues.rbegin() + 1)) / dl;
     const double charge = (*(extremal_charge_eigenvalues.rbegin()) - *(extremal_charge_eigenvalues.rbegin() + 1)) / dl;
     const double spin   = (*(extremal_spin_eigenvalues.rbegin()) - *(extremal_spin_eigenvalues.rbegin() + 1)) / dl;
@@ -109,6 +125,12 @@ void to_json(nlohmann::json& j, const Susceptibility& book_keeper) noexcept {
         {"extremal_sc_eigenvalues", book_keeper.extremal_sc_eigenvalues},
         {"extremal_charge_eigenvalues", book_keeper.extremal_charge_eigenvalues},
         {"extremal_spin_eigenvalues", book_keeper.extremal_spin_eigenvalues},
+        {"extremal_sc_eigenvectors", book_keeper.extremal_sc_eigenvectors},
+        {"extremal_charge_eigenvectors", book_keeper.extremal_charge_eigenvectors},
+        {"extremal_spin_eigenvectors", book_keeper.extremal_spin_eigenvectors},
+        {"extremal_sc_momenta", book_keeper.extremal_sc_momenta},
+        {"extremal_charge_momenta", book_keeper.extremal_charge_momenta},
+        {"extremal_spin_momenta", book_keeper.extremal_spin_momenta},
         {"extracted_channels", std::deque<ExtractionContainer>{ExtractionContainer(book_keeper.last_good_state)}}
     });
 }

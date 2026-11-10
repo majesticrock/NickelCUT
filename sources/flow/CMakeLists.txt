@@ -23,6 +23,7 @@ endif()
 add_library(flow_lib STATIC
     FlowExceptions.cpp
     ExtractionContainer.cpp
+    numerical_setup.cpp
     "${FLOW_EQUATION_SOURCE}"
 )
 

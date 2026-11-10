@@ -46,6 +46,8 @@ int main(int argc, char** argv) {
     mrock::utility::InputFileReader input(argv[1]);
 
     Model model(input);
+    const double l_final = 1. / finite_size_energy_gap(model);
+    std::cout << "Trying to reach l=" << l_final << std::endl;
     FlowContainer flow_state(model);
 
     const std::string output_dir =
@@ -64,7 +66,7 @@ int main(int argc, char** argv) {
     _book_keeper book_keeper(flow_state, 
         flow_equation, 
         flow_state.band_width(), 
-        target_dl(model.U_0),
+        target_dl(l_final),
         input.getInt("max_runtime")
 #ifdef IEOM_BOOK_KEEPING
         , model
@@ -72,7 +74,7 @@ int main(int argc, char** argv) {
     );
 
     // Default end_reason
-    std::string end_reason = "Reached l_final";
+    std::string end_reason = "We reached l_final.";
     double actual_l_final = 0.;
     try {
         boost::numeric::odeint::integrate_adaptive(

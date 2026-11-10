@@ -44,7 +44,9 @@ int main(int argc, char** argv) {
 
     mrock::utility::InputFileReader input(argv[1]);
     NickelCUT::Model model(input);
-
+    const double l_final = 1. / finite_size_energy_gap(model);
+    std::cout << "Trying to reach l=" << l_final << std::endl;
+    
     const std::string output_dir = std::string(OUTPUT_DATA_DIR) +
                                    (std::string(OUTPUT_DATA_DIR).back() == '/' ? "" : "/") +
                                    input.getString("output_dir") + "/" + model.data_dir_name();
@@ -70,10 +72,10 @@ int main(int argc, char** argv) {
     }
 
     FlowEquation flow_equation;
-    _book_keeper book_keeper(flow_state, flow_equation, flow_state.band_width(), target_dl(model.U_0),
+    _book_keeper book_keeper(flow_state, flow_equation, flow_state.band_width(), target_dl(l_final),
                              input.getInt("max_runtime"));
 
-    std::string end_reason = "Reached l_final";
+    std::string end_reason = "We reached l_final.";
     double actual_l_final = 0.;
     try {
         boost::numeric::odeint::integrate_adaptive(

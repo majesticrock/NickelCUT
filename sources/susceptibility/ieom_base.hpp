@@ -9,6 +9,7 @@
 #include <nlohmann/json.hpp>
 
 #include <array>
+#include <tuple>
 #include <vector>
 
 namespace NickelCUT::susceptibility {
@@ -53,8 +54,8 @@ public:
 
     std::array<double, N> get_dispersion() const noexcept;
     bool found_negative_excitation() const noexcept;
-    bool found_pomeranchuk_instability() const noexcept;
     double get_extremal_eigenvalue() const noexcept;
+    std::tuple<double, Vector, momentum> get_extremal_information() const noexcept;
 
     double hartree_fock_filling() const noexcept;
 
@@ -73,8 +74,9 @@ protected:
     double chemical_potential = 0.0;
 
     double _extremal_eigenvalue = 10000.;
+    Vector _extremal_eigenvector = Vector::Zero(N);
+    momentum _extremal_momentum = momentum(-1);
     bool _found_negative_excitation = false;
-    bool _found_pomeranchuk = false;
 
     // This is positive definite!
     double chi_number(const momentum& k, const momentum& kx) const noexcept;

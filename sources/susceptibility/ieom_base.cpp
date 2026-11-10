@@ -67,15 +67,15 @@ ieom_base::ieom_base(const ieom_base* const other_instance)
       epsilon_tilde{other_instance->epsilon_tilde},
       beta{other_instance->beta},
       chemical_potential{other_instance->chemical_potential},
-      _found_negative_excitation{false},
-      _found_pomeranchuk{other_instance->_found_pomeranchuk} {}
+      _found_negative_excitation{false} {}
 
 void ieom_base::update(const FlowContainer& _flow_result, const Model& model) {
     flow_result = &_flow_result;
     epsilon_tilde = flow_result->epsilon_tilde();
     _extremal_eigenvalue = 10000.;
+    _extremal_eigenvector.setZero(N);
+    _extremal_momentum = momentum(-1);
     _found_negative_excitation = false;
-    _found_pomeranchuk = false;
     solve_hartree_fock(model);
 }
 
@@ -86,8 +86,9 @@ void ieom_base::update(const ieom_base* const other_instance) {
     epsilon_tilde = other_instance->epsilon_tilde;
     chemical_potential = other_instance->chemical_potential;
     _extremal_eigenvalue = 10000.;
+    _extremal_eigenvector.setZero(N);
+    _extremal_momentum = momentum(-1);
     _found_negative_excitation = false;
-    _found_pomeranchuk = other_instance->_found_pomeranchuk;
 }
 
 void ieom_base::fill_matrices(const momentum& x) {
@@ -103,19 +104,23 @@ std::vector<double> ieom_base::compute_static_susceptibility(const momentum& x, 
     for (const auto& state : states) {
         const Vector tmp = eigen_solver.eigenvectors().adjoint() * (chi_matrix.asDiagonal() * state);
         Vector inverse_eigenvalues = eigen_solver.eigenvalues();
-        for (auto& ev : inverse_eigenvalues) {
-            ev += 1.; // The matrix to invert is 1+X
-            if (ev < _extremal_eigenvalue) _extremal_eigenvalue = ev;
+        for (int i=0; i<inverse_eigenvalues.size(); ++i) {
+            inverse_eigenvalues(i) += 1.; // The matrix to invert is 1+X
+            if (inverse_eigenvalues(i) < _extremal_eigenvalue) {
+                _extremal_eigenvalue = inverse_eigenvalues(i);
+                _extremal_momentum = x;
+                _extremal_eigenvector = eigen_solver.eigenvectors().col(i);
+            }
 
-            if (is_non_zero(ev)) {
-                ev = 1. / ev;
-                if (ev < 0.0) {
+            if (is_non_zero(inverse_eigenvalues(i))) {
+                inverse_eigenvalues(i) = 1. / inverse_eigenvalues(i);
+                if (inverse_eigenvalues(i) < 0.0) {
                     _found_negative_excitation = true;
                 }
             } 
             else {
                 std::cerr << "Warning: Inversion fallback was used!" << std::endl;
-                ev = 1. / PRECISION;
+                inverse_eigenvalues(i) = 1. / PRECISION;
             }
         }
 
@@ -158,12 +163,12 @@ bool ieom_base::found_negative_excitation() const noexcept {
     return _found_negative_excitation;
 }
 
-bool ieom_base::found_pomeranchuk_instability() const noexcept {
-    return _found_pomeranchuk;
-}
-
 double ieom_base::get_extremal_eigenvalue() const noexcept {
     return _extremal_eigenvalue;
+}
+
+std::tuple<double, ieom_base::Vector, ieom_base::momentum> ieom_base::get_extremal_information() const noexcept {
+    return {_extremal_eigenvalue, _extremal_eigenvector, _extremal_momentum};
 }
 
 double ieom_base::hartree_fock_filling() const noexcept 

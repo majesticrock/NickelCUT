@@ -2,6 +2,7 @@
 
 #include "../L.hpp"
 #include "../shared/FlowContainer.hpp"
+#include "../shared/Model.hpp"
 
 #include <boost/numeric/odeint.hpp>
 
@@ -10,11 +11,10 @@ inline constexpr double _ROD_0(double U_0) {
     return 0.5 * (U_0 < 0. ? -1. : 1.) * U_0;
 }
 
-// Some number larger than what I expect to be reasonable because otherwise finite size effects become dominant
-constexpr double l_final = 4.;
+double finite_size_energy_gap(const Model& model);
 
-inline constexpr double target_dl(double U_0) {
-    return (U_0 < 0. ? -1. : 1.) * (10. / U_0) / 50.;
+inline constexpr double target_dl(double l_final) {
+    return l_final / 25.;
 }
 
 inline constexpr double dl(double U_0) {

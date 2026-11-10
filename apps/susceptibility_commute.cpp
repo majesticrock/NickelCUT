@@ -18,10 +18,11 @@ const Operator c_minus_k_dagger = Operator{-base_k, Index::SpinDown, true};
 
 std::vector<TermCollector> get_basis_operators() {
     std::vector<TermCollector> ret = {
-        // 0/1: f, f^+
-        TermCollector({Term(1, std::vector<Operator>({c_minus_k, c_k}))}),
+        // 0: f^+
         TermCollector({Term(1, std::vector<Operator>({c_k_dagger, c_minus_k_dagger}))}),
-        // 2/3: n_up/down
+        // 1: triplet-f
+        TermCollector({Term(1, std::vector<Operator>({c_k_dagger, Operator{-base_k, Index::SpinUp, true}}))}),
+        // 2/3: n_up +/- down
         TermCollector({Term(1, std::vector<Operator>({c_k_dagger, c_k})),
                        Term(1, std::vector<Operator>({c_minus_k_dagger.with_momentum(Momentum('k', -1)),
                                                       c_minus_k.with_momentum(Momentum('k', -1))}))}),
