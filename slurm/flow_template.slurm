@@ -60,6 +60,6 @@ echo "Running on $(hostname) with $OMP_NUM_THREADS threads (CPU model $CPU_MODEL
 
 # -------------------------------------------------------
 # 4.  Run the program – the actual config file is supplied
-#    as the *first* argument by the generator.
+#    at generation time.
 # -------------------------------------------------------
-"$EXECUTABLE" "$1"
+"$EXECUTABLE" "__CONFIG_FILE__"
