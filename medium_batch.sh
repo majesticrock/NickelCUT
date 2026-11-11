@@ -110,6 +110,7 @@ for NEW_VALUE in "${NEW_VALUES[@]}"; do
   sed \
       -e "s|#SBATCH --job-name=flow|#SBATCH --job-name=flow_${NEW_NAME}_${CURRENT_TIME}|" \
       -e "s|#SBATCH --output=/home/althueser/phd/cpp/NickelCUT/output_med.txt|#SBATCH --output=${PROJECT_ROOT}/output_${CURRENT_TIME}_${NEW_NAME}.txt|" \
+      -e "s|^#SBATCH --time=.*|#SBATCH --time=8:00:00|" \
       -e "s|^#SBATCH --partition=.*|#SBATCH --partition=med|" \
       -e "s|^L=__LATTICE_SIZE__$|L=${L}|" \
       -e "s|__CONFIG_FILE__|${OUTPUT_DIR}/${NEW_NAME}.config|" \
